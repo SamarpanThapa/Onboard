@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - OnboardX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="/js/api.js" defer></script>
+    <script src="/js/login.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <div class="logo">
+                <i class="fas fa-users-gear"></i>
+                <h1>OnboardX</h1>
+            </div>
+            <h2>Login to Your Account</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                        <button type="button" class="toggle-password"><i class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="role">Role</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-user-tag"></i>
+                        <select id="role" name="role" required>
+                            <option value="employee">Employee</option>
+                            <option value="manager">Manager</option>
+                            <option value="hr">HR Personnel</option>
+                            <option value="it">IT Personnel</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-links">
+                    <a href="forgot_pw.html">Forgot Password?</a>
+                </div>
+                <div id="error-message" class="error-message"></div>
+                <div id="success-message" class="success-message"></div>
+                <button type="submit" class="btn-primary">Login</button>
+            </form>
+            <div class="it-only-section">
+                <p>Only IT personnel can create new accounts.</p>
+                <p>Employees: Please contact your IT department for access.</p>
+                <a href="register.html" class="it-register-link">
+                    <i class="fas fa-user-shield"></i> IT Department Registration
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

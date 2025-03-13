@@ -1,0 +1,164 @@
+offboarding.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offboarding Process - OnboardX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/onboarding_offboarding.css">
+</head>
+<body>
+    <div class="branding">
+        <h1 class="brand-name"><i class="fas fa-users-gear"></i> Onboard-X</h1>
+    </div>
+    
+    <div class="offboarding-container">
+        <h2><i class="fas fa-user-minus"></i> Offboarding Process</h2>
+        <p>Complete these steps to finalize your departure</p>
+
+        <form id="offboarding-form" novalidate>
+            <!-- Progress Indicator -->
+            <div class="progress-indicator">
+                <div class="step-container">
+                    <div class="progress-line">
+                        <div class="progress-line-fill"></div>
+                    </div>
+                    <div class="step active" data-step="1">1</div>
+                    <div class="step" data-step="2">2</div>
+                    <div class="step" data-step="3">3</div>
+                    <div class="step" data-step="4">4</div>
+                    <div class="step" data-step="5">5</div>
+                </div>
+                <div class="navigation-row">
+                    <button type="button" id="back-button" class="nav-btn" disabled>
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <button type="button" id="dashboard-button" class="dashboard-btn">
+                        <i class="fas fa-th-large"></i> Dashboard
+                    </button>
+                    <button type="button" id="next-button" class="nav-btn">
+                        Next <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Form Steps Container -->
+            <div class="form-steps-container">
+                <!-- Step 1: Exit Interview -->
+                <div class="form-step active" id="step-1">
+                    <h3><i class="fas fa-comments"></i> Exit Interview</h3>
+                    <div class="row-card">
+                        <label for="reason"><i class="fas fa-question-circle"></i> Reason for Leaving:</label>
+                        <select id="reason" name="reason" required>
+                            <option value="">Select reason</option>
+                            <option value="new-opportunity">New Opportunity</option>
+                            <option value="relocation">Relocation</option>
+                            <option value="retirement">Retirement</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <span class="error-message"></span>
+                    </div>
+                    <div class="row-card">
+                        <label for="feedback"><i class="fas fa-comment-dots"></i> Feedback:</label>
+                        <textarea id="feedback" name="feedback" placeholder="Share your experience working with us" required></textarea>
+                        <span class="error-message"></span>
+                    </div>
+                </div>
+
+                <!-- Step 2: Equipment Return -->
+                <div class="form-step" id="step-2">
+                    <h3><i class="fas fa-laptop"></i> Equipment Return</h3>
+                    <div class="row-card">
+                        <label><i class="fas fa-box"></i> Company Assets:</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="laptop" name="laptop" required>
+                                <label for="laptop"><i class="fas fa-laptop"></i> Laptop</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="phone" name="phone" required>
+                                <label for="phone"><i class="fas fa-mobile-alt"></i> Phone</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="access-card" name="access-card" required>
+                                <label for="access-card"><i class="fas fa-id-card"></i> Access Card</label>
+                            </div>
+                        </div>
+                        <span class="error-message"></span>
+                    </div>
+                </div>
+
+                <!-- Step 3: Final Documentation -->
+                <div class="form-step" id="step-3">
+                    <h3><i class="fas fa-file-alt"></i> Final Documentation</h3>
+                    <div class="row-card">
+                        <label for="last-day"><i class="fas fa-calendar"></i> Last Working Day:</label>
+                        <input type="date" id="last-day" name="last-day" required>
+                        <span class="error-message"></span>
+                    </div>
+                    <div class="row-card">
+                        <label for="handover-doc"><i class="fas fa-file-upload"></i> Handover Document:</label>
+                        <input type="file" id="handover-doc" name="handover-doc" required>
+                        <span class="error-message"></span>
+                    </div>
+                </div>
+
+                <!-- Step 4: Benefits & Accounts -->
+                <div class="form-step" id="step-4">
+                    <h3><i class="fas fa-user-lock"></i> Benefits & Accounts</h3>
+                    <div class="row-card">
+                        <label><i class="fas fa-user-slash"></i> Account Deactivation:</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="email-deactivation" name="email-deactivation" required>
+                                <label for="email-deactivation"><i class="fas fa-envelope"></i> Email Account</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="systems-deactivation" name="systems-deactivation" required>
+                                <label for="systems-deactivation"><i class="fas fa-desktop"></i> System Access</label>
+                            </div>
+                        </div>
+                        <span class="error-message"></span>
+                    </div>
+                </div>
+
+                <!-- Step 5: Compliance Checklist -->
+                <div class="form-step" id="step-5">
+                    <h3><i class="fas fa-clipboard-check"></i> Compliance Checklist</h3>
+                    <div class="row-card">
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="confidentiality" name="confidentiality" required>
+                                <label for="confidentiality"><i class="fas fa-user-secret"></i> I understand my ongoing confidentiality obligations</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="ip-agreement" name="ip-agreement" required>
+                                <label for="ip-agreement"><i class="fas fa-shield-alt"></i> I acknowledge the intellectual property agreement</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="final-confirmation" name="final-confirmation" required>
+                                <label for="final-confirmation"><i class="fas fa-check-double"></i> I confirm all information provided is accurate</label>
+                            </div>
+                        </div>
+                        <span class="error-message"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Message -->
+            <div id="success-message" class="success-message" style="display: none;">
+                <i class="fas fa-check-circle"></i>
+                <h3>Offboarding Completed!</h3>
+                <p>Your offboarding process has been successfully completed.</p>
+                <button type="button" class="dashboard-btn" onclick="window.location.href='/admin'">
+                    <i class="fas fa-th-large"></i> Go to Dashboard
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script src="/js/offboarding.js" defer></script>
+</body>
+</html>

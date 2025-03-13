@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onboarding Process - OnboardX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/onboarding_offboarding.css">
+    <style>
+        .scroll-container {
+            max-height: 300px; /* Adjust height as needed */
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="branding">
+        <h1 class="brand-name"><i class="fas fa-users-gear"></i> Onboard-X</h1>
+    </div>
+    
+    <div class="onboarding-container">
+        <h2><i class="fas fa-user-plus"></i> Onboarding Process</h2>
+        <p>Follow the steps to complete your onboarding process.</p>
+
+        <form id="onboarding-form" novalidate>
+            <!-- Progress Indicator -->
+            <div class="progress-indicator">
+                <div class="step-container">
+                    <div class="progress-line">
+                        <div class="progress-line-fill"></div>
+                    </div>
+                    <div class="step active" data-step="1">1</div>
+                    <div class="step" data-step="2">2</div>
+                    <div class="step" data-step="3">3</div>
+                    <div class="step" data-step="4">4</div>
+                    <div class="step" data-step="5">5</div>
+                </div>
+                <div class="navigation-row">
+                    <button type="button" id="back-button" class="nav-btn" disabled>
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <button type="button" id="dashboard-button" class="dashboard-btn">
+                        <i class="fas fa-th-large"></i> Dashboard
+                    </button>
+                    <button type="button" id="next-button" class="nav-btn">
+                        Next <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Form Steps Container -->
+            <div class="form-steps-container">
+                <!-- Step 1: Personal Information -->
+                <div class="form-step active" id="step-1">
+                    <h3><i class="fas fa-user"></i> Personal Details</h3>
+                    <div class="scroll-container">
+                        <div class="row-card">
+                            <label for="full-name"><i class="fas fa-user"></i> Full Name:</label>
+                            <input type="text" id="full-name" name="full-name" placeholder="Enter your full name" required>
+                            <span class="error-message"></span>
+                        </div>
+                        <div class="row-card">
+                            <label for="dob">Date of Birth:</label>
+                            <input type="date" id="dob">
+                        </div>
+                        <div class="row-card">
+                            <label for="address">Address:</label>
+                            <input type="text" id="address" placeholder="Enter your address">
+                        </div>
+                        <div class="row-card">
+                            <label for="phone">Phone Number:</label>
+                            <input type="tel" id="phone" placeholder="Enter your phone number">
+                        </div>
+                        <div class="row-card">
+                            <label for="email">Email Address:</label>
+                            <input type="email" id="email" placeholder="Enter your email address">
+                        </div>
+                        <div class="row-card">
+                            <label for="emergency-contact">Emergency Contact:</label>
+                            <input type="text" id="emergency-contact" placeholder="Enter emergency contact name">
+                            <input type="text" id="emergency-contact-relationship" placeholder="Enter emergency contact relationship">
+                            <input type="tel" id="emergency-contact-phone" placeholder="Enter emergency contact phone number">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Tax Information -->
+                <div class="form-step" id="step-2">
+                    <h3><i class="fas fa-file-invoice-dollar"></i> Tax Information</h3>
+                    <div class="row-card">
+                        <label for="sin">Social Insurance Number (SIN):</label>
+                        <input type="text" id="sin" placeholder="Enter your SIN">
+                    </div>
+                    <div class="row-card">
+                        <label for="td1">Tax Form (TD1):</label>
+                        <input type="file" id="td1">
+                    </div>
+                </div>
+
+                <!-- Step 3: Employment Eligibility -->
+                <div class="form-step" id="step-3">
+                    <h3><i class="fas fa-id-card"></i> Employment Eligibility</h3>
+                    <div class="row-card">
+                        <label for="work-authorization">Work Authorization:</label>
+                        <input type="file" id="work-authorization">
+                    </div>
+                    <div class="row-card">
+                        <label for="citizenship-proof">Proof of Citizenship or Immigration Status:</label>
+                        <input type="file" id="citizenship-proof">
+                    </div>
+                </div>
+
+                <!-- Step 4: Banking Information -->
+                <div class="form-step" id="step-4">
+                    <h3><i class="fas fa-university"></i> Banking Information</h3>
+                    <div class="row-card">
+                        <label for="bank-name">Bank Name:</label>
+                        <input type="text" id="bank-name" placeholder="Enter your bank name">
+                    </div>
+                    <div class="row-card">
+                        <label for="account-number">Account Number:</label>
+                        <input type="text" id="account-number" placeholder="Enter your account number">
+                    </div>
+                    <div class="row-card">
+                        <label for="routing-number">Routing Number:</label>
+                        <input type="text" id="routing-number" placeholder="Enter your routing number">
+                    </div>
+                </div>
+
+                <!-- Step 5: Job-Related Information -->
+                <div class="form-step" id="step-5">
+                    <h3><i class="fas fa-briefcase"></i> Job-Related Information</h3>
+                    <div class="row-card">
+                        <label for="job-title">Job Title:</label>
+                        <input type="text" id="job-title" placeholder="Enter your job title">
+                    </div>
+                    <div class="row-card">
+                        <label for="start-date">Start Date:</label>
+                        <input type="date" id="start-date">
+                    </div>
+                    <div class="row-card">
+                        <label for="department">Department:</label>
+                        <input type="text" id="department" placeholder="Enter your department">
+                    </div>
+                    <div class="row-card">
+                        <label for="manager">Manager:</label>
+                        <input type="text" id="manager" placeholder="Enter your manager's name">
+                    </div>
+                    <div class="row-card">
+                        <label for="work-schedule">Work Schedule:</label>
+                        <input type="text" id="work-schedule" placeholder="Enter your work schedule">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Message -->
+            <div id="success-message" class="success-message" style="display: none;">
+                <i class="fas fa-check-circle"></i>
+                <h3>Onboarding Completed!</h3>
+                <p>Your information has been successfully submitted.</p>
+                <button type="button" class="dashboard-btn" onclick="window.location.href='/admin'">
+                    <i class="fas fa-th-large"></i> Go to Dashboard
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script src="/js/onboarding.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Dashboard - OnboardX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/admin_dashboard.css">
+    <link rel="stylesheet" href="/css/it_dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="branding">
+        <button id="menu-toggle" class="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="brand-name">
+            <i class="fas fa-laptop-code"></i>
+            IT Portal
+        </h1>
+        <div class="user-menu">
+            <button class="user-menu-toggle">
+                <i class="fas fa-user-circle"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="admin-dashboard">
+        <div class="sidebar">
+            <nav>
+                <div class="nav-group">
+                    <h3>Overview</h3>
+                    <a href="#dashboard" class="active">
+                        <i class="fas fa-chart-line"></i>
+                        Dashboard
+                    </a>
+                </div>
+
+                <div class="nav-group">
+                    <h3>System</h3>
+                    <a href="#monitoring">
+                        <i class="fas fa-desktop"></i>
+                        System Status
+                    </a>
+                    <a href="#network">
+                        <i class="fas fa-network-wired"></i>
+                        Network
+                    </a>
+                    <a href="#security">
+                        <i class="fas fa-shield-alt"></i>
+                        Security
+                    </a>
+                </div>
+
+                <div class="nav-group">
+                    <h3>Support</h3>
+                    <a href="#tickets">
+                        <i class="fas fa-ticket-alt"></i>
+                        Help Desk
+                    </a>
+                    <a href="#access">
+                        <i class="fas fa-key"></i>
+                        Access Control
+                    </a>
+                </div>
+
+                <div class="nav-group">
+                    <h3>Assets</h3>
+                    <a href="#equipment">
+                        <i class="fas fa-laptop"></i>
+                        Equipment
+                    </a>
+                    <a href="#software">
+                        <i class="fas fa-cube"></i>
+                        Software
+                    </a>
+                    <a href="#inventory">
+                        <i class="fas fa-boxes"></i>
+                        Inventory
+                    </a>
+                </div>
+
+                <div class="nav-group">
+                    <h3>Admin</h3>
+                    <a href="#reports">
+                        <i class="fas fa-file-alt"></i>
+                        Reports
+                    </a>
+                    <a href="#settings">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </a>
+                    <a href="index.html">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <div class="main-content">
+            <!-- Dashboard Overview -->
+            <section id="dashboard" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>IT Operations Overview</h2>
+                    <div class="date-time">
+                        <span id="current-date"></span>
+                        <span id="current-time"></span>
+                    </div>
+                </div>
+
+                <!-- System Health Summary -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-server"></i>
+                        <div class="stat-content">
+                            <h3>System Health</h3>
+                            <p class="stat-number">98%</p>
+                            <span class="stat-trend positive">All systems operational</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-ticket-alt"></i>
+                        <div class="stat-content">
+                            <h3>Active Tickets</h3>
+                            <p class="stat-number">24</p>
+                            <span class="stat-trend negative">5 high priority</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-shield-alt"></i>
+                        <div class="stat-content">
+                            <h3>Security Status</h3>
+                            <p class="stat-number">Secure</p>
+                            <span class="stat-trend positive">No threats detected</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-users"></i>
+                        <div class="stat-content">
+                            <h3>Active Users</h3>
+                            <p class="stat-number">145</p>
+                            <span class="stat-trend">Currently online</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Critical Alerts -->
+                <div class="alerts-container">
+                    <h3>Critical Alerts</h3>
+                    <div class="alerts-grid">
+                        <div class="alert-card warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <div class="alert-content">
+                                <h4>High Server Load</h4>
+                                <p>Database server at 85% capacity</p>
+                                <button class="action-btn">View Details</button>
+                            </div>
+                        </div>
+                        <div class="alert-card critical">
+                            <i class="fas fa-radiation"></i>
+                            <div class="alert-content">
+                                <h4>Security Alert</h4>
+                                <p>3 failed login attempts detected</p>
+                                <button class="action-btn">Investigate</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <h3>Quick Actions</h3>
+                    <div class="actions-grid">
+                        <button class="action-card">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>New Ticket</span>
+                        </button>
+                        <button class="action-card">
+                            <i class="fas fa-key"></i>
+                            <span>Access Request</span>
+                        </button>
+                        <button class="action-card">
+                            <i class="fas fa-download"></i>
+                            <span>Generate Report</span>
+                        </button>
+                        <button class="action-card">
+                            <i class="fas fa-bell"></i>
+                            <span>View Alerts</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="recent-activity">
+                    <h3>Recent Activity</h3>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <i class="fas fa-ticket-alt"></i>
+                            <div class="activity-content">
+                                <p>New high-priority ticket: Network connectivity issue</p>
+                                <span class="activity-time">30 minutes ago</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-key"></i>
+                            <div class="activity-content">
+                                <p>Access request approved for Sarah Johnson</p>
+                                <span class="activity-time">1 hour ago</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-shield-alt"></i>
+                            <div class="activity-content">
+                                <p>Security patch applied to all servers</p>
+                                <span class="activity-time">2 hours ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- System Status Section -->
+            <section id="monitoring" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>System Status</h2>
+                    <div class="action-bar">
+                        <select class="time-filter">
+                            <option>Real-time</option>
+                            <option>Last Hour</option>
+                            <option>Last 24 Hours</option>
+                        </select>
+                        <button class="add-btn"><i class="fas fa-bell"></i> Subscribe to Alerts</button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-server"></i>
+                        <div class="stat-content">
+                            <h3>Server Status</h3>
+                            <p class="stat-number">4/4</p>
+                            <span class="stat-trend positive">All servers operational</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-database"></i>
+                        <div class="stat-content">
+                            <h3>Database Load</h3>
+                            <p class="stat-number">42%</p>
+                            <span class="stat-trend">Normal load</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-memory"></i>
+                        <div class="stat-content">
+                            <h3>Memory Usage</h3>
+                            <p class="stat-number">65%</p>
+                            <span class="stat-trend">2.1 GB available</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-microchip"></i>
+                        <div class="stat-content">
+                            <h3>CPU Usage</h3>
+                            <p class="stat-number">28%</p>
+                            <span class="stat-trend positive">Normal load</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metrics-container">
+                    <div class="metrics-header">
+                        <h3>System Health Overview</h3>
+                        <div class="metrics-controls">
+                            <button class="filter-btn active">Performance</button>
+                            <button class="filter-btn">Resources</button>
+                            <button class="filter-btn">Security</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Status</th>
+                                    <th>Uptime</th>
+                                    <th>Response Time</th>
+                                    <th>Last Incident</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Web Server</td>
+                                    <td><span class="status-badge active">Operational</span></td>
+                                    <td>99.99%</td>
+                                    <td>124ms</td>
+                                    <td>None</td>
+                                    <td>
+                                        <button class="action-btn"><i class="fas fa-chart-line"></i></button>
+                                        <button class="action-btn"><i class="fas fa-cog"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Database Server</td>
+                                    <td><span class="status-badge active">Operational</span></td>
+                                    <td>99.95%</td>
+                                    <td>45ms</td>
+                                    <td>3d ago</td>
+                                    <td>
+                                        <button class="action-btn"><i class="fas fa-chart-line"></i></button>
+                                        <button class="action-btn"><i class="fas fa-cog"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Email Server</td>
+                                    <td><span class="status-badge active">Operational</span></td>
+                                    <td>99.98%</td>
+                                    <td>156ms</td>
+                                    <td>5d ago</td>
+                                    <td>
+                                        <button class="action-btn"><i class="fas fa-chart-line"></i></button>
+                                        <button class="action-btn"><i class="fas fa-cog"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>File Server</td>
+                                    <td><span class="status-badge warning">Degraded</span></td>
+                                    <td>98.45%</td>
+                                    <td>890ms</td>
+                                    <td>1h ago</td>
+                                    <td>
+                                        <button class="action-btn"><i class="fas fa-chart-line"></i></button>
+                                        <button class="action-btn"><i class="fas fa-cog"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>System Resource Utilization</h3>
+                    <canvas id="resourceUtilizationChart"></canvas>
+                </div>
+
+                <div class="insights-grid">
+                    <div class="insight-card warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h4>Performance Alert</h4>
+                        <p>File server showing increased response time. Investigating cause.</p>
+                    </div>
+                    <div class="insight-card positive">
+                        <i class="fas fa-check-circle"></i>
+                        <h4>Security Update</h4>
+                        <p>All system security patches successfully applied.</p>
+                    </div>
+                    <div class="insight-card neutral">
+                        <i class="fas fa-info-circle"></i>
+                        <h4>Scheduled Maintenance</h4>
+                        <p>Database backup scheduled for tonight at 2 AM.</p>
+                    </div>
+                    <div class="insight-card positive">
+                        <i class="fas fa-chart-line"></i>
+                        <h4>Performance Improvement</h4>
+                        <p>Web server response time improved by 15% after optimization.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Help Desk Section -->
+            <section id="tickets" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Help Desk</h2>
+                    <div class="action-bar">
+                        <input type="search" placeholder="Search tickets...">
+                        <select class="ticket-filter">
+                            <option value="all">All Tickets</option>
+                            <option value="high">High Priority</option>
+                            <option value="medium">Medium Priority</option>
+                            <option value="low">Low Priority</option>
+                        </select>
+                        <button class="add-btn"><i class="fas fa-plus"></i> New Ticket</button>
+                    </div>
+                </div>
+
+                <div class="kanban-board">
+                    <div class="kanban-column">
+                        <h3>New <span class="task-count">3</span></h3>
+                        <div class="kanban-items">
+                            <div class="task-card priority-high">
+                                <div class="task-header">
+                                    <span class="priority-badge">High</span>
+                                    <div class="task-actions">
+                                        <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    </div>
+                                </div>
+                                <h4>Network Connectivity</h4>
+                                <p>Marketing department reporting slow internet</p>
+                                <div class="task-meta">
+                                    <span><i class="fas fa-clock"></i> 30 min ago</span>
+                                    <span><i class="fas fa-user"></i> Marketing Team</span>
+                                </div>
+                            </div>
+                            <div class="task-card priority-medium">
+                                <div class="task-header">
+                                    <span class="priority-badge">Medium</span>
+                                    <div class="task-actions">
+                                        <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    </div>
+                                </div>
+                                <h4>Software Installation</h4>
+                                <p>Install design software for new hire</p>
+                                <div class="task-meta">
+                                    <span><i class="fas fa-clock"></i> 1 hour ago</span>
+                                    <span><i class="fas fa-user"></i> Design Team</span>
+                                </div>
+                            </div>
+                            <div class="task-card priority-high">
+                                <div class="task-header">
+                                    <span class="priority-badge">High</span>
+                                    <div class="task-actions">
+                                        <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    </div>
+                                </div>
+                                <h4>Email Service Disruption</h4>
+                                <p>Users reporting delayed email delivery</p>
+                                <div class="task-meta">
+                                    <span><i class="fas fa-clock"></i> 15 min ago</span>
+                                    <span><i class="fas fa-user"></i> IT Team</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="kanban-column">
+                        <h3>In Progress <span class="task-count">2</span></h3>
+                        <div class="kanban-items">
+                            <div class="task-card priority-high">
+                                <div class="task-header">
+                                    <span class="priority-badge">High</span>
+                                    <div class="task-actions">
+                                        <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    </div>
+                                </div>
+                                <h4>Server Maintenance</h4>
+                                <p>Scheduled maintenance and updates</p>
+                                <div class="task-meta">
+                                    <span><i class="fas fa-clock"></i> 2 hours ago</span>
+                                    <span><i class="fas fa-user"></i> IT Team</span>
+                                </div>
+                                <div class="task-progress">
+                                    <div class="progress-bar" style="width: 60%"></div>
+                                </div>
+                            </div>
+                            <div class="task-card priority-medium">
+                                <div class="task-header">
+                                    <span class="priority-badge">Medium</span>
+                                    <div class="task-actions">
+                                        <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    </div>
+                                </div>
+                                <h4>VPN Access Issue</h4>
+                                <p>Remote team unable to connect to VPN</p>
+                                <div class="task-meta">
+                                    <span><i class="fas fa-clock"></i> 45 min ago</span>
+                                    <span><i class="fas fa-user"></i> Remote Team</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="kanban-column">
+                        <h3>Resolved <span class="task-count">1</span></h3>
+                        <div class="kanban-items">
+                            <div class="task-card completed">
+                                <div class="task-header">
+                                    <span class="status-badge">Completed</span>
+                                    <div class="task-actions">
+                                        <button class="action-btn"><i class="fas fa-check-circle"></i></button>
+                                    </div>
+                                </div>
+                                <h4>Password Reset</h4>
+                                <p>Reset password for marketing team member</p>
+                                <div class="task-meta">
+                                    <span><i class="fas fa-check"></i> Resolved</span>
+                                    <span><i class="fas fa-user"></i> IT Support</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Access Management Section -->
+            <section id="access" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Access Management</h2>
+                    <div class="action-bar">
+                        <input type="search" placeholder="Search requests...">
+                        <button class="add-btn"><i class="fas fa-plus"></i> New Request</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Department</th>
+                                <th>Access Type</th>
+                                <th>Requested</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Sarah Johnson</td>
+                                <td>Marketing</td>
+                                <td>Design Software</td>
+                                <td>2024-03-15</td>
+                                <td><span class="status-badge onboarding">Pending</span></td>
+                                <td>
+                                    <button class="action-btn"><i class="fas fa-check"></i></button>
+                                    <button class="action-btn"><i class="fas fa-times"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Michael Chen</td>
+                                <td>Engineering</td>
+                                <td>Development Tools</td>
+                                <td>2024-03-14</td>
+                                <td><span class="status-badge active">Approved</span></td>
+                                <td>
+                                    <button class="action-btn"><i class="fas fa-eye"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Equipment Management Section -->
+            <section id="equipment" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Equipment Management</h2>
+                <div class="action-bar">
+                        <input type="search" placeholder="Search equipment...">
+                        <select class="equipment-filter">
+                            <option value="all">All Types</option>
+                            <option value="laptop">Laptops</option>
+                            <option value="desktop">Desktops</option>
+                            <option value="mobile">Mobile Devices</option>
+                            <option value="accessories">Accessories</option>
+                        </select>
+                        <button class="add-btn"><i class="fas fa-plus"></i> Add Equipment</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Asset ID</th>
+                            <th>Type</th>
+                                <th>Model</th>
+                            <th>Assigned To</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                                <td>LAP-2024-001</td>
+                            <td>Laptop</td>
+                                <td>MacBook Pro M2</td>
+                                <td>Sarah Johnson</td>
+                                <td><span class="status-badge active">In Use</span></td>
+                                <td>
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-history"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>DSK-2024-005</td>
+                                <td>Desktop</td>
+                                <td>Dell XPS</td>
+                                <td>-</td>
+                                <td><span class="status-badge onboarding">Available</span></td>
+                                <td>
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-history"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>MOB-2024-003</td>
+                                <td>Mobile</td>
+                                <td>iPhone 14 Pro</td>
+                                <td>John Smith</td>
+                                <td><span class="status-badge active">In Use</span></td>
+                                <td>
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-history"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>ACC-2024-010</td>
+                                <td>Accessory</td>
+                                <td>Dell Monitor 27"</td>
+                                <td>Emily Davis</td>
+                                <td><span class="status-badge active">In Use</span></td>
+                                <td>
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-history"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                </div>
+            </section>
+
+            <!-- Software Management Section -->
+            <section id="software" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Software Management</h2>
+                    <div class="action-bar">
+                        <input type="search" placeholder="Search software...">
+                        <button class="add-btn"><i class="fas fa-plus"></i> Add License</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Software</th>
+                                <th>Type</th>
+                                <th>Licenses</th>
+                                <th>Used</th>
+                                <th>Expiry</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Adobe Creative Suite</td>
+                                <td>Design</td>
+                                <td>25</td>
+                                <td>18</td>
+                                <td>2024-12-31</td>
+                                <td>
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-user-plus"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Visual Studio</td>
+                                <td>Development</td>
+                                <td>50</td>
+                                <td>42</td>
+                                <td>2024-12-31</td>
+                                <td>
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-user-plus"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Microsoft 365</td>
+                                <td>Productivity</td>
+                                <td>200</td>
+                                <td>185</td>
+                                <td>2024-12-31</td>
+                                <td>
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-user-plus"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Zoom</td>
+                                <td>Communication</td>
+                                <td>100</td>
+                                <td>82</td>
+                                <td>2024-09-30</td>
+                                <td>
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-user-plus"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Network Management Section -->
+            <section id="network" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Network Status</h2>
+                    <div class="action-bar">
+                        <select class="time-filter">
+                            <option>Last 24 Hours</option>
+                            <option>Last 7 Days</option>
+                            <option>Last 30 Days</option>
+                        </select>
+                        <button class="add-btn"><i class="fas fa-download"></i> Export Report</button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-wifi"></i>
+                        <div class="stat-content">
+                            <h3>Network Uptime</h3>
+                            <p class="stat-number">99.9%</p>
+                            <span class="stat-trend positive">Last 30 days</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <div class="stat-content">
+                            <h3>Bandwidth Usage</h3>
+                            <p class="stat-number">75%</p>
+                            <span class="stat-trend">Of capacity</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-shield-alt"></i>
+                        <div class="stat-content">
+                            <h3>Security Status</h3>
+                            <p class="stat-number">Secure</p>
+                            <span class="stat-trend positive">No threats detected</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-users"></i>
+                        <div class="stat-content">
+                            <h3>Active Users</h3>
+                            <p class="stat-number">145</p>
+                            <span class="stat-trend">Currently online</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Network Performance</h3>
+                    <canvas id="networkPerformanceChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Security Section -->
+            <section id="security" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Security Management</h2>
+                    <div class="action-bar">
+                        <select class="time-filter">
+                            <option>Last 24 Hours</option>
+                            <option>Last 7 Days</option>
+                            <option>Last 30 Days</option>
+                        </select>
+                        <button class="add-btn"><i class="fas fa-shield-alt"></i> Security Scan</button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-shield-alt"></i>
+                        <div class="stat-content">
+                            <h3>Security Score</h3>
+                            <p class="stat-number">92%</p>
+                            <span class="stat-trend positive">Above threshold</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-user-shield"></i>
+                        <div class="stat-content">
+                            <h3>Access Attempts</h3>
+                            <p class="stat-number">156</p>
+                            <span class="stat-trend">3 suspicious</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-bug"></i>
+                        <div class="stat-content">
+                            <h3>Vulnerabilities</h3>
+                            <p class="stat-number">2</p>
+                            <span class="stat-trend">Needs attention</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Event Type</th>
+                                <th>Source</th>
+                                <th>Timestamp</th>
+                                <th>Risk Level</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Failed Login Attempts</td>
+                                <td>192.168.1.105</td>
+                                <td>2024-03-15 14:23</td>
+                                <td><span class="status-badge warning">Medium</span></td>
+                                <td>Under Investigation</td>
+                                <td>
+                                    <button class="action-btn" data-approval="required"><i class="fas fa-eye"></i></button>
+                                    <button class="action-btn" data-approval="required"><i class="fas fa-ban"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Unauthorized Access</td>
+                                <td>Remote VPN</td>
+                                <td>2024-03-15 10:15</td>
+                                <td><span class="status-badge critical">High</span></td>
+                                <td>Blocked</td>
+                                <td>
+                                    <button class="action-btn" data-approval="required"><i class="fas fa-eye"></i></button>
+                                    <button class="action-btn" data-approval="required"><i class="fas fa-unlock"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Inventory Section -->
+            <section id="inventory" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Inventory Management</h2>
+                    <div class="action-bar">
+                        <input type="search" placeholder="Search inventory...">
+                        <button class="add-btn" data-approval="required"><i class="fas fa-plus"></i> Add Item</button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-boxes"></i>
+                        <div class="stat-content">
+                            <h3>Total Items</h3>
+                            <p class="stat-number">324</p>
+                            <span class="stat-trend">In stock</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div class="stat-content">
+                            <h3>Low Stock</h3>
+                            <p class="stat-number">12</p>
+                            <span class="stat-trend negative">Need reorder</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-shipping-fast"></i>
+                        <div class="stat-content">
+                            <h3>Pending Orders</h3>
+                            <p class="stat-number">8</p>
+                            <span class="stat-trend">In transit</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Item ID</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>In Stock</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>INV-2024-001</td>
+                                <td>Laptop Chargers</td>
+                                <td>Accessories</td>
+                                <td>15</td>
+                                <td><span class="status-badge warning">Low Stock</span></td>
+                                <td>
+                                    <button class="action-btn" data-approval="required"><i class="fas fa-plus"></i></button>
+                                    <button class="action-btn"><i class="fas fa-history"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>INV-2024-002</td>
+                                <td>Monitors</td>
+                                <td>Hardware</td>
+                                <td>28</td>
+                                <td><span class="status-badge active">Sufficient</span></td>
+                                <td>
+                                    <button class="action-btn" data-approval="required"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-history"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section id="reports" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Reports & Analytics</h2>
+                    <div class="action-bar">
+                        <select class="report-type">
+                            <option>System Performance</option>
+                            <option>Security Audit</option>
+                            <option>Inventory Status</option>
+                            <option>User Activity</option>
+                        </select>
+                        <button class="add-btn"><i class="fas fa-download"></i> Generate Report</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Report Name</th>
+                                <th>Type</th>
+                                <th>Generated</th>
+                                <th>Generated By</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Monthly Security Audit</td>
+                                <td>Security</td>
+                                <td>2024-03-01</td>
+                                <td>System</td>
+                                <td><span class="status-badge active">Complete</span></td>
+                                <td>
+                                    <button class="action-btn"><i class="fas fa-download"></i></button>
+                                    <button class="action-btn" data-approval="required"><i class="fas fa-share"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Q1 Inventory Report</td>
+                                <td>Inventory</td>
+                                <td>2024-03-15</td>
+                                <td>Admin</td>
+                                <td><span class="status-badge active">Complete</span></td>
+                                <td>
+                                    <button class="action-btn"><i class="fas fa-download"></i></button>
+                                    <button class="action-btn" data-approval="required"><i class="fas fa-share"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="chart-container">
+                    <h3>System Performance Trends</h3>
+                    <canvas id="performanceTrendChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>System Settings</h2>
+                    <button class="add-btn"><i class="fas fa-save"></i> Save Changes</button>
+                </div>
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <h3><i class="fas fa-shield-alt"></i> Department Access Control</h3>
+                        <div class="department-code-section">
+                            <div class="current-code">
+                                <label>Current Department Code</label>
+                                <div class="code-display">
+                                    <input type="password" id="department-code" value="IT2024" readonly>
+                                    <button class="action-btn" id="toggle-code-visibility">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="action-btn" id="copy-code">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                                <p class="code-info">Share this code with new IT personnel for registration</p>
+                            </div>
+                            <div class="code-actions mt-3">
+                                <button class="add-btn" id="generate-new-code">
+                                    <i class="fas fa-key"></i>
+                                    Generate New Code
+                                </button>
+                            </div>
+                            <div class="code-history mt-3">
+                                <h4>Code History</h4>
+                                <div class="history-list">
+                                    <div class="history-item">
+                                        <span class="code-value">IT2024</span>
+                                        <span class="code-date">Current</span>
+                                        <span class="code-status active">Active</span>
+                                    </div>
+                                    <div class="history-item">
+                                        <span class="code-value">IT2023</span>
+                                        <span class="code-date">Expired: 01/01/2024</span>
+                                        <span class="code-status expired">Expired</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3><i class="fas fa-sliders-h"></i> General Settings</h3>
+                        <form class="settings-form">
+                            <div class="form-group">
+                                <label>Ticket Auto-Assignment</label>
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>Default Priority</label>
+                                <select>
+                                    <option>Medium</option>
+                                    <option>High</option>
+                                    <option>Low</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Response Time SLA</label>
+                                <select>
+                                    <option>4 hours</option>
+                                    <option>8 hours</option>
+                                    <option>24 hours</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3><i class="fas fa-bell"></i> Notifications</h3>
+                        <form class="settings-form">
+                            <div class="form-group">
+                                <label>High Priority Alerts</label>
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>System Status Updates</label>
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>License Expiry Alerts</label>
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3><i class="fas fa-users-cog"></i> Access Control</h3>
+                        <form class="settings-form">
+                            <div class="form-group">
+                                <label>Auto-Approve Common Requests</label>
+                                <label class="switch">
+                                    <input type="checkbox">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>Password Policy</label>
+                                <select>
+                                    <option>Strong (12+ chars, special chars)</option>
+                                    <option>Medium (8+ chars)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Session Timeout</label>
+                                <select>
+                                    <option>30 minutes</option>
+                                    <option>1 hour</option>
+                                    <option>2 hours</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3><i class="fas fa-database"></i> Backup Settings</h3>
+                        <form class="settings-form">
+                            <div class="form-group">
+                                <label>Auto Backup</label>
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>Backup Frequency</label>
+                                <select>
+                                    <option>Daily</option>
+                                    <option>Weekly</option>
+                                    <option>Monthly</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Retention Period</label>
+                                <select>
+                                    <option>30 days</option>
+                                    <option>60 days</option>
+                                    <option>90 days</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="/js/it_dashboard.js"></script>
+</body>
+</html>

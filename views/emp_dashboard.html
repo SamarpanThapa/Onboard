@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Dashboard - OnboardX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/emp_dashboard.css">
+    <script src="/js/dashboard.js" defer></script>
+</head>
+<body>
+    <header class="branding">
+        <h1 class="brand-name">
+            <i class="fas fa-user-circle"></i>
+            OnboardX
+        </h1>
+        <nav class="main-nav">
+            <a href="emp_dashboard.html" class="active">
+                <i class="fas fa-home"></i>
+                Dashboard
+            </a>
+            <a href="onboarding.html">
+                <i class="fas fa-clipboard-check"></i>
+                Onboarding
+            </a>
+            <a href="offboarding.html">
+                <i class="fas fa-user-minus"></i>
+                Offboarding
+            </a>
+            <a href="#" id="help-link">
+                <i class="fas fa-question-circle"></i>
+                Help
+            </a>
+            <a href="index.html" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+            </a>
+        </nav>
+        <button class="mobile-menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+    </header>
+
+    <div class="dashboard-container">
+        <!-- Welcome Banner -->
+        <div class="welcome-banner">
+            <div class="welcome-content">
+                <h2>Welcome to Your Dashboard</h2>
+                <p>Track your progress and access important resources for your onboarding journey.</p>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-sections">
+            <!-- Left Column -->
+            <div class="main-column">
+                <!-- Tasks Section -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-clipboard-list"></i> Assigned Tasks</h3>
+                    </div>
+                    <div class="task-list">
+                        <div class="task-item" data-id="task1" data-category="documentation">
+                            <div class="task-checkbox">
+                                <input type="checkbox" id="task1">
+                                <label for="task1"></label>
+                            </div>
+                            <div class="task-content">
+                                <h4>Complete Training Module</h4>
+                                <p>Due: Tomorrow</p>
+                                <span class="task-category documentation">Documentation</span>
+                            </div>
+                        </div>
+                        <div class="task-item" data-id="task2" data-category="compliance">
+                            <div class="task-checkbox">
+                                <input type="checkbox" id="task2">
+                                <label for="task2"></label>
+                            </div>
+                            <div class="task-content">
+                                <h4>Submit ID Proof</h4>
+                                <p>Due: 3 days</p>
+                                <span class="task-category compliance">Compliance</span>
+                            </div>
+                        </div>
+                        <div class="task-item" data-id="task3" data-category="orientation">
+                            <div class="task-checkbox">
+                                <input type="checkbox" id="task3">
+                                <label for="task3"></label>
+                            </div>
+                            <div class="task-content">
+                                <h4>Fill Personal Information Form</h4>
+                                <p>Due: 5 days</p>
+                                <span class="task-category orientation">Orientation</span>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="onboarding.html#tasks" class="view-all-link">View all tasks</a>
+                </div>
+
+                <!-- Resources Section -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-book"></i> Resources</h3>
+                    </div>
+                    <div class="resource-list">
+                        <a href="/resources/handbook.pdf" class="resource-item" data-type="pdf">
+                            <div class="resource-icon">
+                                <i class="fas fa-file-pdf"></i>
+                            </div>
+                            <div class="resource-content">
+                                <h4>Employee Handbook</h4>
+                                <span class="resource-type">PDF Document</span>
+                            </div>
+                        </a>
+                        <a href="/resources/calendar.ics" class="resource-item" data-type="calendar">
+                            <div class="resource-icon">
+                                <i class="fas fa-calendar"></i>
+                            </div>
+                            <div class="resource-content">
+                                <h4>Holiday Calendar</h4>
+                                <span class="resource-type">Calendar File</span>
+                            </div>
+                        </a>
+                        <a href="/resources/guidelines.pdf" class="resource-item" data-type="pdf">
+                            <div class="resource-icon">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="resource-content">
+                                <h4>Office Guidelines</h4>
+                                <span class="resource-type">PDF Document</span>
+                            </div>
+                        </a>
+                        <a href="/resources/training_schedule.pdf" class="resource-item" data-type="pdf">
+                            <div class="resource-icon">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <div class="resource-content">
+                                <h4>Training Schedule</h4>
+                                <span class="resource-type">PDF Document</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Communication Section -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-comments"></i> Communication</h3>
+                    </div>
+                    <div class="communication-list">
+                        <div class="communication-item">
+                            <div class="comm-icon">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div class="comm-content">
+                                <h4>Your Manager</h4>
+                                <p>John Smith - <a href="mailto:john.smith@company.com">john.smith@company.com</a></p>
+                            </div>
+                        </div>
+                        <div class="communication-item">
+                            <div class="comm-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="comm-content">
+                                <h4>HR Department</h4>
+                                <p>HR Team - <a href="mailto:hr@company.com">hr@company.com</a></p>
+                            </div>
+                        </div>
+                        <div class="communication-item">
+                            <div class="comm-icon">
+                                <i class="fas fa-laptop-code"></i>
+                            </div>
+                            <div class="comm-content">
+                                <h4>IT Support</h4>
+                                <p>IT Team - <a href="mailto:it-support@company.com">it-support@company.com</a></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Help Section - Simplified -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-life-ring"></i> Need Help?</h3>
+                    </div>
+                    <div class="help-contact">
+                        <p>Have questions or need assistance?</p>
+                        <div class="help-buttons">
+                            <a href="#" class="help-btn" id="contact-hr">
+                                <i class="fas fa-users"></i>
+                                Contact HR
+                            </a>
+                            <a href="#" class="help-btn" id="it-support">
+                                <i class="fas fa-laptop-medical"></i>
+                                IT Support
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="main-column">
+                <!-- Progress Overview -->
+                <div class="dashboard-section progress-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-chart-line"></i> Your Progress</h3>
+                    </div>
+                    <div class="progress-stats">
+                        <div class="stat-card">
+                            <i class="fas fa-tasks"></i>
+                            <div class="stat-info">
+                                <p class="stat-number">3</p>
+                                <span class="stat-label">Tasks Pending</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-calendar-check"></i>
+                            <div class="stat-info">
+                                <p class="stat-number">60%</p>
+                                <span class="stat-label">Onboarding Complete</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Onboarding Section -->
+                    <div class="process-card">
+                        <div class="process-header">
+                            <h4><i class="fas fa-user-plus"></i> Onboarding</h4>
+                            <div class="progress-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 60%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <p>Continue your onboarding process to get fully integrated into the company.</p>
+                        <div class="process-details">
+                            <div class="process-detail-item">
+                                <i class="fas fa-file-signature"></i>
+                                <span>Documentation</span>
+                            </div>
+                            <div class="process-detail-item">
+                                <i class="fas fa-laptop"></i>
+                                <span>Equipment Setup</span>
+                            </div>
+                            <div class="process-detail-item">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span>Training</span>
+                            </div>
+                        </div>
+                        <a href="onboarding.html" class="primary-btn">
+                            Continue Onboarding
+                        </a>
+                    </div>
+
+                    <!-- Offboarding Section -->
+                    <div class="process-card">
+                        <div class="process-header">
+                            <h4><i class="fas fa-user-minus"></i> Offboarding</h4>
+                        </div>
+                        <p>Begin your offboarding process when you're ready to transition out of the company.</p>
+                        <div class="process-details">
+                            <div class="process-detail-item">
+                                <i class="fas fa-comments"></i>
+                                <span>Exit Interview</span>
+                            </div>
+                            <div class="process-detail-item">
+                                <i class="fas fa-laptop"></i>
+                                <span>Asset Return</span>
+                            </div>
+                            <div class="process-detail-item">
+                                <i class="fas fa-file-alt"></i>
+                                <span>Documentation</span>
+                            </div>
+                        </div>
+                        <a href="offboarding.html" class="secondary-btn">
+                            Start Offboarding
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Feedback Section -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-comment-dots"></i> Feedback</h3>
+                    </div>
+                    <div class="feedback-content">
+                        <p>Your feedback helps us improve our onboarding process.</p>
+                        <button id="provide-feedback" class="feedback-btn">
+                            <i class="fas fa-paper-plane"></i>
+                            Provide Feedback
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Compliance Checklist -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-clipboard-check"></i> Compliance Checklist</h3>
+                    </div>
+                    <div class="compliance-list">
+                        <div class="compliance-item">
+                            <div class="compliance-status completed">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="compliance-content">
+                                <h4>NDA Signed</h4>
+                                <p>Completed on: 05/15/2023</p>
+                            </div>
+                        </div>
+                        <div class="compliance-item">
+                            <div class="compliance-status pending">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="compliance-content">
+                                <h4>I-9 Verification</h4>
+                                <p>Due: 05/20/2023</p>
+                            </div>
+                        </div>
+                        <div class="compliance-item">
+                            <div class="compliance-status pending">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="compliance-content">
+                                <h4>Background Check</h4>
+                                <p>In Progress</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p>&copy; 2024 OnboardX. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <div id="notification-container"></div>
+</body>
+</html>

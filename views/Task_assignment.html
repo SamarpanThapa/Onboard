@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Assignment - OnboardX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/Task_assignment.css">
+</head>
+<body>
+   
+    <div class="branding">
+        <h1 class="brand-name">Onboard-X</h1>
+    </div>
+    
+    
+    <div class="dashboard-container">
+        <!-- Task List -->
+        <div class="task-section">
+            <h2 >Assigned Tasks</h2>
+            <ul id="task-list">
+                <li>Submit ID Proof  <span class="due-date">Due: Feb 10</span></li>
+                <li>Complete Training Module <span class="due-date">Due: Feb 15</span></li>
+                <li>Upload Bank Details <span class="due-date">Due: Feb 18</span></li>
+            </ul>
+        </div>
+
+        <!-- Document Upload -->
+        <div class="upload-section">
+            <h2>Upload Documents</h2>
+            <input type="file" id="document-upload" />
+            <button class="btn" onclick="uploadDocument()">Upload</button>
+        </div>
+
+        <!-- Progress Tracker -->
+        <div class="progress-section">
+            <h2>Onboarding Progress</h2>
+            <div class="progress-bar">
+                <div class="progress" style="width: 40%">40%</div>
+            </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="notification-section">
+            <h2>Notifications</h2>
+            <div id="notification-box">No new notifications</div>
+        </div>
+    </div>
+
+    <script>
+        function uploadDocument() {
+            alert("Document uploaded successfully!");
+        }
+    </script>
+</body>
+</html>
