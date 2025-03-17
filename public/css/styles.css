@@ -12,7 +12,9 @@ body {
     color: #fff;
 }
 
-.page-wrapper {
+/* Page Wrapper - Common for all pages */
+.page-wrapper,
+.container {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
@@ -24,14 +26,16 @@ body {
 }
 
 /* Branding */
-.branding {
+.branding,
+.logo {
     margin-bottom: 20px;
     text-align: center;
     opacity: 0;
     animation: fadeIn 0.8s ease-out forwards;
 }
 
-.brand-name {
+.brand-name,
+.logo h1 {
     font-size: 2.5rem;
     color: #1DB954;
     font-weight: 700;
@@ -42,7 +46,8 @@ body {
     gap: 0.5rem;
 }
 
-.brand-name i {
+.brand-name i,
+.logo i {
     font-size: 2rem;
     animation: rotate 20s linear infinite;
 }
@@ -55,7 +60,8 @@ body {
 }
 
 /* Login Container */
-.login-container {
+.login-container,
+.form-container {
     background: rgba(30, 30, 30, 0.95);
     padding: 2.5rem;
     border-radius: 16px;
@@ -69,20 +75,29 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.login-subtitle {
+.form-container h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    color: #fff;
+}
+
+.login-subtitle,
+.form-container p {
     color: #b3b3b3;
     margin-bottom: 2rem;
     font-size: 1rem;
 }
 
 /* Form Elements */
-.input-group {
+.input-group,
+.form-group {
     margin-bottom: 1.5rem;
     text-align: left;
     position: relative;
 }
 
-.input-group label {
+.input-group label,
+.form-group label {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -92,13 +107,19 @@ body {
     transition: color 0.3s ease;
 }
 
-.input-group label i {
+.input-group label i,
+.form-group label i,
+.input-with-icon i {
     color: #1DB954;
     font-size: 1rem;
 }
 
 .input-group input,
-.input-group select {
+.input-group select,
+.form-group input,
+.form-group select,
+.input-with-icon input,
+.input-with-icon select {
     width: 100%;
     padding: 0.75rem 1rem;
     font-size: 1rem;
@@ -111,22 +132,32 @@ body {
 }
 
 .input-group input:focus,
-.input-group select:focus {
+.input-group select:focus,
+.form-group input:focus,
+.form-group select:focus,
+.input-with-icon input:focus,
+.input-with-icon select:focus {
     border-color: #1DB954;
     outline: none;
     box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.1);
 }
 
 .input-group input:hover,
-.input-group select:hover {
+.input-group select:hover,
+.form-group input:hover,
+.form-group select:hover,
+.input-with-icon input:hover,
+.input-with-icon select:hover {
     border-color: #404040;
 }
 
-.password-group {
+.password-group,
+.input-with-icon {
     position: relative;
 }
 
-.password-input-wrapper {
+.password-input-wrapper,
+.input-with-icon {
     position: relative;
     display: flex;
     align-items: center;
@@ -135,6 +166,8 @@ body {
 .toggle-password {
     position: absolute;
     right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
     background: none;
     border: none;
     color: #b3b3b3;
@@ -194,7 +227,8 @@ body {
 }
 
 /* Login Button */
-.login-btn {
+.login-btn,
+.btn-primary {
     width: 100%;
     padding: 0.875rem;
     background-color: #1DB954;
@@ -213,7 +247,8 @@ body {
     overflow: hidden;
 }
 
-.login-btn::before {
+.login-btn::before,
+.btn-primary::before {
     content: '';
     position: absolute;
     top: 0;
@@ -225,17 +260,20 @@ body {
     transition: transform 0.6s ease;
 }
 
-.login-btn:hover::before {
+.login-btn:hover::before,
+.btn-primary:hover::before {
     transform: translateX(100%);
 }
 
-.login-btn:hover {
+.login-btn:hover,
+.btn-primary:hover {
     background-color: #1ed760;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(29, 185, 84, 0.2);
 }
 
-.login-btn:active {
+.login-btn:active,
+.btn-primary:active {
     transform: translateY(0);
 }
 
@@ -264,8 +302,27 @@ body {
     animation: shake 0.5s ease-in-out;
 }
 
+/* Success Message */
+#success-message,
+.success-message {
+    color: #1DB954;
+    margin: 1rem 0;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background-color: rgba(29, 185, 84, 0.1);
+    border: 1px solid rgba(29, 185, 84, 0.2);
+    display: none;
+}
+
+#success-message.visible,
+.success-message.visible {
+    display: block;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
 /* Auth Links */
-.auth-links {
+.auth-links,
+.form-links {
     margin-top: 1.5rem;
     display: flex;
     align-items: center;
@@ -275,7 +332,8 @@ body {
     animation: fadeIn 0.6s ease-out 0.9s forwards;
 }
 
-.auth-links a {
+.auth-links a,
+.form-links a {
     color: #1DB954;
     text-decoration: none;
     font-size: 0.9rem;
@@ -285,13 +343,75 @@ body {
     gap: 0.5rem;
 }
 
-.auth-links a:hover {
+.auth-links a:hover,
+.form-links a:hover {
     color: #1ed760;
     transform: translateY(-1px);
 }
 
 .auth-links .divider {
     color: #404040;
+}
+
+/* IT Only Section */
+.it-only-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: rgba(30, 30, 30, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    text-align: center;
+}
+
+.it-only-section p {
+    margin: 0.5rem 0;
+    color: #b3b3b3;
+    font-size: 0.9rem;
+}
+
+.it-register-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: rgba(30, 30, 30, 0.8);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #1DB954;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.it-register-link:hover {
+    background-color: rgba(29, 185, 84, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Password Strength Meter */
+.password-strength {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: #b3b3b3;
+}
+
+meter {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+}
+
+meter::-webkit-meter-optimum-value {
+    background: #1DB954;
+}
+
+meter::-webkit-meter-suboptimum-value {
+    background: orange;
+}
+
+meter::-webkit-meter-even-less-good-value {
+    background: red;
 }
 
 /* Input Validation Feedback */
@@ -303,16 +423,21 @@ body {
 }
 
 .input-group.error input,
-.input-group.error select {
+.input-group.error select,
+.form-group.error input,
+.form-group.error select {
     border-color: #ff4444;
 }
 
-.input-group.error .input-feedback {
+.input-group.error .input-feedback,
+.form-group.error .input-feedback {
     display: block;
 }
 
 .input-group.success input,
-.input-group.success select {
+.input-group.success select,
+.form-group.success input,
+.form-group.success select {
     border-color: #1DB954;
 }
 
@@ -375,18 +500,21 @@ body {
 
 /* Responsive Design */
 @media (max-width: 480px) {
-    .login-container {
+    .login-container,
+    .form-container {
         padding: 1.5rem;
         width: 100%;
         margin: 1rem;
         border-radius: 12px;
     }
 
-    .brand-name {
+    .brand-name,
+    .logo h1 {
         font-size: 2rem;
     }
 
-    .brand-name i {
+    .brand-name i,
+    .logo i {
         font-size: 1.75rem;
     }
 
@@ -396,17 +524,27 @@ body {
 
     .input-group input,
     .input-group select,
-    .login-btn {
+    .form-group input,
+    .form-group select,
+    .input-with-icon input,
+    .input-with-icon select,
+    .login-btn,
+    .btn-primary {
         padding: 0.75rem;
     }
 
-    .auth-links {
+    .auth-links,
+    .form-links {
         flex-direction: column;
         gap: 0.75rem;
     }
 
     .auth-links .divider {
         display: none;
+    }
+    
+    .it-only-section {
+        padding: 1rem;
     }
 }
 
