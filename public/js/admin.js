@@ -1109,103 +1109,66 @@ async function loadOnboardingSubmissions() {
             </tr>
         `;
         
-        // Fetch onboarding submissions from API or use fallback data
-        let submissions = [];
-        try {
-            submissions = await fetchOnboardingSubmissions();
-            console.log('Successfully loaded submissions:', submissions);
-        } catch (error) {
-            console.error('Error fetching submissions, using fallback data:', error);
-            // Use fallback data if API fails
-            submissions = [
-                {
-                    id: "1",
-                    name: "Sarah Johnson",
-                    email: "sarah.johnson@example.com",
-                    department: "Marketing",
-                    position: "Content Manager",
-                    startDate: "2024-03-15",
-                    status: "pending",
-                    submissionDate: "2024-03-10",
-                    completionPercentage: 100
-                },
-                {
-                    id: "4",
-                    name: "John Smith",
-                    email: "john.smith@example.com",
-                    department: "Engineering",
-                    position: "Software Developer",
-                    startDate: "Pending",
-                    status: "revision_required",
-                    submissionDate: "2024-03-17",
-                    completionPercentage: 80
-                },
-                {
-                    id: "5",
-                    name: "Alisha Patel",
-                    email: "alisha.patel@example.com",
-                    department: "Human Resources",
-                    position: "HR Specialist",
-                    startDate: "2024-04-01",
-                    status: "pending",
-                    submissionDate: "2024-03-18",
-                    completionPercentage: 95
-                }
-            ];
+        // Fetch onboarding submissions from API
+        const response = await fetch('/api/onboarding-processes/submissions/pending', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error loading submissions: ${response.statusText}`);
         }
         
-        // Clear loading state
-        tableBody.innerHTML = '';
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to load submissions');
+        }
         
-        // If we have submissions, display them
-        if (submissions && submissions.length > 0) {
-            submissions.forEach(submission => {
-                const row = createSubmissionRow(submission);
-                tableBody.appendChild(row);
-            });
-            
-            // Attach event handlers for buttons
-            attachSubmissionActionHandlers();
-            console.log('Successfully loaded submissions:', submissions.length);
-        } else {
+        const submissions = result.data;
+        
+        // If no submissions, show empty state
+        if (submissions.length === 0) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center">
-                        <p>No onboarding submissions found</p>
-                    </td>
+                    <td colspan="7" class="text-center">No onboarding submissions pending approval.</td>
                 </tr>
             `;
+            return;
         }
+        
+        // Clear table body
+        tableBody.innerHTML = '';
+        
+        // Add each submission to the table
+        submissions.forEach(submission => {
+            const row = createSubmissionRow(submission);
+            tableBody.appendChild(row);
+        });
+        
+        // Attach event handlers to action buttons
+        attachSubmissionActionHandlers();
+        
     } catch (error) {
         console.error('Error in loadOnboardingSubmissions:', error);
+        
+        // Show error state
         tableBody.innerHTML = `
             <tr>
                 <td colspan="7" class="text-center">
-                    <p>Sample Data (API connection unavailable)</p>
-                </td>
-            </tr>
-            <tr>
-                <td>Sarah Johnson</td>
-                <td>Content Manager</td>
-                <td>Marketing</td>
-                <td>Mar 10, 2024</td>
-                <td><span class="status-badge pending">Pending Review</span></td>
-                <td>
-                    <div class="progress-container">
-                        <div class="progress-bar" style="width: 100%"></div>
-                        <span class="progress-text">100%</span>
-                    </div>
-                </td>
-                <td>
-                    <button class="action-btn view-submission" data-id="1"><i class="fas fa-eye"></i></button>
-                    <button class="action-btn approve-submission" data-id="1"><i class="fas fa-check"></i></button>
-                    <button class="action-btn request-revision" data-id="1"><i class="fas fa-redo"></i></button>
+                    <p class="error-message">Error loading submissions: ${error.message}</p>
+                    <button class="btn-primary retry-btn">Try Again</button>
                 </td>
             </tr>
         `;
         
-        // Attach event handlers even in error case
-        attachSubmissionActionHandlers();
+        // Add event listener to retry button
+        const retryBtn = tableBody.querySelector('.retry-btn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', loadOnboardingSubmissions);
+        }
     }
 }
 
@@ -2081,7 +2044,7 @@ function initializeOnboardingTracker() {
     inProgressColumn.innerHTML = '';
     completedColumn.innerHTML = '';
     
-    // Load employee data
+    // Load employee data from API
     loadEmployeesForOnboarding();
     
     // Initialize sortable for drag and drop between columns
@@ -2122,125 +2085,49 @@ function initializeOnboardingTracker() {
 // Load employees for onboarding tracker
 async function loadEmployeesForOnboarding() {
     try {
-        // Get employees either from API or localStorage
-        let employees = [];
+        showNotification('Loading onboarding data...', 'info');
         
-        try {
-            // First try to get from localStorage
-            const storedEmployees = localStorage.getItem('employees');
-            if (storedEmployees) {
-                employees = JSON.parse(storedEmployees);
-                console.log('Using employees from localStorage:', employees);
-            } else {
-                // If no stored employees, use our mock data from loadEmployeeData
-                const mockData = [
-                    {
-                        id: "1",
-                        name: "Sarah Johnson",
-                        email: "sarah.johnson@example.com",
-                        department: "Marketing",
-                        position: "Content Manager",
-                        startDate: "2024-03-15",
-                        status: "in-progress",
-                        completionPercentage: 60
-                    },
-                    {
-                        id: "2",
-                        name: "Michael Chen",
-                        email: "michael.chen@example.com",
-                        department: "Engineering",
-                        position: "Senior Developer",
-                        startDate: "2024-03-10",
-                        status: "completed",
-                        completionPercentage: 100
-                    },
-                    {
-                        id: "3",
-                        name: "Emily Brown",
-                        email: "emily.brown@example.com",
-                        department: "Sales",
-                        position: "Account Executive",
-                        startDate: "2024-03-01",
-                        status: "offboarding",
-                        completionPercentage: 0
-                    },
-                    {
-                        id: "4",
-                        name: "Alex Thompson",
-                        email: "alex.thompson@example.com",
-                        department: "Engineering",
-                        position: "Software Engineer",
-                        startDate: "2024-03-20",
-                        status: "to-start",
-                        completionPercentage: 0
-                    },
-                    {
-                        id: "5",
-                        name: "Rachel Martinez",
-                        email: "rachel.martinez@example.com",
-                        department: "Design",
-                        position: "UX Designer",
-                        startDate: "2024-03-25",
-                        status: "to-start",
-                        completionPercentage: 0
-                    },
-                    {
-                        id: "6",
-                        name: "David Wilson",
-                        email: "david.wilson@example.com",
-                        department: "Product",
-                        position: "Product Manager",
-                        startDate: "2024-03-12",
-                        status: "in-progress",
-                        completionPercentage: 80
-                    },
-                    {
-                        id: "7",
-                        name: "Alisha Patel",
-                        email: "alisha.patel@example.com",
-                        department: "Human Resources",
-                        position: "HR Specialist",
-                        startDate: "2024-03-20",
-                        status: "in-progress",
-                        completionPercentage: 95
-                    }
-                ];
-                
-                employees = mockData;
-                
-                // Store them for future use
-                localStorage.setItem('employees', JSON.stringify(mockData));
+        // Get data from API
+        const response = await fetch('/api/onboarding-processes/kanban/board', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
-        } catch (error) {
-            console.error('Error loading employees from localStorage:', error);
-            return;
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error loading onboarding data: ${response.statusText}`);
         }
+        
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to load onboarding data');
+        }
+        
+        const { toStart, inProgress, completed } = result.data;
         
         // Add employees to appropriate kanban columns
         const toStartColumn = document.getElementById('toStart');
         const inProgressColumn = document.getElementById('inProgress');
         const completedColumn = document.getElementById('completed');
         
-        employees.forEach(employee => {
-            // Only include employees who are in an onboarding state
-            if (employee.status === 'offboarding') {
-                return; // Skip offboarding employees
-            }
-            
-            // Create kanban item
+        // Populate To Start column
+        toStart.forEach(employee => {
             const item = createKanbanItem(employee);
-            
-            // Add to appropriate column
-            if (employee.status === 'to-start' || employee.status === 'pending') {
-                toStartColumn.appendChild(item);
-            } else if (employee.status === 'in-progress' || employee.status === 'onboarding' || employee.status === 'revision_required') {
-                inProgressColumn.appendChild(item);
-            } else if (employee.status === 'completed' || employee.status === 'active' || employee.status === 'approved') {
-                completedColumn.appendChild(item);
-            } else {
-                // If status not specified, default to "To Start"
-                toStartColumn.appendChild(item);
-            }
+            toStartColumn.appendChild(item);
+        });
+        
+        // Populate In Progress column
+        inProgress.forEach(employee => {
+            const item = createKanbanItem(employee);
+            inProgressColumn.appendChild(item);
+        });
+        
+        // Populate Completed column
+        completed.forEach(employee => {
+            const item = createKanbanItem(employee);
+            completedColumn.appendChild(item);
         });
         
         console.log('Successfully loaded employees for onboarding tracker');
@@ -2266,7 +2153,7 @@ function createKanbanItem(employee) {
     
     // Determine label based on status
     let dateLabel = 'Start Date:';
-    if (employee.status === 'in-progress' || employee.status === 'onboarding') {
+    if (employee.status === 'in_progress' || employee.status === 'onboarding') {
         dateLabel = 'Started:';
     } else if (employee.status === 'completed' || employee.status === 'active' || employee.status === 'approved') {
         dateLabel = 'Completed:';
@@ -2274,7 +2161,7 @@ function createKanbanItem(employee) {
     
     // Calculate progress percentage
     let progressWidth = employee.completionPercentage || 0;
-    if (employee.status === 'completed' || employee.status === 'active' || employee.status === 'approved') {
+    if (employee.status === 'completed') {
         progressWidth = 100;
     }
     
@@ -2299,134 +2186,68 @@ function createKanbanItem(employee) {
 }
 
 // Update employee status when moved between columns
-function updateEmployeeOnboardingStatus(employeeId, newStatus) {
+async function updateEmployeeOnboardingStatus(employeeId, newStatus) {
     console.log(`Updating employee ${employeeId} status to ${newStatus}`);
     
     try {
-        // Get the employees from localStorage
-        const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+        const response = await fetch(`/api/onboarding-processes/${employeeId}/status`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
         
-        // Find the employee by ID
-        const employeeIndex = employees.findIndex(emp => emp.id === employeeId);
-        
-        if (employeeIndex === -1) {
-            console.error('Employee not found:', employeeId);
-            return;
+        if (!response.ok) {
+            throw new Error(`Error updating status: ${response.statusText}`);
         }
         
-        // Map kanban column ID to actual status
-        let statusMapping = {
-            'toStart': 'to-start',
-            'inProgress': 'in-progress',
-            'completed': 'completed'
-        };
-        
-        // Update employee status
-        employees[employeeIndex].status = statusMapping[newStatus] || newStatus;
-        
-        // Update completion percentage based on new status
-        if (newStatus === 'inProgress') {
-            // If moved to in progress and no completion percentage, set to 50%
-            if (!employees[employeeIndex].completionPercentage || employees[employeeIndex].completionPercentage === 0) {
-                employees[employeeIndex].completionPercentage = 50;
-            }
-        } else if (newStatus === 'completed') {
-            // If moved to completed, set to 100%
-            employees[employeeIndex].completionPercentage = 100;
-            
-            // Also update the status in other data structures
-            employees[employeeIndex].status = 'active'; // Set as active employee now
-        } else if (newStatus === 'toStart') {
-            // If moved back to start, reset progress
-            employees[employeeIndex].completionPercentage = 0;
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to update employee status');
         }
         
-        // Save back to localStorage
-        localStorage.setItem('employees', JSON.stringify(employees));
-        
-        // If there's an onboarding submission, update that too
-        updateOnboardingSubmissionStatus(employeeId, statusMapping[newStatus] || newStatus);
+        const employee = result.data;
         
         // Show notification
-        const employee = employees[employeeIndex];
-        showNotification(`Updated ${employee.name}'s onboarding status`, 'success');
+        showNotification(`Updated ${employee.employee ? employee.employee.name : 'employee'}'s onboarding status`, 'success');
         
         // Update progress bar in the kanban item
         const kanbanItem = document.querySelector(`.kanban-item[data-id="${employeeId}"]`);
         if (kanbanItem) {
             const progressBar = kanbanItem.querySelector('.progress-bar');
             if (progressBar) {
-                progressBar.style.width = `${employee.completionPercentage}%`;
+                progressBar.style.width = `${employee.progress.percentComplete}%`;
             }
             
             // Update date label
             const dateSpan = kanbanItem.querySelector('.date');
             if (dateSpan) {
                 let dateLabel = 'Start Date:';
-                if (newStatus === 'inProgress') {
+                if (newStatus === 'inProgress' || employee.status === 'in_progress') {
                     dateLabel = 'Started:';
-                } else if (newStatus === 'completed') {
+                } else if (newStatus === 'completed' || employee.status === 'completed') {
                     dateLabel = 'Completed:';
                 }
                 
-                const formattedDate = employee.startDate ? new Date(employee.startDate).toLocaleDateString('en-US', {
+                const formattedDate = new Date(employee.startDate).toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric'
-                }) : 'TBD';
+                });
                 
                 dateSpan.textContent = `${dateLabel} ${formattedDate}`;
             }
         }
         
+        // If there's an onboarding submission for this employee, refresh it
+        if (document.getElementById('onboarding-approvals').classList.contains('active')) {
+            loadOnboardingSubmissions();
+        }
+        
     } catch (error) {
         console.error('Error updating employee status:', error);
-        showNotification('Error updating employee status', 'error');
-    }
-}
-
-// Update onboarding submission status
-function updateOnboardingSubmissionStatus(employeeId, newStatus) {
-    try {
-        // Get the submissions from localStorage
-        const submissions = JSON.parse(localStorage.getItem('onboardingSubmissions') || '[]');
-        
-        // Find the submission for this employee
-        const submission = submissions.find(sub => sub.id === employeeId);
-        
-        if (!submission) {
-            console.log('No onboarding submission found for employee', employeeId);
-            return;
-        }
-        
-        // Map kanban status to submission status
-        let statusMapping = {
-            'to-start': 'pending',
-            'in-progress': 'pending',
-            'completed': 'approved'
-        };
-        
-        // Update submission status
-        submission.status = statusMapping[newStatus] || submission.status;
-        
-        // If completed/approved, add approval date and message
-        if (newStatus === 'completed' || newStatus === 'approved') {
-            submission.approvedDate = new Date().toISOString();
-            submission.feedback = 'Your onboarding submission has been approved. Welcome to the team!';
-            
-            // Send notification to the employee
-            sendEmployeeNotification(submission.email, {
-                type: 'onboarding_approved',
-                title: 'Onboarding Submission Approved',
-                message: 'Your onboarding submission has been approved. Welcome to the team!',
-                date: new Date().toISOString()
-            });
-        }
-        
-        // Save back to localStorage
-        localStorage.setItem('onboardingSubmissions', JSON.stringify(submissions));
-        
-    } catch (error) {
-        console.error('Error updating submission status:', error);
+        showNotification('Error updating employee status. Please try again.', 'error');
     }
 }
 
@@ -2489,31 +2310,35 @@ function showOnboardingModal() {
 }
 
 // Create new onboarding
-function createNewOnboarding(name, email, department, position, startDate) {
+async function createNewOnboarding(name, email, department, position, startDate) {
     try {
-        // Generate a unique ID
-        const id = Date.now().toString();
+        showNotification('Creating new onboarding...', 'info');
         
-        // Create employee object
-        const newEmployee = {
-            id,
-            name,
-            email,
-            department,
-            position,
-            startDate,
-            status: 'to-start', // Default to "To Start" column
-            completionPercentage: 0
-        };
+        const response = await fetch('/api/onboarding-processes/employee', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                name,
+                email,
+                department,
+                position,
+                startDate
+            })
+        });
         
-        // Get existing employees
-        const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+        if (!response.ok) {
+            throw new Error(`Error creating onboarding: ${response.statusText}`);
+        }
         
-        // Add new employee
-        employees.push(newEmployee);
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to create onboarding');
+        }
         
-        // Save to localStorage
-        localStorage.setItem('employees', JSON.stringify(employees));
+        const newEmployee = result.data;
         
         // Create a kanban item for the new employee
         const kanbanItem = createKanbanItem(newEmployee);
@@ -2534,6 +2359,397 @@ function createNewOnboarding(name, email, department, position, startDate) {
         
     } catch (error) {
         console.error('Error creating new onboarding:', error);
-        showNotification('Error creating new onboarding', 'error');
+        showNotification('Error creating new onboarding: ' + error.message, 'error');
+    }
+}
+
+// View details of an onboarding submission
+async function viewOnboardingSubmission(submissionId) {
+    console.log('Viewing submission details for:', submissionId);
+    
+    try {
+        // Show loading notification
+        showNotification('Loading submission details...', 'info');
+        
+        // Fetch submission details from API
+        const response = await fetch(`/api/onboarding-processes/${submissionId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error fetching submission details: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to load submission details');
+        }
+        
+        const process = result.data;
+        const employee = process.employee;
+        
+        // Format dates for display
+        const formattedStartDate = new Date(process.startDate).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        // Create modal content with tabs for different sections
+        const modalContent = `
+            <div class="submission-detail-container">
+                <div class="employee-info">
+                    <h3>${employee.name}</h3>
+                    <p>${employee.position} - ${employee.department}</p>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="label">Email:</span>
+                            <span class="value">${employee.email}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Start Date:</span>
+                            <span class="value">${formattedStartDate}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Status:</span>
+                            <span class="value status-badge ${getStatusClass(process.status)}">${getStatusText(process.status)}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Progress:</span>
+                            <div class="progress-container">
+                                <div class="progress-bar" style="width: ${process.progress.percentComplete}%"></div>
+                                <span class="progress-text">${process.progress.percentComplete}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="submission-tabs">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" data-tab="personal-info">Personal Info</button>
+                        <button class="tab-btn" data-tab="employee-details">Employment Details</button>
+                        <button class="tab-btn" data-tab="documents">Documents</button>
+                        <button class="tab-btn" data-tab="approval-actions">Approval Actions</button>
+                    </div>
+                    
+                    <div class="tab-content active" id="personal-info">
+                        <h4>Personal Information</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="label">Full Name:</span>
+                                <span class="value">${employee.personalInfo?.firstName || ''} ${employee.personalInfo?.middleName || ''} ${employee.personalInfo?.lastName || ''}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Phone:</span>
+                                <span class="value">${employee.personalInfo?.phoneNumber || 'Not provided'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Address:</span>
+                                <span class="value">${formatAddress(employee.personalInfo?.address) || 'Not provided'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Emergency Contact:</span>
+                                <span class="value">${formatEmergencyContact(employee.personalInfo?.emergencyContact) || 'Not provided'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="employee-details">
+                        <h4>Employment Details</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="label">Position:</span>
+                                <span class="value">${employee.position}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Department:</span>
+                                <span class="value">${employee.department}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Employment Type:</span>
+                                <span class="value">${employee.employmentDetails?.contractType || 'Full-time'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Start Date:</span>
+                                <span class="value">${formattedStartDate}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="documents">
+                        <h4>Submitted Documents</h4>
+                        ${renderDocuments(process.documents)}
+                    </div>
+                    
+                    <div class="tab-content" id="approval-actions">
+                        <h4>Approval Actions</h4>
+                        <div class="action-buttons">
+                            <button class="btn-success approve-btn" data-id="${submissionId}">
+                                <i class="fas fa-check"></i> Approve Submission
+                            </button>
+                            <button class="btn-warning revision-btn" data-id="${submissionId}">
+                                <i class="fas fa-undo"></i> Request Revision
+                            </button>
+                        </div>
+                        
+                        <div class="revision-form" style="display: none;">
+                            <h4>Request Revisions</h4>
+                            <div class="form-group">
+                                <label>Feedback</label>
+                                <textarea id="revision-feedback" placeholder="Provide detailed feedback for the employee"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Missing Items</label>
+                                <div class="missing-items-list">
+                                    <div class="missing-item">
+                                        <input type="checkbox" id="missing-personal-info" value="Personal Information">
+                                        <label for="missing-personal-info">Personal Information</label>
+                                    </div>
+                                    <div class="missing-item">
+                                        <input type="checkbox" id="missing-documents" value="Required Documents">
+                                        <label for="missing-documents">Required Documents</label>
+                                    </div>
+                                    <div class="missing-item">
+                                        <input type="checkbox" id="missing-signatures" value="Signatures">
+                                        <label for="missing-signatures">Signatures</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn-primary send-revision-btn" data-id="${submissionId}">Send Revision Request</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Show modal with submission details
+        showModal(`Onboarding Submission - ${employee.name}`, modalContent);
+        
+        // Add tab switching functionality
+        document.querySelectorAll('.submission-tabs .tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Remove active class from all tabs and content
+                document.querySelectorAll('.submission-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.submission-tabs .tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab).classList.add('active');
+            });
+        });
+        
+        // Add event listener for approve button
+        document.querySelector('.approve-btn').addEventListener('click', function() {
+            approveOnboardingDirectly(this.dataset.id);
+        });
+        
+        // Add event listener for revision button
+        document.querySelector('.revision-btn').addEventListener('click', function() {
+            // Show revision form
+            document.querySelector('.revision-form').style.display = 'block';
+            this.style.display = 'none';
+        });
+        
+        // Add event listener for send revision button
+        document.querySelector('.send-revision-btn').addEventListener('click', function() {
+            const feedback = document.getElementById('revision-feedback').value;
+            const missingItems = [];
+            
+            // Get checked missing items
+            document.querySelectorAll('.missing-items-list input:checked').forEach(item => {
+                missingItems.push(item.value);
+            });
+            
+            // Validate feedback
+            if (!feedback) {
+                showNotification('Please provide feedback for the revision request', 'warning');
+                return;
+            }
+            
+            // Send revision request
+            requestOnboardingRevisionDirectly(this.dataset.id, feedback, missingItems);
+        });
+        
+    } catch (error) {
+        console.error('Error viewing onboarding submission:', error);
+        showNotification('Error loading submission details: ' + error.message, 'error');
+    }
+}
+
+// Helper function to format address
+function formatAddress(address) {
+    if (!address) return null;
+    
+    const parts = [];
+    if (address.street) parts.push(address.street);
+    if (address.city) parts.push(address.city);
+    if (address.state) parts.push(address.state);
+    if (address.zipCode) parts.push(address.zipCode);
+    if (address.country) parts.push(address.country);
+    
+    return parts.join(', ');
+}
+
+// Helper function to format emergency contact
+function formatEmergencyContact(contact) {
+    if (!contact) return null;
+    
+    const parts = [];
+    if (contact.name) parts.push(contact.name);
+    if (contact.relationship) parts.push(`(${contact.relationship})`);
+    if (contact.phoneNumber) parts.push(contact.phoneNumber);
+    
+    return parts.join(' ');
+}
+
+// Helper function to render documents
+function renderDocuments(documents) {
+    if (!documents || documents.length === 0) {
+        return '<p>No documents submitted</p>';
+    }
+    
+    let html = '<div class="documents-list">';
+    
+    documents.forEach(doc => {
+        html += `
+            <div class="document-item">
+                <div class="document-icon">
+                    <i class="fas fa-file-${getDocumentIcon(doc.title)}"></i>
+                </div>
+                <div class="document-info">
+                    <h5>${doc.title}</h5>
+                    <span class="status-badge ${getStatusClass(doc.status)}">${getStatusText(doc.status)}</span>
+                </div>
+                <div class="document-actions">
+                    <button class="action-btn view-document" title="View Document">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    return html;
+}
+
+// Helper function to get document icon based on title
+function getDocumentIcon(title) {
+    if (!title) return 'alt';
+    
+    const lowercaseTitle = title.toLowerCase();
+    
+    if (lowercaseTitle.includes('contract')) return 'contract';
+    if (lowercaseTitle.includes('id') || lowercaseTitle.includes('identification')) return 'id-badge';
+    if (lowercaseTitle.includes('tax')) return 'file-invoice-dollar';
+    if (lowercaseTitle.includes('health') || lowercaseTitle.includes('medical')) return 'file-medical';
+    if (lowercaseTitle.includes('agreement')) return 'file-signature';
+    if (lowercaseTitle.includes('pdf')) return 'pdf';
+    if (lowercaseTitle.includes('doc')) return 'word';
+    if (lowercaseTitle.includes('xls')) return 'excel';
+    
+    return 'alt';
+}
+
+// Approve an onboarding submission
+async function approveOnboardingDirectly(submissionId) {
+    console.log('Approving onboarding submission:', submissionId);
+    
+    try {
+        // Show loading notification
+        showNotification('Processing approval...', 'info');
+        
+        // Call API to approve submission
+        const response = await fetch(`/api/onboarding-processes/submissions/${submissionId}/approve`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error approving submission: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to approve submission');
+        }
+        
+        // Close modal if open
+        const modal = document.querySelector('.modal');
+        if (modal) {
+            modal.classList.remove('visible');
+            setTimeout(() => modal.remove(), 300);
+        }
+        
+        // Show success notification
+        showNotification('Onboarding submission approved successfully', 'success');
+        
+        // Refresh submissions list
+        loadOnboardingSubmissions();
+        
+        // Refresh onboarding tracker if it's visible
+        if (document.getElementById('onboarding').classList.contains('active')) {
+            loadEmployeesForOnboarding();
+        }
+        
+    } catch (error) {
+        console.error('Error approving onboarding submission:', error);
+        showNotification('Error approving submission: ' + error.message, 'error');
+    }
+}
+
+// Request revision for an onboarding submission
+async function requestOnboardingRevisionDirectly(submissionId, feedback, missingItems) {
+    console.log('Requesting revision for onboarding submission:', submissionId);
+    
+    try {
+        // Show loading notification
+        showNotification('Processing revision request...', 'info');
+        
+        // Call API to request revision
+        const response = await fetch(`/api/onboarding-processes/submissions/${submissionId}/revise`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                feedback,
+                missingItems
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error requesting revision: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to request revision');
+        }
+        
+        // Close modal if open
+        const modal = document.querySelector('.modal');
+        if (modal) {
+            modal.classList.remove('visible');
+            setTimeout(() => modal.remove(), 300);
+        }
+        
+        // Show success notification
+        showNotification('Revision request sent successfully', 'success');
+        
+        // Refresh submissions list
+        loadOnboardingSubmissions();
+        
+    } catch (error) {
+        console.error('Error requesting revision for submission:', error);
+        showNotification('Error requesting revision: ' + error.message, 'error');
     }
 }

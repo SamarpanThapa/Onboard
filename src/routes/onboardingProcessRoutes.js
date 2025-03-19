@@ -9,7 +9,16 @@ const {
   updateProcessStatus,
   addTaskToProcess,
   getMyOnboardingProcess,
-  getOnboardingMetrics
+  getOnboardingMetrics,
+  getAllProcesses,
+  getProcessById,
+  deleteProcess,
+  getProcessesByStatus,
+  getKanbanBoardData,
+  addEmployeeToOnboarding,
+  getPendingSubmissions,
+  approveSubmission,
+  requestRevision
 } = require('../controllers/onboardingProcessController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const OnboardingProcess = require('../models/OnboardingProcess');
@@ -36,7 +45,7 @@ router.get(
   '/',
   protect,
   authorize('hr_admin'),
-  getOnboardingProcesses
+  getAllProcesses
 );
 
 // @route   GET /api/onboarding-processes/me
@@ -64,7 +73,7 @@ router.get(
 router.get(
   '/:id',
   protect,
-  getOnboardingProcess
+  getProcessById
 );
 
 // @route   PUT /api/onboarding-processes/:id
@@ -314,6 +323,66 @@ router.post(
       });
     }
   }
+);
+
+// @route   GET /api/onboarding-processes/status/:status
+// @desc    Get onboarding processes by status
+// @access  Private (HR Admin only)
+router.get(
+  '/status/:status',
+  protect,
+  authorize('hr_admin'),
+  getProcessesByStatus
+);
+
+// @route   GET /api/onboarding-processes/kanban/board
+// @desc    Get onboarding processes for kanban board grouped by status
+// @access  Private (HR Admin only)
+router.get(
+  '/kanban/board',
+  protect,
+  authorize('hr_admin'),
+  getKanbanBoardData
+);
+
+// @route   POST /api/onboarding-processes/employee
+// @desc    Add employee to onboarding process
+// @access  Private (HR Admin only)
+router.post(
+  '/employee',
+  protect,
+  authorize('hr_admin'),
+  addEmployeeToOnboarding
+);
+
+// @route   GET /api/onboarding-processes/submissions/pending
+// @desc    Get submissions pending approval
+// @access  Private (HR Admin only)
+router.get(
+  '/submissions/pending',
+  protect,
+  authorize('hr_admin'),
+  getPendingSubmissions
+);
+
+// @route   PATCH /api/onboarding-processes/submissions/:id/approve
+// @desc    Approve onboarding submission
+// @access  Private (HR Admin only)
+router.patch(
+  '/submissions/:id/approve',
+  protect,
+  authorize('hr_admin'),
+  approveSubmission
+);
+
+// @route   PATCH /api/onboarding-processes/submissions/:id/revise
+// @desc    Request revision for onboarding submission
+// @access  Private (HR Admin only)
+router.patch(
+  '/submissions/:id/revise',
+  protect,
+  authorize('hr_admin'),
+  requestRevision
 );
 
 module.exports = router; 

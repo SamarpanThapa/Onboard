@@ -5,6 +5,7 @@ const EmployeeTask = require('../models/EmployeeTask');
 const User = require('../models/User');
 const Document = require('../models/Document');
 const Notification = require('../models/Notification');
+const asyncHandler = require('express-async-handler');
 
 // @desc    Create a new onboarding process for an employee
 // @route   POST /api/onboarding-processes
@@ -767,4 +768,458 @@ const addCustomTasks = async (customTasks, onboardingProcess, createdBy) => {
   }
 
   await onboardingProcess.save();
-}; 
+};
+
+// @desc    Get all onboarding processes
+// @route   GET /api/onboarding-processes
+// @access  Private (HR Admin)
+exports.getAllProcesses = asyncHandler(async (req, res) => {
+  const processes = await OnboardingProcess.find()
+    .populate('employee', 'name email department position personalInfo employmentDetails')
+    .populate('createdBy', 'name')
+    .sort({ 'keyDates.created': -1 });
+  
+  res.status(200).json({ success: true, data: processes });
+});
+
+// @desc    Get onboarding process by ID
+// @route   GET /api/onboarding-processes/:id
+// @access  Private
+exports.getProcessById = asyncHandler(async (req, res) => {
+  const process = await OnboardingProcess.findById(req.params.id)
+    .populate('employee', 'name email department position personalInfo employmentDetails')
+    .populate('createdBy', 'name')
+    .populate('tasks.taskId')
+    .populate('documents.documentId');
+  
+  if (!process) {
+    res.status(404);
+    throw new Error('Onboarding process not found');
+  }
+  
+  res.status(200).json({ success: true, data: process });
+});
+
+// @desc    Create new onboarding process
+// @route   POST /api/onboarding-processes
+// @access  Private (HR Admin)
+exports.createProcess = asyncHandler(async (req, res) => {
+  const { employee, startDate, template } = req.body;
+  
+  // Check if employee exists
+  const employeeExists = await User.findById(employee);
+  if (!employeeExists) {
+    res.status(400);
+    throw new Error('Employee not found');
+  }
+  
+  // Check if already has active onboarding process
+  const existingProcess = await OnboardingProcess.findOne({ 
+    employee, 
+    status: { $nin: ['completed', 'terminated'] } 
+  });
+  
+  if (existingProcess) {
+    res.status(400);
+    throw new Error('Employee already has an active onboarding process');
+  }
+  
+  const process = await OnboardingProcess.create({
+    employee,
+    startDate,
+    template,
+    status: 'not_started',
+    createdBy: req.user.id,
+    keyDates: {
+      created: Date.now(),
+      expectedCompletionDate: new Date(new Date(startDate).getTime() + 14 * 24 * 60 * 60 * 1000) // Default to 2 weeks
+    }
+  });
+  
+  // Update user's onboarding status
+  await User.findByIdAndUpdate(employee, {
+    'employmentDetails.startDate': startDate,
+    'employmentDetails.onboardingStatus': 'in_progress'
+  });
+  
+  res.status(201).json({ success: true, data: process });
+});
+
+// @desc    Update onboarding process
+// @route   PUT /api/onboarding-processes/:id
+// @access  Private (HR Admin)
+exports.updateProcess = asyncHandler(async (req, res) => {
+  let process = await OnboardingProcess.findById(req.params.id);
+  
+  if (!process) {
+    res.status(404);
+    throw new Error('Onboarding process not found');
+  }
+  
+  // Update the process
+  process = await OnboardingProcess.findByIdAndUpdate(
+    req.params.id,
+    { 
+      ...req.body,
+      updatedBy: req.user.id,
+      updatedAt: Date.now()
+    },
+    { new: true, runValidators: true }
+  );
+  
+  res.status(200).json({ success: true, data: process });
+});
+
+// @desc    Delete onboarding process
+// @route   DELETE /api/onboarding-processes/:id
+// @access  Private (HR Admin)
+exports.deleteProcess = asyncHandler(async (req, res) => {
+  const process = await OnboardingProcess.findById(req.params.id);
+  
+  if (!process) {
+    res.status(404);
+    throw new Error('Onboarding process not found');
+  }
+  
+  await process.remove();
+  
+  res.status(200).json({ success: true, data: {} });
+});
+
+// @desc    Get onboarding processes by status (for kanban board)
+// @route   GET /api/onboarding-processes/status/:status
+// @access  Private (HR Admin)
+exports.getProcessesByStatus = asyncHandler(async (req, res) => {
+  // Map front-end status to backend status
+  const statusMap = {
+    'toStart': 'not_started',
+    'inProgress': 'in_progress',
+    'completed': 'completed'
+  };
+  
+  const status = statusMap[req.params.status] || req.params.status;
+  
+  const processes = await OnboardingProcess.find({ status })
+    .populate('employee', 'name email department position employmentDetails')
+    .sort({ 'keyDates.created': -1 });
+  
+  res.status(200).json({ success: true, data: processes });
+});
+
+// @desc    Update onboarding process status (for kanban drag and drop)
+// @route   PATCH /api/onboarding-processes/:id/status
+// @access  Private (HR Admin)
+exports.updateProcessStatus = asyncHandler(async (req, res) => {
+  const { status } = req.body;
+  
+  // Map front-end status to backend status
+  const statusMap = {
+    'toStart': 'not_started',
+    'inProgress': 'in_progress',
+    'completed': 'completed'
+  };
+  
+  const mappedStatus = statusMap[status] || status;
+  
+  let process = await OnboardingProcess.findById(req.params.id);
+  
+  if (!process) {
+    res.status(404);
+    throw new Error('Onboarding process not found');
+  }
+  
+  // Update the process status
+  process = await OnboardingProcess.findByIdAndUpdate(
+    req.params.id,
+    { 
+      status: mappedStatus,
+      updatedBy: req.user.id,
+      updatedAt: Date.now()
+    },
+    { new: true }
+  );
+  
+  // Calculate progress based on status
+  let progress = process.progress.percentComplete;
+  if (mappedStatus === 'not_started') {
+    progress = 0;
+  } else if (mappedStatus === 'in_progress' && progress === 0) {
+    progress = 50; // Default to 50% when moved to in_progress and no progress yet
+  } else if (mappedStatus === 'completed') {
+    progress = 100;
+    
+    // If completed, also update the user's onboarding status
+    await User.findByIdAndUpdate(process.employee, {
+      'employmentDetails.onboardingStatus': 'completed',
+      'isActive': true
+    });
+    
+    // Add a notification for the employee
+    await Notification.create({
+      user: process.employee._id,
+      title: 'Onboarding Completed',
+      message: 'Your onboarding process has been completed. Welcome to the team!',
+      type: 'onboarding_approved',
+      link: '/dashboard',
+      isRead: false
+    });
+  }
+  
+  // Update progress
+  process = await OnboardingProcess.findByIdAndUpdate(
+    req.params.id,
+    { 
+      'progress.percentComplete': progress,
+      'keyDates.lastUpdated': Date.now(),
+      ...(mappedStatus === 'completed' ? { 'keyDates.actualCompletionDate': Date.now() } : {})
+    },
+    { new: true }
+  );
+  
+  res.status(200).json({ success: true, data: process });
+});
+
+// @desc    Get onboarding processes for kanban board grouped by status
+// @route   GET /api/onboarding-processes/kanban/board
+// @access  Private (HR Admin)
+exports.getKanbanBoardData = asyncHandler(async (req, res) => {
+  // Get only active processes (exclude terminated)
+  const processes = await OnboardingProcess.find({ 
+    status: { $ne: 'terminated' } 
+  })
+    .populate('employee', 'name email department position employmentDetails personalInfo')
+    .sort({ 'keyDates.created': -1 });
+  
+  // Group processes by status for the kanban board
+  const toStart = processes.filter(p => p.status === 'not_started').map(formatForKanban);
+  const inProgress = processes.filter(p => p.status === 'in_progress').map(formatForKanban);
+  const completed = processes.filter(p => p.status === 'completed').map(formatForKanban);
+  
+  res.status(200).json({ 
+    success: true, 
+    data: {
+      toStart,
+      inProgress,
+      completed
+    } 
+  });
+});
+
+// Helper function to format process for kanban board
+function formatForKanban(process) {
+  return {
+    id: process._id,
+    name: process.employee.name,
+    email: process.employee.email,
+    department: process.employee.department,
+    position: process.employee.position,
+    startDate: process.startDate,
+    status: process.status,
+    completionPercentage: process.progress.percentComplete
+  };
+}
+
+// @desc    Add employee to onboarding process
+// @route   POST /api/onboarding-processes/employee
+// @access  Private (HR Admin)
+exports.addEmployeeToOnboarding = asyncHandler(async (req, res) => {
+  const { name, email, department, position, startDate } = req.body;
+  
+  // First create or find the user
+  let user = await User.findOne({ email });
+  
+  if (!user) {
+    // Create a new user with temporary password
+    const tempPassword = Math.random().toString(36).slice(-8);
+    
+    user = await User.create({
+      name,
+      email,
+      password: tempPassword, // Would hash this in the User model pre-save hook
+      department,
+      position,
+      role: 'employee',
+      isFirstLogin: true,
+      employmentDetails: {
+        startDate,
+        contractType: 'full-time',
+        onboardingStatus: 'not_started'
+      }
+    });
+    
+    // TODO: Send welcome email with temp password
+  }
+  
+  // Now create an onboarding process for this user
+  const process = await OnboardingProcess.create({
+    employee: user._id,
+    startDate,
+    status: 'not_started',
+    createdBy: req.user.id,
+    progress: {
+      percentComplete: 0,
+      totalTasks: 0,
+      tasksCompleted: 0
+    },
+    keyDates: {
+      created: Date.now(),
+      expectedCompletionDate: new Date(new Date(startDate).getTime() + 14 * 24 * 60 * 60 * 1000) // Default to 2 weeks
+    }
+  });
+  
+  // Update user's employmentDetails
+  await User.findByIdAndUpdate(user._id, {
+    position,
+    department,
+    'employmentDetails.startDate': startDate,
+    'employmentDetails.onboardingStatus': 'not_started'
+  });
+  
+  res.status(201).json({ 
+    success: true, 
+    data: formatForKanban({
+      ...process.toObject(),
+      employee: user
+    })
+  });
+});
+
+// @desc    Get onboarding submissions pending approval
+// @route   GET /api/onboarding-processes/submissions/pending
+// @access  Private (HR Admin)
+exports.getPendingSubmissions = asyncHandler(async (req, res) => {
+  // Find processes where user has submitted documents or forms that need review
+  const pendingProcesses = await OnboardingProcess.find({
+    status: 'in_progress',
+    'documents.status': 'pending_review'
+  }).populate('employee', 'name email department position employmentDetails personalInfo');
+  
+  // Format for frontend
+  const submissions = pendingProcesses.map(process => {
+    const pendingDocs = process.documents.filter(doc => doc.status === 'pending_review');
+    
+    return {
+      id: process._id,
+      employee: {
+        id: process.employee._id,
+        name: process.employee.name,
+        email: process.employee.email,
+        department: process.employee.department,
+        position: process.employee.position
+      },
+      submissionDate: pendingDocs.length > 0 ? pendingDocs[0].completedDate : process.keyDates.lastUpdated,
+      status: 'pending',
+      documents: pendingDocs,
+      progress: process.progress
+    };
+  });
+  
+  res.status(200).json({ success: true, data: submissions });
+});
+
+// @desc    Approve onboarding submission
+// @route   PATCH /api/onboarding-processes/submissions/:id/approve
+// @access  Private (HR Admin)
+exports.approveSubmission = asyncHandler(async (req, res) => {
+  const process = await OnboardingProcess.findById(req.params.id)
+    .populate('employee', 'name email');
+  
+  if (!process) {
+    res.status(404);
+    throw new Error('Onboarding submission not found');
+  }
+  
+  // Update all pending documents to approved
+  const updatedDocs = process.documents.map(doc => {
+    if (doc.status === 'pending_review') {
+      return {
+        ...doc.toObject(),
+        status: 'approved'
+      };
+    }
+    return doc;
+  });
+  
+  // Update the process
+  const updatedProcess = await OnboardingProcess.findByIdAndUpdate(
+    req.params.id,
+    {
+      documents: updatedDocs,
+      'progress.percentComplete': 100,
+      status: 'completed',
+      'keyDates.actualCompletionDate': Date.now(),
+      'keyDates.lastUpdated': Date.now(),
+      updatedBy: req.user.id
+    },
+    { new: true }
+  );
+  
+  // Update user status to active
+  await User.findByIdAndUpdate(process.employee._id, {
+    'employmentDetails.onboardingStatus': 'completed',
+    'isActive': true
+  });
+  
+  // Create notification for the employee
+  await Notification.create({
+    user: process.employee._id,
+    title: 'Onboarding Submission Approved',
+    message: 'Your onboarding submission has been approved. Welcome to the team!',
+    type: 'onboarding_approved',
+    link: '/dashboard',
+    isRead: false
+  });
+  
+  res.status(200).json({ success: true, data: updatedProcess });
+});
+
+// @desc    Request revision for onboarding submission
+// @route   PATCH /api/onboarding-processes/submissions/:id/revise
+// @access  Private (HR Admin)
+exports.requestRevision = asyncHandler(async (req, res) => {
+  const { feedback, missingItems } = req.body;
+  
+  const process = await OnboardingProcess.findById(req.params.id)
+    .populate('employee', 'name email');
+  
+  if (!process) {
+    res.status(404);
+    throw new Error('Onboarding submission not found');
+  }
+  
+  // Add note with feedback
+  process.notes.push({
+    author: req.user.id,
+    text: feedback,
+    category: 'feedback',
+    createdAt: Date.now()
+  });
+  
+  // Update status to in_progress
+  const updatedProcess = await OnboardingProcess.findByIdAndUpdate(
+    req.params.id,
+    {
+      notes: process.notes,
+      status: 'in_progress',
+      'progress.percentComplete': 75, // Set to 75% when revisions requested
+      'keyDates.lastUpdated': Date.now(),
+      updatedBy: req.user.id
+    },
+    { new: true }
+  );
+  
+  // Create notification for the employee
+  await Notification.create({
+    user: process.employee._id,
+    title: 'Onboarding Revision Requested',
+    message: feedback,
+    metadata: {
+      missingItems: missingItems || []
+    },
+    type: 'onboarding_revision',
+    link: '/onboarding',
+    isRead: false
+  });
+  
+  res.status(200).json({ success: true, data: updatedProcess });
+}); 
