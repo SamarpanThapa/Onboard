@@ -578,6 +578,26 @@ body {
     color: #fff;
 }
 
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #333;
+    border-radius: 4px;
+    background: #1e1e1e;
+    color: #fff;
+    font-family: inherit;
+}
+
+input[type="date"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #333;
+    border-radius: 4px;
+    background: #1e1e1e;
+    color: #fff;
+    font-family: inherit;
+}
+
 /* Toggle Switch */
 .switch {
     position: relative;
@@ -1426,4 +1446,200 @@ input:checked + .slider:before {
     background: #1e1e1e;
     color: #fff;
     min-width: 150px;
+}
+
+/* Tab Navigation */
+.tab-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.tab-btn {
+    background: #282828;
+    border: none;
+    color: #b3b3b3;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+    background: #333;
+    color: #fff;
+}
+
+.tab-btn.active {
+    background: #1db954;
+    color: #fff;
+}
+
+.tab-content {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+    opacity: 1;
+}
+
+/* Compliance Verification */
+.status-badge.warning {
+    background-color: #ffd700;
+    color: #333;
+}
+
+.status-badge.danger {
+    background-color: #e74c3c;
+    color: #fff;
+}
+
+.verify-compliance {
+    background-color: #1db954;
+    color: #fff;
+}
+
+.verify-compliance:hover {
+    background-color: #18a148;
+}
+
+.reject-compliance {
+    background-color: #e74c3c;
+    color: #fff;
+}
+
+.reject-compliance:hover {
+    background-color: #c0392b;
+}
+
+/* Modal Forms */
+#reject-form textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #333;
+    border-radius: 4px;
+    background: #1e1e1e;
+    color: #fff;
+    min-height: 100px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+#reject-form input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #333;
+    border-radius: 4px;
+    background: #1e1e1e;
+    color: #fff;
+    font-family: inherit;
+}
+
+#reject-form label {
+    display: block;
+    margin-bottom: 8px;
+    color: #b3b3b3;
+    font-weight: 500;
+}
+
+.submit-btn {
+    background: #1db954;
+    color: #fff;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    margin-top: 15px;
+    transition: background 0.2s ease;
+}
+
+.submit-btn:hover {
+    background: #18a148;
+}
+
+.add-compliance-btn {
+    background: #1db954;
+    color: #fff;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-size: 0.9em;
+}
+
+.add-compliance-btn:hover {
+    background: #18a148;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    margin: 20px auto;
+    border: 4px solid rgba(29, 185, 84, 0.3);
+    border-top: 4px solid #1db954;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Success and Error Messages */
+.success-message {
+    color: #1db954;
+    font-weight: 500;
+    padding: 10px;
+    background-color: rgba(29, 185, 84, 0.1);
+    border-left: 4px solid #1db954;
+    margin: 10px 0;
+    border-radius: 4px;
+}
+
+.error-message {
+    color: #e44d4d;
+    font-weight: 500;
+    padding: 10px;
+    background-color: rgba(228, 77, 77, 0.1);
+    border-left: 4px solid #e44d4d;
+    margin: 10px 0;
+    border-radius: 4px;
+}
+
+/* Loading State for Buttons */
+button.loading {
+    position: relative;
+    color: transparent !important;
+}
+
+button.loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin-top: -8px;
+    margin-left: -8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }

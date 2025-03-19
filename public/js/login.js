@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
+  // Flag to prevent multiple form submissions
+  let isSubmitting = false;
+  
   // Check if user is already logged in
   if (api.auth.isAuthenticated()) {
     redirectBasedOnRole();
@@ -75,6 +78,15 @@ document.addEventListener('DOMContentLoaded', function() {
     loginForm.addEventListener('submit', async function(e) {
       e.preventDefault();
       
+      // Prevent multiple submissions
+      if (isSubmitting) {
+        console.log('Form submission already in progress');
+        return;
+      }
+      
+      // Set submission flag
+      isSubmitting = true;
+      
       // Clear previous messages
       errorMessage.textContent = '';
       errorMessage.classList.remove('visible');
@@ -84,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Get form values
       const email = emailInput.value.trim();
       const password = passwordInput.value.trim();
-      const role = roleSelect ? roleSelect.value : null;
+      const role = roleSelect.value.trim();
       
       // Validate form
       let isValid = true;
@@ -107,6 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       if (!isValid) {
+        isSubmitting = false;
         return;
       }
       
@@ -116,50 +129,109 @@ document.addEventListener('DOMContentLoaded', function() {
         submitButton.classList.add('loading');
         submitButton.disabled = true;
         
-        // Call login API
-        const response = await api.auth.login(email, password);
+        // Call login API with role
+        const response = await api.auth.login(email, password, role);
         
         // Show success message
         successMessage.textContent = 'Login successful! Redirecting...';
         successMessage.classList.add('visible');
         
-        // Redirect based on user role
-        setTimeout(() => {
-          redirectBasedOnRole();
-        }, 1000);
+        // Create a safe redirect function with navigation count
+        const safeRedirect = (url) => {
+          console.log(`Redirecting to: ${url}`);
+          // Use replace instead of href to avoid browser history issues
+          window.location.replace(url);
+        };
+        
+        // Check if first time login
+        if (response.user && response.user.isFirstLogin) {
+          // Store user data in localStorage for the welcome page
+          localStorage.setItem('welcomeUser', JSON.stringify({
+            name: response.user.firstName || response.user.name.split(' ')[0] || 'New Employee',
+            role: response.user.role,
+            isFirstLogin: true
+          }));
+          
+          // Redirect to welcome page
+          setTimeout(() => {
+            safeRedirect('welcome.html');
+          }, 1000);
+        } else if (response.user && response.user.redirectUrl) {
+          // Use the redirect URL provided by the server
+          setTimeout(() => {
+            safeRedirect(response.user.redirectUrl);
+          }, 1000);
+        } else {
+          // Fallback to local role-based redirection
+          setTimeout(() => {
+            redirectBasedOnRole();
+          }, 1000);
+        }
       } catch (error) {
         // Show error message
         errorMessage.textContent = error.message || 'Invalid email or password';
         errorMessage.classList.add('visible');
         
         // Reset button
+        const submitButton = loginForm.querySelector('button[type="submit"]');
         submitButton.classList.remove('loading');
         submitButton.disabled = false;
+        
+        // Reset submission flag
+        isSubmitting = false;
       }
     });
   }
   
   // Function to redirect based on user role
   function redirectBasedOnRole() {
-    const role = api.auth.getUserRole();
+    const userData = api.auth.getUserData();
+    const role = userData.role;
     
+    // If server provided a redirect URL, use that
+    if (userData.redirectUrl) {
+      safeRedirect(userData.redirectUrl);
+      return;
+    }
+
+    let targetUrl = 'index.html'; // Default fallback
+    
+    // Otherwise, determine based on role
     switch (role) {
-      case 'it':
-        window.location.href = 'it_dashboard.html';
+      case 'it_admin':
+        targetUrl = 'it_dashboard.html';
         break;
-      case 'hr':
-        window.location.href = 'admin.html';
+      case 'hr_admin':
+        targetUrl = 'admin.html';
         break;
-      case 'manager':
-        window.location.href = 'admin.html';
+      case 'department_admin':
+        targetUrl = 'admin.html';
         break;
       case 'employee':
-        window.location.href = 'emp_dashboard.html';
+        // Check onboarding status
+        const onboardingStatus = userData.onboardingStatus;
+        if (onboardingStatus === 'not_started' || onboardingStatus === 'in_progress') {
+          targetUrl = 'onboarding.html';
+        } else {
+          targetUrl = 'emp_dashboard.html';
+        }
         break;
       default:
         // If role is not recognized, log out and stay on login page
         api.auth.logout();
+        targetUrl = 'index.html';
         break;
     }
+    
+    console.log(`Redirecting to: ${targetUrl} based on role: ${role}`);
+    // Use replace instead of href to avoid browser history issues
+    window.location.replace(targetUrl);
+  }
+  
+  // Safe redirect function
+  function safeRedirect(url) {
+    console.log(`Redirecting to: ${url}`);
+    // Use replace instead of href to avoid browser history issues
+    window.location.replace(url);
   }
 });

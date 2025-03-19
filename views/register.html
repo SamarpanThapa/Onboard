@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IT Registration - OnboardX</title>
+    <title>Account Registration - OnboardX</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/css/styles.css">
@@ -17,12 +17,12 @@
                 <i class="fas fa-users-gear"></i>
                 OnboardX
             </h1>
-            <p class="tagline">IT Department Registration</p>
+            <p class="tagline" id="registration-tagline">Account Registration</p>
         </div>
         
         <div class="login-container">
-            <h2>Create IT Account</h2>
-            <p class="login-subtitle">Register as an IT administrator to manage company onboarding</p>
+            <h2 id="register-title">Create Account</h2>
+            <p class="login-subtitle" id="register-subtitle">Register to access the company's onboarding system</p>
             
             <form id="register-form" novalidate>
                 <div class="input-group">
@@ -75,15 +75,34 @@
                 </div>
                 
                 <div class="input-group">
+                    <label for="user-role">
+                        <i class="fas fa-user-tag"></i>
+                        Role
+                    </label>
+                    <select
+                        id="user-role"
+                        name="user-role"
+                        required
+                        aria-required="true"
+                    >
+                        <option value="" disabled selected>Select your role</option>
+                        <option value="employee">Employee</option>
+                        <option value="hr_admin">HR Administrator</option>
+                        <option value="it_admin">IT Administrator</option>
+                    </select>
+                    <span class="input-feedback"></span>
+                </div>
+                
+                <div class="input-group">
                     <label for="department-code">
                         <i class="fas fa-key"></i>
-                        IT Department Code
+                        Department Code
                     </label>
                     <input 
                         type="text" 
                         id="department-code" 
                         name="department-code" 
-                        placeholder="Enter IT department code" 
+                        placeholder="Enter department code" 
                         required
                         aria-required="true"
                     >
@@ -138,12 +157,12 @@
                     <span class="input-feedback"></span>
                 </div>
                 
-                <div id="error-message" role="alert" aria-live="polite"></div>
-                <div id="success-message" role="alert" aria-live="polite"></div>
+                <div id="error-message" class="error-message" role="alert" aria-live="polite"></div>
+                <div id="success-message" class="success-message" role="alert" aria-live="polite"></div>
                 
-                <button type="submit" class="login-btn">
-                    <span class="btn-text">Create IT Account</span>
-                    <i class="fas fa-user-shield"></i>
+                <button type="submit" class="login-btn" id="register-btn">
+                    <span class="btn-text">Create Account</span>
+                    <i class="fas fa-user-plus"></i>
                 </button>
             </form>
             

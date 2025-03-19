@@ -183,8 +183,79 @@ document.addEventListener('DOMContentLoaded', function() {
             nextButton.classList.add('loading');
             nextButton.disabled = true;
 
-            // Simulate API call
-            setTimeout(() => {
+            // Gather form data
+            const userData = api.auth.getUserData();
+            const offboardingData = {
+                reason: document.getElementById('reason').value,
+                feedback: document.getElementById('feedback').value,
+                lastWorkingDay: document.getElementById('last-day').value,
+                companyAssetsReturned: [
+                    {
+                        assetName: 'Laptop',
+                        returnStatus: document.getElementById('laptop').checked ? 'pending' : 'not_applicable',
+                    },
+                    {
+                        assetName: 'Phone',
+                        returnStatus: document.getElementById('phone').checked ? 'pending' : 'not_applicable',
+                    },
+                    {
+                        assetName: 'Access Card',
+                        returnStatus: document.getElementById('access-card').checked ? 'pending' : 'not_applicable',
+                    }
+                ],
+                accountDeactivation: {
+                    status: false, // Will be updated by IT
+                    requested: document.getElementById('email-deactivation').checked || 
+                              document.getElementById('systems-deactivation').checked
+                },
+                complianceAcknowledged: document.getElementById('confidentiality').checked && 
+                                       document.getElementById('ip-agreement').checked && 
+                                       document.getElementById('final-confirmation').checked
+            };
+
+            // Send offboarding data to the server
+            api.users.updateCurrentUser({
+                offboarding: {
+                    status: 'in_progress',
+                    reason: offboardingData.reason,
+                    exitDate: offboardingData.lastWorkingDay,
+                    companyAssetsReturned: offboardingData.companyAssetsReturned,
+                    accountDeactivated: {
+                        status: false,
+                        requested: offboardingData.accountDeactivation.requested
+                    }
+                }
+            }).then(async () => {
+                // Send notifications to IT and HR
+                
+                // 1. Asset return notification for IT
+                if (offboardingData.companyAssetsReturned.some(asset => asset.returnStatus === 'pending')) {
+                    await api.notifications.createNotification({
+                        title: 'Asset Return Request',
+                        message: `${userData.firstName} ${userData.lastName} has submitted asset returns for processing.`,
+                        type: 'system',
+                        recipients: ['it_admin']
+                    });
+                }
+                
+                // 2. Account deactivation request for IT
+                if (offboardingData.accountDeactivation.requested) {
+                    await api.notifications.createNotification({
+                        title: 'Account Deactivation Request',
+                        message: `${userData.firstName} ${userData.lastName} has requested account deactivation.`,
+                        type: 'system',
+                        recipients: ['it_admin']
+                    });
+                }
+                
+                // 3. Handover document notification for HR
+                await api.notifications.createNotification({
+                    title: 'Offboarding Documents Submitted',
+                    message: `${userData.firstName} ${userData.lastName} has submitted their offboarding documents.`,
+                    type: 'system',
+                    recipients: ['hr_admin']
+                });
+
                 // Hide the form and show success message
                 form.querySelector('.form-steps-container').style.display = 'none';
                 form.querySelector('.progress-indicator').style.display = 'none';
@@ -193,7 +264,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Reset form state
                 nextButton.classList.remove('loading');
                 nextButton.disabled = false;
-            }, 1500);
+            }).catch(error => {
+                console.error('Error saving offboarding data:', error);
+                alert('There was an error submitting your offboarding request. Please try again.');
+                
+                // Reset button state
+                nextButton.classList.remove('loading');
+                nextButton.disabled = false;
+            });
         }
     }
 

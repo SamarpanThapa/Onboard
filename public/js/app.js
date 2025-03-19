@@ -1,9 +1,15 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if user is already logged in
+    if (api.auth.isAuthenticated()) {
+        redirectBasedOnRole();
+        return;
+    }
+
     const loginForm = document.getElementById('login-form');
     const togglePasswordBtn = document.querySelector('.toggle-password');
     const passwordInput = document.getElementById('password');
     const errorMessage = document.getElementById('error-message');
-    const inputs = loginForm.querySelectorAll('input, select');
+    const inputs = loginForm ? loginForm.querySelectorAll('input, select') : [];
 
     // Form validation feedback
     function showInputError(input, message) {
@@ -90,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Form submission
     if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
+        loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             // Validate all inputs
@@ -109,37 +115,68 @@ document.addEventListener('DOMContentLoaded', function() {
             const submitBtn = loginForm.querySelector('.login-btn');
             submitBtn.classList.add('loading');
             
-            const role = document.getElementById('role').value;
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
             
-            // Simulate API call delay
-            setTimeout(() => {
-                submitBtn.classList.remove('loading');
+            try {
+                // Call the login API
+                await api.auth.login(email, password);
                 
-                // Navigate based on role
-                switch(role) {
-                    case 'admin':
-                        window.location.href = 'admin_dashboard.html';
-                        break;
-                    case 'it':
-                        window.location.href = 'it_dashboard.html';
-                        break;
-                    case 'employee':
-                        window.location.href = 'emp_dashboard.html';
-                        break;
-                    default:
-                        window.location.href = 'emp_dashboard.html';
-                }
-            }, 1500);
+                // Show success message
+                showSuccess('Login successful! Redirecting...');
+                
+                // Redirect based on user role
+                setTimeout(() => {
+                    redirectBasedOnRole();
+                }, 1000);
+            } catch (error) {
+                // Show error message
+                showError(error.message || 'Login failed. Please check your credentials.');
+                submitBtn.classList.remove('loading');
+            }
         });
+    }
+
+    // Function to redirect based on user role
+    function redirectBasedOnRole() {
+        const role = api.auth.getUserRole();
+        
+        switch (role) {
+            case 'it':
+                window.location.href = 'it_dashboard.html';
+                break;
+            case 'hr':
+                window.location.href = 'admin.html';
+                break;
+            case 'manager':
+                window.location.href = 'admin.html';
+                break;
+            case 'employee':
+                window.location.href = 'emp_dashboard.html';
+                break;
+            default:
+                // If role is not recognized, log out and stay on login page
+                api.auth.logout();
+                break;
+        }
     }
 
     // Add smooth transitions when showing error messages
     function showError(message) {
+        if (!errorMessage) return;
         errorMessage.textContent = message;
         errorMessage.classList.add('visible');
         setTimeout(() => {
             errorMessage.classList.remove('visible');
         }, 5000);
+    }
+    
+    // Function to show success messages
+    function showSuccess(message) {
+        const successMessage = document.getElementById('success-message');
+        if (!successMessage) return;
+        successMessage.textContent = message;
+        successMessage.classList.add('visible');
     }
 
     // Add focus effects for input groups

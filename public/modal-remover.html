@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Modal Remover</title>
+    <script>
+        // This script will run immediately when loaded
+        window.onload = function() {
+            // Get the parent window (assuming this is loaded in an iframe)
+            const parentWindow = window.opener || window.parent;
+            
+            // If we have access to the parent window, try to close its modals
+            if (parentWindow && parentWindow.document) {
+                try {
+                    // Find all modals in the parent window
+                    const modals = parentWindow.document.querySelectorAll('.modal');
+                    
+                    // Hide each modal
+                    modals.forEach(modal => {
+                        modal.style.display = 'none';
+                    });
+                    
+                    // Specifically target the onboarding approval modal
+                    const onboardingModal = parentWindow.document.getElementById('onboarding-approval-modal');
+                    if (onboardingModal) {
+                        onboardingModal.style.display = 'none';
+                    }
+                    
+                    // Remove any modal backdrop/overlay that might be present
+                    const modalBackdrops = parentWindow.document.querySelectorAll('.modal-backdrop, .modal-overlay');
+                    modalBackdrops.forEach(backdrop => {
+                        backdrop.parentNode.removeChild(backdrop);
+                    });
+                    
+                    // Restore body scrolling if it was disabled
+                    parentWindow.document.body.style.overflow = 'auto';
+                    
+                    console.log('All modals have been closed');
+                } catch (e) {
+                    console.error('Error closing modals:', e);
+                }
+            }
+            
+            // Also try on the current window
+            try {
+                // Find all modals
+                const modals = document.querySelectorAll('.modal');
+                
+                // Hide each modal
+                modals.forEach(modal => {
+                    modal.style.display = 'none';
+                });
+                
+                // Specifically target the onboarding approval modal
+                const onboardingModal = document.getElementById('onboarding-approval-modal');
+                if (onboardingModal) {
+                    onboardingModal.style.display = 'none';
+                }
+                
+                console.log('All modals have been closed in current window');
+            } catch (e) {
+                console.error('Error closing modals in current window:', e);
+            }
+            
+            // Show a message to the user
+            document.body.innerHTML = '<h1>All modals have been closed.</h1><p>You can close this tab and return to the admin dashboard.</p>';
+        };
+    </script>
+</head>
+<body>
+    <h1>Closing modals...</h1>
+</body>
+</html> 

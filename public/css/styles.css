@@ -286,38 +286,26 @@ body {
     transform: translateX(4px);
 }
 
-/* Error Message */
+/* Error and Success Messages */
+#error-message, #success-message {
+    margin: 15px 0;
+    padding: 10px;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 0.9rem;
+    display: none;
+}
+
 #error-message {
-    color: #ff4444;
-    margin: 1rem 0;
-    padding: 0.75rem;
-    border-radius: 8px;
-    background-color: rgba(255, 68, 68, 0.1);
-    border: 1px solid rgba(255, 68, 68, 0.2);
-    display: none;
+    background-color: rgba(255, 59, 48, 0.1);
+    color: #ff3b30;
+    border-left: 3px solid #ff3b30;
 }
 
-#error-message.visible {
-    display: block;
-    animation: shake 0.5s ease-in-out;
-}
-
-/* Success Message */
-#success-message,
-.success-message {
-    color: #1DB954;
-    margin: 1rem 0;
-    padding: 0.75rem;
-    border-radius: 8px;
+#success-message {
     background-color: rgba(29, 185, 84, 0.1);
-    border: 1px solid rgba(29, 185, 84, 0.2);
-    display: none;
-}
-
-#success-message.visible,
-.success-message.visible {
-    display: block;
-    animation: fadeIn 0.5s ease-in-out;
+    color: #1db954;
+    border-left: 3px solid #1db954;
 }
 
 /* Auth Links */
@@ -469,33 +457,91 @@ meter::-webkit-meter-even-less-good-value {
     to { transform: rotate(360deg); }
 }
 
-/* Loading States */
-.loading {
+/* Loading State */
+button.loading {
     position: relative;
-    pointer-events: none;
+    color: transparent !important;
 }
 
-.loading::after {
+button.loading::after {
     content: '';
     position: absolute;
-    width: 20px;
-    height: 20px;
     top: 50%;
     left: 50%;
+    width: 20px;
+    height: 20px;
     margin: -10px 0 0 -10px;
     border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: #fff;
+    border-top-color: white;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }
 
-.loading .btn-text,
-.loading i {
-    opacity: 0;
-}
-
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
+
+/* Token Error State */
+.token-error {
+    text-align: center;
+    padding: 30px 20px;
+    background-color: rgba(255, 59, 48, 0.05);
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.token-error i {
+    font-size: 3rem;
+    color: #ff3b30;
+    margin-bottom: 15px;
+}
+
+.token-error h3 {
+    color: #ff3b30;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+}
+
+.token-error p {
+    margin-bottom: 20px;
+    color: #666;
+}
+
+.token-error .primary-btn {
+    display: inline-block;
+    background-color: #1db954;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.token-error .primary-btn:hover {
+    background-color: #1aa54a;
+}
+
+/* Loading Container */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(29, 185, 84, 0.2);
+    border-top-color: #1db954;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+.loading-container p {
+    color: #777;
 }
 
 /* Responsive Design */

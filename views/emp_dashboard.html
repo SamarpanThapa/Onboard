@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/css/emp_dashboard.css">
+    <script src="/js/api.js" defer></script>
     <script src="/js/dashboard.js" defer></script>
 </head>
 <body>
@@ -32,7 +33,7 @@
                 <i class="fas fa-question-circle"></i>
                 Help
             </a>
-            <a href="index.html" class="logout-btn">
+            <a href="#" id="logout-link">
                 <i class="fas fa-sign-out-alt"></i>
                 Logout
             </a>
@@ -46,8 +47,8 @@
         <!-- Welcome Banner -->
         <div class="welcome-banner">
             <div class="welcome-content">
-                <h2>Welcome to Your Dashboard</h2>
-                <p>Track your progress and access important resources for your onboarding journey.</p>
+                <h2>Welcome <span id="user-name"></span> to your dashboard!</h2>
+                <p>Track your progress, complete tasks, and access resources to make your onboarding journey smooth and successful.</p>
             </div>
         </div>
 
@@ -330,6 +331,79 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Right Column (Smaller) -->
+            <div class="side-column">
+                <!-- Upcoming Events -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-calendar-alt"></i> Upcoming Events</h3>
+                    </div>
+                    <div class="event-list">
+                        <div class="event-item">
+                            <div class="event-date">
+                                <span class="day">28</span>
+                                <span class="month">Mar</span>
+                            </div>
+                            <div class="event-content">
+                                <h4>Team Meeting</h4>
+                                <p>10:00 AM - Project Kickoff</p>
+                            </div>
+                        </div>
+                        <div class="event-item">
+                            <div class="event-date">
+                                <span class="day">2</span>
+                                <span class="month">Apr</span>
+                            </div>
+                            <div class="event-content">
+                                <h4>Training Session</h4>
+                                <p>2:00 PM - Company Tools</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications Section -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-bell"></i> Notifications</h3>
+                    </div>
+                    <div class="notification-list" id="notification-list">
+                        <!-- Notifications will be dynamically populated -->
+                        <div class="notification-item" id="onboarding-status-notification" style="display: none;">
+                            <div class="notification-icon">
+                                <i class="fas fa-clipboard-check"></i>
+                            </div>
+                            <div class="notification-content">
+                                <h4 id="onboarding-status-title">Onboarding Status Update</h4>
+                                <p id="onboarding-status-message">Your onboarding submission is pending review.</p>
+                                <span class="notification-time" id="onboarding-status-time">Just now</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resources -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-book"></i> Resources</h3>
+                    </div>
+                    <div class="resources-list">
+                        <a href="#" class="resource-item">
+                            <i class="fas fa-file-pdf"></i>
+                            <span>Employee Handbook</span>
+                        </a>
+                        <a href="#" class="resource-item">
+                            <i class="fas fa-file-alt"></i>
+                            <span>Benefit Plans</span>
+                        </a>
+                        <a href="#" class="resource-item">
+                            <i class="fas fa-video"></i>
+                            <span>Training Videos</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -340,5 +414,73 @@
     </footer>
 
     <div id="notification-container"></div>
+
+    <!-- Onboarding Revision Required Modal -->
+    <div class="modal" id="revision-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-redo"></i> Onboarding Revision Required</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="revision-message">
+                    <p>HR has reviewed your onboarding submission and is requesting some changes before it can be approved.</p>
+                    <div class="feedback-box">
+                        <h4>Feedback from HR</h4>
+                        <p id="revision-feedback">Please provide your tax documentation and update your emergency contact information.</p>
+                    </div>
+                </div>
+                <div class="missing-items" id="revision-missing-items">
+                    <h4>Items to Update</h4>
+                    <ul id="revision-items-list">
+                        <!-- Will be populated dynamically -->
+                        <li>Missing tax documentation</li>
+                        <li>Incomplete emergency contact information</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="update-onboarding-btn" class="btn primary-btn">
+                    <i class="fas fa-edit"></i> Update My Information
+                </button>
+                <button class="btn cancel-btn close-modal">Dismiss</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onboarding Approved Modal -->
+    <div class="modal" id="approval-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-check-circle"></i> Onboarding Approved</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="approval-message">
+                    <p>Congratulations! HR has approved your onboarding submission.</p>
+                    <div class="feedback-box">
+                        <h4>Feedback from HR</h4>
+                        <p id="approval-feedback">Welcome to the team! Your onboarding documentation is complete and has been approved.</p>
+                    </div>
+                    <div class="next-steps">
+                        <h4>Next Steps</h4>
+                        <ul>
+                            <li>Attend your orientation session on <span id="orientation-date">April 2nd, 2024</span></li>
+                            <li>Complete your employee training modules</li>
+                            <li>Schedule a meeting with your manager</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="go-to-training-btn" class="btn primary-btn">
+                    <i class="fas fa-graduation-cap"></i> Go to Training
+                </button>
+                <button class="btn cancel-btn close-modal">Dismiss</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
 </body>
 </html>

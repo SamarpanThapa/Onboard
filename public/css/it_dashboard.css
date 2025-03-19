@@ -854,11 +854,57 @@
 
 /* Department Code Section */
 .department-code-section {
-    padding: 20px 0;
+    padding: 15px;
+}
+
+.role-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    z-index: 5;
+    cursor: pointer;
+}
+
+.role-tab {
+    flex: 1;
+    padding: 12px;
+    background: transparent;
+    border: none;
+    color: #c0c0c0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 14px;
+    text-align: center;
+    position: relative;
+    outline: none;
+}
+
+.role-tab.active {
+    background-color: #1DB954;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(29, 185, 84, 0.5);
+}
+
+.role-tab:hover:not(.active) {
+    background-color: #3a3a3a;
+    color: #fff;
+}
+
+.role-tab:active {
+    transform: scale(0.98);
 }
 
 .current-code {
     margin-bottom: 20px;
+}
+
+.code-display {
+    display: flex;
+    margin-top: 10px;
 }
 
 .current-code label {
@@ -991,4 +1037,520 @@
 .notification.info {
     background: #0088cc;
     color: #fff;
+}
+
+/* Styles specific to IT dashboard */
+
+/* Tab buttons */
+.tab-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    padding: 10px 16px;
+    background-color: #333;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.tab-btn:hover {
+    background-color: #444;
+}
+
+.tab-btn.active {
+    background-color: #1db954;
+    color: #000;
+    font-weight: bold;
+}
+
+/* Tab content */
+.tab-content {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+    opacity: 1;
+}
+
+/* Status badges for assets and accounts */
+.status-badge.warning {
+    background-color: #ffd700;
+    color: #000;
+}
+
+.status-badge.critical {
+    background-color: #ff4d4d;
+    color: #fff;
+}
+
+.status-badge.inactive {
+    background-color: #aaa;
+    color: #fff;
+}
+
+/* Button styles */
+.mark-returned, .mark-damaged, .deactivate-account {
+    transition: all 0.2s ease;
+}
+
+.mark-returned:hover {
+    background-color: #1db954;
+    color: #fff;
+}
+
+.mark-damaged:hover, .deactivate-account:hover {
+    background-color: #ff4d4d;
+    color: #fff;
+}
+
+.mark-returned:disabled, .mark-damaged:disabled, .deactivate-account:disabled {
+    background-color: #ccc;
+    color: #777;
+    cursor: not-allowed;
+}
+
+/* Account Deactivation Tab Styles */
+#account-deactivation {
+    padding: 1.5rem;
+    background: #1a1a1a;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+#account-deactivation .section-header {
+    margin-bottom: 1.5rem;
+}
+
+#account-deactivation .section-header h3 {
+    color: #fff;
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+}
+
+#account-deactivation .section-header p {
+    color: #b3b3b3;
+    font-size: 0.95rem;
+    max-width: 800px;
+}
+
+#account-deactivation .action-bar {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+#account-deactivation input[type="search"],
+#account-deactivation select {
+    background: #252525;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 10px 15px;
+    border-radius: 6px;
+    flex: 1;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+#account-deactivation input[type="search"]:focus,
+#account-deactivation select:focus {
+    border-color: #1db954;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.3);
+}
+
+#account-deactivation .account-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 1rem;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #252525;
+    border: 1px solid #333;
+}
+
+#account-deactivation .account-table thead {
+    background-color: #333;
+}
+
+#account-deactivation .account-table th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #fff;
+    border-bottom: 2px solid #444;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+#account-deactivation .account-table td {
+    padding: 15px;
+    border-bottom: 1px solid #333;
+    color: #ddd;
+}
+
+#account-deactivation .account-table tbody tr {
+    transition: background-color 0.3s ease;
+}
+
+#account-deactivation .account-table tbody tr:hover {
+    background-color: #2a2a2a;
+}
+
+#account-deactivation .account-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-align: center;
+    min-width: 80px;
+}
+
+.status-badge.active {
+    background-color: rgba(29, 185, 84, 0.15);
+    color: #1db954;
+    border: 1px solid rgba(29, 185, 84, 0.3);
+}
+
+.status-badge.inactive {
+    background-color: rgba(255, 68, 68, 0.15);
+    color: #ff4444;
+    border: 1px solid rgba(255, 68, 68, 0.3);
+}
+
+.status-badge.warning {
+    background-color: rgba(255, 215, 0, 0.15);
+    color: #ffd700;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.status-badge.critical {
+    background-color: rgba(255, 0, 0, 0.15);
+    color: #ff0000;
+    border: 1px solid rgba(255, 0, 0, 0.3);
+}
+
+.action-btn {
+    background: #2a2a2a;
+    border: 1px solid #333;
+    cursor: pointer;
+    color: #1db954;
+    font-size: 1rem;
+    padding: 8px;
+    margin-right: 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:hover {
+    background-color: #333;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.action-btn.delete-account {
+    color: #ff4444;
+}
+
+.action-btn.delete-account:hover {
+    background-color: rgba(255, 68, 68, 0.2);
+}
+
+.action-btn.activate-account {
+    color: #1db954;
+}
+
+.action-btn.activate-account:hover {
+    background-color: rgba(29, 185, 84, 0.2);
+}
+
+.action-btn.deactivate-account {
+    color: #ff4444;
+}
+
+.action-btn.deactivate-account:hover {
+    background-color: rgba(255, 68, 68, 0.2);
+}
+
+.action-btn.view-user {
+    color: #38a7ff;
+}
+
+.action-btn.view-user:hover {
+    background-color: rgba(56, 167, 255, 0.2);
+}
+
+.action-btn.danger-btn {
+    background-color: #ff4444;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+}
+
+.action-btn.danger-btn:hover {
+    background-color: #ff2424;
+}
+
+.loading-row, .error-row, .empty-row {
+    text-align: center;
+    padding: 2rem 0;
+    color: #b3b3b3;
+    font-size: 0.95rem;
+}
+
+.loading-row i, .error-row i {
+    margin-right: 8px;
+    font-size: 1.2rem;
+}
+
+.error-row {
+    color: #ff4444;
+}
+
+.empty-row {
+    color: #b3b3b3;
+    font-style: italic;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background-color: #1a1a1a;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    animation: modalFadeIn 0.3s ease-in-out;
+    border: 1px solid #333;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-header {
+    padding: 1.2rem 1.5rem;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #252525;
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #fff;
+    font-weight: 600;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #b3b3b3;
+    transition: color 0.2s ease;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-modal:hover {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.user-details-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.8rem;
+}
+
+.user-profile-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    padding-bottom: 1.5rem;
+}
+
+.user-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background-color: #252525;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border: 3px solid #333;
+    overflow: hidden;
+}
+
+.user-avatar i {
+    font-size: 70px;
+    color: #1db954;
+}
+
+.user-status {
+    position: absolute;
+    bottom: 0;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.user-status.active {
+    background-color: rgba(29, 185, 84, 0.2);
+    color: #1db954;
+    border: 1px solid rgba(29, 185, 84, 0.3);
+}
+
+.user-status.inactive {
+    background-color: rgba(255, 68, 68, 0.2);
+    color: #ff4444;
+    border: 1px solid rgba(255, 68, 68, 0.3);
+}
+
+.user-info-section {
+    padding: 1.5rem;
+    background-color: #252525;
+    border-radius: 12px;
+    border: 1px solid #333;
+}
+
+.user-info-section h3 {
+    margin-top: 0;
+    margin-bottom: 1.2rem;
+    color: #fff;
+    font-size: 1.25rem;
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.user-info-section h3::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 50px;
+    height: 3px;
+    background-color: #1db954;
+    border-radius: 3px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.2rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-item label {
+    font-weight: 600;
+    color: #b3b3b3;
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+}
+
+.info-item span {
+    font-size: 1rem;
+    color: #fff;
+}
+
+.user-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1.2rem;
+    padding: 1.2rem 0 0.5rem;
+    flex-wrap: wrap;
+}
+
+.user-actions .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 160px;
+    justify-content: center;
+    border: 1px solid #333;
+}
+
+.user-actions .action-btn:not(.danger-btn) {
+    background-color: #252525;
+    color: #fff;
+}
+
+.user-actions .action-btn:not(.danger-btn):hover {
+    background-color: #333;
+    transform: translateY(-2px);
 }

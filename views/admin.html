@@ -8,6 +8,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin_dashboard.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Sortable.js for drag and drop functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <!-- Include API client -->
+    <script src="/js/api.js"></script>
+    <style>
+        /* Hide notification feed */
+        .notification-feed, #notification-feed {
+            display: none !important;
+        }
+    </style>
 </head>
 <body>
     <div class="branding">
@@ -82,7 +92,7 @@
                         <i class="fas fa-cog"></i>
                         System Settings
                     </a>
-                    <a href="index.html">
+                    <a href="#" id="logout-link">
                         <i class="fas fa-sign-out-alt"></i>
                         Logout
                     </a>
@@ -94,7 +104,7 @@
             <!-- Dashboard Overview -->
             <section id="dashboard" class="dashboard-section">
                 <div class="dashboard-header">
-                    <h2>Welcome back, Admin</h2>
+                    <h2>Welcome <span id="user-name">to your dashboard!</span></h2>
                     <div class="date-time">
                         <span id="current-date"></span>
                         <span id="current-time"></span>
@@ -521,105 +531,201 @@
                     <h2>Task Management</h2>
                     <div class="action-bar">
                         <input type="search" placeholder="Search tasks...">
-                        <select class="task-filter">
-                            <option value="all">All Tasks</option>
-                            <option value="high">High Priority</option>
-                            <option value="medium">Medium Priority</option>
-                            <option value="low">Low Priority</option>
-                        </select>
+                        <div class="tab-buttons">
+                            <button class="tab-btn active" data-tab="general-tasks">General Tasks</button>
+                            <button class="tab-btn" data-tab="compliance-verification">Compliance Verification</button>
+                            <button class="tab-btn" data-tab="onboarding-approvals">Onboarding Approvals</button>
+                        </div>
                         <button class="add-btn"><i class="fas fa-plus"></i> Add Task</button>
                     </div>
                 </div>
-                <div class="task-board">
-                    <div class="task-columns">
-                        <div class="task-column">
-                            <h3>To Do <span class="task-count">3</span></h3>
-                            <div class="task-list">
-                                <div class="task-card priority-high">
-                                    <div class="task-header">
-                                        <span class="priority-badge">High</span>
-                                        <div class="task-actions">
-                                            <button class="action-btn"><i class="fas fa-edit"></i></button>
-                                            <button class="action-btn"><i class="fas fa-trash"></i></button>
+                
+                <!-- General Tasks Tab -->
+                <div class="tab-content active" id="general-tasks">
+                    <div class="task-board">
+                        <div class="task-columns">
+                            <div class="task-column">
+                                <h3>To Do <span class="task-count">3</span></h3>
+                                <div class="task-list">
+                                    <div class="task-card priority-high">
+                                        <div class="task-header">
+                                            <span class="priority-badge">High</span>
+                                            <div class="task-actions">
+                                                <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                                <button class="action-btn"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                        </div>
+                                        <h4>Setup IT Infrastructure</h4>
+                                        <p>Configure workstation and system access for new employees</p>
+                                        <div class="task-meta">
+                                            <span><i class="fas fa-calendar"></i> Due: Apr 5</span>
+                                            <span><i class="fas fa-user"></i> IT Team</span>
+                                        </div>
+                                        <div class="task-progress">
+                                            <div class="progress-bar" style="width: 0%"></div>
                                         </div>
                                     </div>
-                                    <h4>Setup IT Infrastructure</h4>
-                                    <p>Configure workstation and system access for new employees</p>
-                                    <div class="task-meta">
-                                        <span><i class="fas fa-calendar"></i> Due: Apr 5</span>
-                                        <span><i class="fas fa-user"></i> IT Team</span>
-                                    </div>
-                                    <div class="task-progress">
-                                        <div class="progress-bar" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                                <div class="task-card priority-medium">
-                                    <div class="task-header">
-                                        <span class="priority-badge">Medium</span>
-                                        <div class="task-actions">
-                                            <button class="action-btn"><i class="fas fa-edit"></i></button>
-                                            <button class="action-btn"><i class="fas fa-trash"></i></button>
+                                    <div class="task-card priority-medium">
+                                        <div class="task-header">
+                                            <span class="priority-badge">Medium</span>
+                                            <div class="task-actions">
+                                                <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                                <button class="action-btn"><i class="fas fa-trash"></i></button>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <h4>Training Schedule</h4>
-                                    <p>Create orientation training schedule for new marketing team</p>
-                                    <div class="task-meta">
-                                        <span><i class="fas fa-calendar"></i> Due: Apr 10</span>
-                                        <span><i class="fas fa-user"></i> HR Team</span>
-                                    </div>
-                                    <div class="task-progress">
-                                        <div class="progress-bar" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="task-column">
-                            <h3>In Progress <span class="task-count">2</span></h3>
-                            <div class="task-list">
-                                <div class="task-card priority-high">
-                                    <div class="task-header">
-                                        <span class="priority-badge">High</span>
-                                        <div class="task-actions">
-                                            <button class="action-btn"><i class="fas fa-edit"></i></button>
-                                            <button class="action-btn"><i class="fas fa-trash"></i></button>
+                                        <h4>Training Schedule</h4>
+                                        <p>Create orientation training schedule for new marketing team</p>
+                                        <div class="task-meta">
+                                            <span><i class="fas fa-calendar"></i> Due: Apr 10</span>
+                                            <span><i class="fas fa-user"></i> HR Team</span>
                                         </div>
-                                    </div>
-                                    <h4>Document Review</h4>
-                                    <p>Review and update employee handbook for 2024</p>
-                                    <div class="task-meta">
-                                        <span><i class="fas fa-calendar"></i> Due: Apr 3</span>
-                                        <span><i class="fas fa-user"></i> Legal Team</span>
-                                    </div>
-                                    <div class="task-progress">
-                                        <div class="progress-bar" style="width: 60%"></div>
+                                        <div class="task-progress">
+                                            <div class="progress-bar" style="width: 0%"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="task-column">
-                            <h3>Completed <span class="task-count">1</span></h3>
-                            <div class="task-list">
-                                <div class="task-card completed">
-                                    <div class="task-header">
-                                        <span class="status-badge">Completed</span>
-                                        <div class="task-actions">
-                                            <button class="action-btn"><i class="fas fa-check-circle"></i></button>
+                            <div class="task-column">
+                                <h3>In Progress <span class="task-count">2</span></h3>
+                                <div class="task-list">
+                                    <div class="task-card priority-high">
+                                        <div class="task-header">
+                                            <span class="priority-badge">High</span>
+                                            <div class="task-actions">
+                                                <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                                <button class="action-btn"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                        </div>
+                                        <h4>Document Review</h4>
+                                        <p>Review and update employee handbook for 2024</p>
+                                        <div class="task-meta">
+                                            <span><i class="fas fa-calendar"></i> Due: Apr 3</span>
+                                            <span><i class="fas fa-user"></i> Legal Team</span>
+                                        </div>
+                                        <div class="task-progress">
+                                            <div class="progress-bar" style="width: 60%"></div>
                                         </div>
                                     </div>
-                                    <h4>Benefits Package Update</h4>
-                                    <p>Update employee benefits package for Q2 2024</p>
-                                    <div class="task-meta">
-                                        <span><i class="fas fa-calendar-check"></i> Completed: Mar 30</span>
-                                        <span><i class="fas fa-user"></i> HR Team</span>
-                                    </div>
-                                    <div class="task-progress">
-                                        <div class="progress-bar" style="width: 100%"></div>
+                                </div>
+                            </div>
+                            <div class="task-column">
+                                <h3>Completed <span class="task-count">1</span></h3>
+                                <div class="task-list">
+                                    <div class="task-card priority-medium">
+                                        <div class="task-header">
+                                            <span class="priority-badge">Medium</span>
+                                            <div class="task-actions">
+                                                <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                                <button class="action-btn"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                        </div>
+                                        <h4>Benefits Overview</h4>
+                                        <p>Create benefits presentation for new employees</p>
+                                        <div class="task-meta">
+                                            <span><i class="fas fa-calendar"></i> Completed: Mar 28</span>
+                                            <span><i class="fas fa-user"></i> HR Team</span>
+                                        </div>
+                                        <div class="task-progress">
+                                            <div class="progress-bar" style="width: 100%"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                
+                <!-- Compliance Verification Tab -->
+                <div class="tab-content" id="compliance-verification">
+                    <div class="action-buttons" style="margin-bottom: 20px;">
+                        <button class="add-compliance-btn" id="add-compliance-btn">
+                            <i class="fas fa-plus"></i> Add Compliance Item
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Department</th>
+                                    <th>Compliance Item</th>
+                                    <th>Submitted Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Sarah Johnson</td>
+                                    <td>Marketing</td>
+                                    <td>NDA Document</td>
+                                    <td>2024-03-15</td>
+                                    <td><span class="status-badge warning">Pending Verification</span></td>
+                                    <td>
+                                        <button class="action-btn verify-compliance" data-task-id="comp123" title="Verify"><i class="fas fa-check"></i></button>
+                                        <button class="action-btn reject-compliance" data-task-id="comp123" title="Reject"><i class="fas fa-times"></i></button>
+                                        <button class="action-btn" title="View Document"><i class="fas fa-eye"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Michael Chen</td>
+                                    <td>Engineering</td>
+                                    <td>Tax Documentation</td>
+                                    <td>2024-03-14</td>
+                                    <td><span class="status-badge warning">Pending Verification</span></td>
+                                    <td>
+                                        <button class="action-btn verify-compliance" data-task-id="comp124" title="Verify"><i class="fas fa-check"></i></button>
+                                        <button class="action-btn reject-compliance" data-task-id="comp124" title="Reject"><i class="fas fa-times"></i></button>
+                                        <button class="action-btn" title="View Document"><i class="fas fa-eye"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Lisa Kim</td>
+                                    <td>Design</td>
+                                    <td>Equipment Agreement</td>
+                                    <td>2024-03-16</td>
+                                    <td><span class="status-badge active">Verified</span></td>
+                                    <td>
+                                        <button class="action-btn" title="View Document"><i class="fas fa-eye"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Onboarding Approvals Tab -->
+                <div class="tab-content" id="onboarding-approvals">
+                    <div class="dashboard-header" style="margin-bottom: 20px;">
+                        <h3>Onboarding Approvals</h3>
+                        <p>Review and approve employee onboarding submissions</p>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="onboarding-approvals-table">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Position</th>
+                                    <th>Department</th>
+                                    <th>Submission Date</th>
+                                    <th>Status</th>
+                                    <th>Completion</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dynamically populated with JavaScript -->
+                                <tr>
+                                    <td colspan="7" class="text-center">
+                                        <div class="loading-spinner"></div>
+                                        <p>Loading submissions...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
             </section>
 
             <!-- Documents Section -->

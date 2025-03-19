@@ -1,41 +1,31 @@
 document.addEventListener('DOMContentLoaded', function() {
     const forgotPasswordForm = document.getElementById('forgot-password-form');
+    const emailInput = document.getElementById('email');
     const errorMessage = document.getElementById('error-message');
     const successMessage = document.getElementById('success-message');
-    const emailInput = document.getElementById('email');
     const backToLoginLink = document.querySelector('.back-to-login-link');
-
-    function showInputError(input, message) {
-        const group = input.closest('.input-group');
-        group.classList.add('error');
-        group.classList.remove('success');
-        const feedback = group.querySelector('.input-feedback');
-        feedback.textContent = message;
-    }
-
-    function showInputSuccess(input) {
-        const group = input.closest('.input-group');
-        group.classList.remove('error');
-        group.classList.add('success');
-        const feedback = group.querySelector('.input-feedback');
-        feedback.textContent = '';
-    }
 
     function validateEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
     }
 
-    function showError(message) {
-        errorMessage.textContent = message;
-        errorMessage.classList.add('visible');
-        successMessage.classList.remove('visible');
+    function showInputError(input, message) {
+        const group = input.closest('.input-group');
+        group.classList.add('error');
+        const feedback = group.querySelector('.input-feedback');
+        if (feedback) {
+            feedback.textContent = message;
+        }
     }
 
-    function showSuccess(message) {
-        successMessage.textContent = message;
-        successMessage.classList.add('visible');
-        errorMessage.classList.remove('visible');
+    function showInputSuccess(input) {
+        const group = input.closest('.input-group');
+        group.classList.remove('error');
+        const feedback = group.querySelector('.input-feedback');
+        if (feedback) {
+            feedback.textContent = '';
+        }
     }
 
     // Back to login navigation
@@ -46,55 +36,158 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Real-time email validation
-    emailInput.addEventListener('input', function() {
-        const email = this.value.trim();
-        if (email && !validateEmail(email)) {
-            showInputError(this, 'Please enter a valid email address');
-        } else {
-            showInputSuccess(this);
-        }
-    });
+    // Email validation on input
+    if (emailInput) {
+        emailInput.addEventListener('input', function() {
+            const email = this.value.trim();
+            if (email && !validateEmail(email)) {
+                showInputError(this, 'Please enter a valid email address');
+            } else {
+                showInputSuccess(this);
+            }
+        });
+    }
 
-    // Form submission
+    // Create a preview link element
+    function createPreviewLink(url) {
+        // Create container
+        const previewContainer = document.createElement('div');
+        previewContainer.className = 'preview-container';
+        previewContainer.style.marginTop = '15px';
+        previewContainer.style.padding = '10px';
+        previewContainer.style.backgroundColor = '#f0f8ff';
+        previewContainer.style.borderRadius = '5px';
+        previewContainer.style.borderLeft = '3px solid #1db954';
+        
+        // Create heading
+        const heading = document.createElement('h4');
+        heading.textContent = 'Development Mode';
+        heading.style.margin = '0 0 10px 0';
+        heading.style.color = '#333';
+        
+        // Create info text
+        const infoText = document.createElement('p');
+        infoText.textContent = 'View the password reset email at:';
+        infoText.style.margin = '0 0 10px 0';
+        infoText.style.fontSize = '14px';
+        
+        // Create link
+        const link = document.createElement('a');
+        link.href = url;
+        link.textContent = 'Open Email Preview';
+        link.target = '_blank';
+        link.style.color = '#1db954';
+        link.style.textDecoration = 'none';
+        link.style.fontWeight = 'bold';
+        link.style.display = 'inline-block';
+        link.style.padding = '5px 10px';
+        link.style.border = '1px solid #1db954';
+        link.style.borderRadius = '3px';
+        
+        // Assemble the container
+        previewContainer.appendChild(heading);
+        previewContainer.appendChild(infoText);
+        previewContainer.appendChild(link);
+        
+        return previewContainer;
+    }
+
     if (forgotPasswordForm) {
-        forgotPasswordForm.addEventListener('submit', function(e) {
+        forgotPasswordForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // Clear previous messages
+            if (errorMessage) {
+                errorMessage.textContent = '';
+                errorMessage.style.display = 'none';
+            }
+            if (successMessage) {
+                successMessage.textContent = '';
+                successMessage.style.display = 'none';
+            }
+            
+            // Remove any existing preview link
+            const existingPreview = document.querySelector('.preview-container');
+            if (existingPreview) {
+                existingPreview.remove();
+            }
             
             const email = emailInput.value.trim();
             
-            // Validate email
+            // Validate form
+            let isValid = true;
             if (!email) {
                 showInputError(emailInput, 'Email is required');
-                return;
-            }
-            
-            if (!validateEmail(email)) {
+                isValid = false;
+            } else if (!validateEmail(email)) {
                 showInputError(emailInput, 'Please enter a valid email address');
+                isValid = false;
+            }
+            
+            if (!isValid) {
                 return;
             }
-
-            // Show loading state
-            const submitBtn = forgotPasswordForm.querySelector('.login-btn');
-            submitBtn.classList.add('loading');
             
-            // Simulate API call
-            setTimeout(() => {
-                submitBtn.classList.remove('loading');
-                showSuccess('Password reset instructions have been sent to your email address. Please check your inbox.');
+            // Show loading state
+            const submitButton = forgotPasswordForm.querySelector('button[type="submit"]');
+            submitButton.classList.add('loading');
+            submitButton.disabled = true;
+            
+            try {
+                console.log('Sending password reset request for:', email);
+                
+                const response = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                console.log('Forgot password response:', data);
+                
+                // Always remove loading state
+                submitButton.classList.remove('loading');
+                submitButton.disabled = false;
+                
+                if (!response.ok) {
+                    // Show error message
+                    if (errorMessage) {
+                        errorMessage.textContent = data.message || 'Failed to send reset email. Please try again later.';
+                        errorMessage.style.display = 'block';
+                    }
+                    return;
+                }
+                
+                // Show success message
+                if (successMessage) {
+                    successMessage.textContent = 'Password reset link sent! Please check your email.';
+                    successMessage.style.display = 'block';
+                    
+                    // If in development mode and there's a preview URL, add it
+                    if (data.previewUrl) {
+                        const previewLink = createPreviewLink(data.previewUrl);
+                        successMessage.after(previewLink);
+                    }
+                }
                 
                 // Clear form
                 emailInput.value = '';
-                showInputSuccess(emailInput);
                 
-                // Disable form temporarily
-                submitBtn.disabled = true;
+            } catch (error) {
+                console.error('Password reset error:', error);
                 
-                // Redirect to login after 3 seconds
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 3000);
-            }, 1500);
+                // Always remove loading state
+                submitButton.classList.remove('loading');
+                submitButton.disabled = false;
+                
+                // Show error message
+                if (errorMessage) {
+                    errorMessage.textContent = 'An error occurred. Please try again later.';
+                    errorMessage.style.display = 'block';
+                }
+            }
         });
     }
 }); 

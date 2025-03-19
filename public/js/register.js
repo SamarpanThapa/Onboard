@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if user is already logged in
     if (api.auth.isAuthenticated()) {
         const role = api.auth.getUserRole();
-        if (role === 'it') {
+        if (role === 'it_admin') {
             window.location.href = 'it_dashboard.html';
         } else {
             api.auth.logout(); // Log out if not IT role
@@ -18,8 +18,76 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmPasswordInput = document.getElementById('confirm-password');
     const departmentCodeInput = document.getElementById('department-code');
     const companyNameInput = document.getElementById('company-name');
+    const userRoleSelect = document.getElementById('user-role');
+    const registerButton = document.getElementById('register-btn');
+    const registerTitle = document.getElementById('register-title');
+    const registerSubtitle = document.getElementById('register-subtitle');
+    const registrationTagline = document.getElementById('registration-tagline');
     const errorMessage = document.getElementById('error-message');
     const successMessage = document.getElementById('success-message');
+
+    // Role specific UI updates
+    if (userRoleSelect) {
+        userRoleSelect.addEventListener('change', function() {
+            updateFormForRole(this.value);
+        });
+    }
+
+    // Check URL parameters for pre-selected role
+    function checkUrlParameters() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const role = urlParams.get('role');
+        
+        if (role && userRoleSelect) {
+            // Set the value if it exists in the options
+            const options = userRoleSelect.options;
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].value === role) {
+                    userRoleSelect.value = role;
+                    updateFormForRole(role);
+                    break;
+                }
+            }
+        }
+    }
+    
+    // Call on page load
+    checkUrlParameters();
+
+    function updateFormForRole(role) {
+        // Update title and subtitle based on role
+        if (registerTitle && registerSubtitle && registrationTagline) {
+            switch (role) {
+                case 'it_admin':
+                    registerTitle.textContent = 'Create IT Admin Account';
+                    registerSubtitle.textContent = 'Register as an IT administrator to manage company systems';
+                    registrationTagline.textContent = 'IT Department Registration';
+                    registerButton.querySelector('.btn-text').textContent = 'Create IT Admin Account';
+                    registerButton.querySelector('i').className = 'fas fa-user-shield';
+                    break;
+                case 'hr_admin':
+                    registerTitle.textContent = 'Create HR Admin Account';
+                    registerSubtitle.textContent = 'Register as an HR administrator to manage company onboarding';
+                    registrationTagline.textContent = 'HR Department Registration';
+                    registerButton.querySelector('.btn-text').textContent = 'Create HR Admin Account';
+                    registerButton.querySelector('i').className = 'fas fa-user-tie';
+                    break;
+                case 'employee':
+                    registerTitle.textContent = 'Create Employee Account';
+                    registerSubtitle.textContent = 'Register as an employee to access company systems';
+                    registrationTagline.textContent = 'Employee Registration';
+                    registerButton.querySelector('.btn-text').textContent = 'Create Employee Account';
+                    registerButton.querySelector('i').className = 'fas fa-user';
+                    break;
+                default:
+                    registerTitle.textContent = 'Create Account';
+                    registerSubtitle.textContent = 'Register to access the company\'s onboarding system';
+                    registrationTagline.textContent = 'Account Registration';
+                    registerButton.querySelector('.btn-text').textContent = 'Create Account';
+                    registerButton.querySelector('i').className = 'fas fa-user-plus';
+            }
+        }
+    }
 
     // Input validation functions
     function showInputError(input, message) {
@@ -184,10 +252,14 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             
             // Clear previous messages
-            errorMessage.textContent = '';
-            errorMessage.classList.remove('visible');
-            successMessage.textContent = '';
-            successMessage.classList.remove('visible');
+            if (errorMessage) {
+                errorMessage.textContent = '';
+                errorMessage.style.display = 'none';
+            }
+            if (successMessage) {
+                successMessage.textContent = '';
+                successMessage.style.display = 'none';
+            }
             
             // Get form values
             const fullName = fullNameInput.value.trim();
@@ -196,6 +268,29 @@ document.addEventListener('DOMContentLoaded', function() {
             const confirmPassword = confirmPasswordInput.value.trim();
             const departmentCode = departmentCodeInput.value.trim();
             const companyName = companyNameInput.value.trim();
+            const role = userRoleSelect.value;
+            
+            console.log('Selected role:', role);
+            
+            // Set default department and position based on role
+            let department, position;
+            switch (role) {
+                case 'it_admin':
+                    department = 'IT';
+                    position = 'IT Administrator';
+                    break;
+                case 'hr_admin':
+                    department = 'HR';
+                    position = 'HR Administrator';
+                    break;
+                case 'employee':
+                    department = 'General';
+                    position = 'Employee';
+                    break;
+                default:
+                    department = 'General';
+                    position = 'User';
+            }
             
             // Validate form
             let isValid = true;
@@ -234,6 +329,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 isValid = false;
             }
             
+            if (!role) {
+                showInputError(userRoleSelect, 'Please select a role');
+                isValid = false;
+            }
+            
             if (!departmentCode) {
                 showInputError(departmentCodeInput, 'Department code is required');
                 isValid = false;
@@ -243,49 +343,134 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Validate department code
+            // Show loading state
+            const submitButton = registerForm.querySelector('button[type="submit"]');
+            submitButton.classList.add('loading');
+            submitButton.disabled = true;
+            
             try {
-                // Show loading state
-                const submitButton = registerForm.querySelector('button[type="submit"]');
-                submitButton.classList.add('loading');
-                submitButton.disabled = true;
+                // 1. First verify the department code
+                console.log('Verifying department code:', departmentCode);
+                const codeResponse = await api.auth.verifyDepartmentCode(departmentCode);
                 
-                const codeVerification = await api.auth.verifyDepartmentCode(departmentCode);
-                if (!codeVerification.isValid) {
-                    showInputError(departmentCodeInput, 'Invalid department code');
+                console.log('Department code verification result:', codeResponse);
+                
+                if (!codeResponse || !codeResponse.isValid) {
+                    const errorMsg = codeResponse?.message || 'Invalid department code. Please check and try again.';
+                    showInputError(departmentCodeInput, errorMsg);
                     submitButton.classList.remove('loading');
                     submitButton.disabled = false;
                     return;
                 }
                 
-                // Prepare registration data
+                // Check if the role is allowed for this department code
+                if (codeResponse.allowedRoles && codeResponse.allowedRoles.length > 0) {
+                    if (!codeResponse.allowedRoles.includes(role)) {
+                        // This is an important validation - the code is valid but not for this role
+                        const allowedRoles = codeResponse.allowedRoles.map(r => 
+                            r === 'it_admin' ? 'IT Admin' : 
+                            r === 'hr_admin' ? 'HR Admin' : 
+                            r === 'employee' ? 'Employee' : r
+                        ).join(', ');
+                        
+                        showInputError(departmentCodeInput, 
+                            `This code is only valid for: ${allowedRoles}. Please select a valid role or use the correct code.`);
+                        submitButton.classList.remove('loading');
+                        submitButton.disabled = false;
+                        return;
+                    }
+                }
+                
+                // If department was provided in code verification response, use it
+                if (codeResponse.department) {
+                    department = codeResponse.department;
+                    console.log('Using department from code verification:', department);
+                }
+                
+                // 2. Now register the user
+                console.log('Registering user with department:', department);
+                
+                // Create the registration data
                 const registrationData = {
-                    fullName,
-                    email,
-                    password,
-                    role: 'it', // IT personnel registration
-                    department: 'IT Department',
-                    companyName,
-                    departmentCode
+                    name: fullName,
+                    email: email,
+                    password: password,
+                    role: role,
+                    department: department,
+                    position: position,
+                    departmentCode: departmentCode,
+                    companyName: companyName
                 };
                 
-                // Call register API
-                const response = await api.auth.register(registrationData);
+                console.log('Full registration data:', JSON.stringify(registrationData));
                 
-                // Show success message
-                successMessage.textContent = 'Account created successfully! Redirecting to login...';
-                successMessage.classList.add('visible');
+                const registerResponse = await fetch(`/api/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(registrationData)
+                });
+                
+                console.log('Register response status:', registerResponse.status);
+                
+                // Check if response is ok before parsing JSON (in case of connection errors)
+                if (!registerResponse.ok) {
+                    const registerData = await registerResponse.json();
+                    console.error('Registration error response:', registerData);
+                    
+                    let errorMsg = registerData.message || 'Error registering account';
+                    
+                    // Check if it's an email uniqueness error
+                    if (errorMsg === 'User already exists') {
+                        errorMsg = 'An account with this email already exists. Please login or use a different email.';
+                        showInputError(emailInput, errorMsg);
+                    }
+                    
+                    if (errorMessage) {
+                        errorMessage.textContent = errorMsg;
+                        errorMessage.style.display = 'block';
+                    }
+                    
+                    submitButton.classList.remove('loading');
+                    submitButton.disabled = false;
+                    return;
+                }
+                
+                const registerData = await registerResponse.json();
+                console.log('Registration success response:', registerData);
+                
+                // Success - show message and redirect
+                if (successMessage) {
+                    successMessage.textContent = 'Account created successfully! Redirecting to login...';
+                    successMessage.style.display = 'block';
+                }
+                
+                // Remove loading state from button
+                submitButton.classList.remove('loading');
+                submitButton.disabled = false;
                 
                 // Redirect to login page after delay
                 setTimeout(() => {
                     window.location.href = 'index.html';
                 }, 2000);
-            } catch (error) {
-                // Show error message
-                errorMessage.textContent = error.message || 'Error creating account';
-                errorMessage.classList.add('visible');
                 
-                // Reset button
+            } catch (error) {
+                console.error('Registration error:', error);
+                
+                // Provide more detailed error message
+                let errorMsg = 'Error during registration process. ';
+                if (error.message) {
+                    errorMsg += error.message;
+                } else {
+                    errorMsg += 'Please check your network connection and try again.';
+                }
+                
+                if (errorMessage) {
+                    errorMessage.textContent = errorMsg;
+                    errorMessage.style.display = 'block';
+                }
+                
                 submitButton.classList.remove('loading');
                 submitButton.disabled = false;
             }

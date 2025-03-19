@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - OnboardX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <style>
+        .welcome-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(to bottom right, #1e252b, #2a3842);
+            color: #fff;
+        }
+        
+        .welcome-logo {
+            margin-bottom: 2rem;
+            animation: fadeIn 1s ease;
+        }
+        
+        .welcome-logo i {
+            font-size: 4rem;
+            color: #1db954;
+            margin-bottom: 1rem;
+        }
+        
+        .welcome-content {
+            max-width: 800px;
+            animation: slideUp 0.8s ease;
+        }
+        
+        .welcome-title {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+        
+        .welcome-subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            color: #ccc;
+        }
+        
+        .welcome-message {
+            background-color: rgba(29, 185, 84, 0.1);
+            border-left: 4px solid #1db954;
+            padding: 1.5rem;
+            border-radius: 6px;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+        
+        .welcome-message p {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        
+        .welcome-progress {
+            width: 100%;
+            max-width: 400px;
+            margin: 2rem auto;
+            position: relative;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #1db954;
+            border-radius: 4px;
+            width: 0%;
+            animation: progressFill 5s linear forwards;
+        }
+        
+        .redirect-message {
+            font-size: 0.9rem;
+            color: #ccc;
+            margin-top: 1rem;
+        }
+        
+        .employee-name {
+            color: #1db954;
+            font-weight: bold;
+        }
+        
+        .skip-button {
+            margin-top: 1rem;
+            padding: 0.6rem 1.5rem;
+            background-color: transparent;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .skip-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes progressFill {
+            from { width: 0%; }
+            to { width: 100%; }
+        }
+    </style>
+    <script src="/js/api.js" defer></script>
+</head>
+<body>
+    <div class="welcome-container">
+        <div class="welcome-logo">
+            <i class="fas fa-user-circle"></i>
+            <h1>Onboard-X</h1>
+        </div>
+        
+        <div class="welcome-content">
+            <h2 class="welcome-title">Welcome, <span id="employee-name" class="employee-name">New Employee</span>!</h2>
+            <p class="welcome-subtitle">We're excited to have you join our team.</p>
+            
+            <div class="welcome-message">
+                <p>Your account has been successfully created by the IT department. You're now ready to begin your onboarding journey.</p>
+                <p>In just a few moments, you'll be directed to our onboarding portal where you can complete your profile, learn about our company, and get set up with everything you need.</p>
+                <p>This process will help us personalize your experience and ensure you have a smooth start with our organization.</p>
+            </div>
+            
+            <div class="welcome-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <p class="redirect-message">You'll be automatically redirected to the onboarding page in a few seconds...</p>
+            </div>
+            
+            <button id="skip-button" class="skip-button">Skip to Onboarding <i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated
+            if (!api.auth.isAuthenticated()) {
+                console.log('User not authenticated, redirecting to login page');
+                window.location.replace('index.html');
+                return;
+            }
+            
+            // Get welcome user data from localStorage
+            const welcomeUserData = JSON.parse(localStorage.getItem('welcomeUser') || '{}');
+            const userData = api.auth.getUserData();
+            const userRole = userData.role || welcomeUserData.role;
+            
+            const employeeName = document.getElementById('employee-name');
+            
+            // Update employee name
+            if (welcomeUserData.name) {
+                employeeName.textContent = welcomeUserData.name;
+            } else if (userData.firstName) {
+                employeeName.textContent = userData.firstName;
+            } else if (userData.name) {
+                employeeName.textContent = userData.name.split(' ')[0];
+            }
+            
+            // Safe redirect function
+            function safeRedirect(url) {
+                console.log(`Redirecting to: ${url}`);
+                try {
+                    // Use replace instead of href to avoid browser history issues
+                    window.location.replace(url);
+                } catch (error) {
+                    console.error('Redirect error:', error);
+                    // Fallback
+                    window.location.href = url;
+                }
+            }
+            
+            // Determine the correct redirect URL based on role
+            function getRedirectUrl() {
+                // If role is admin or IT, direct to the appropriate dashboard
+                switch (userRole) {
+                    case 'it_admin':
+                        return 'it_dashboard.html';
+                    case 'hr_admin':
+                    case 'department_admin':
+                        return 'admin.html';
+                    case 'employee':
+                    default:
+                        return 'onboarding.html';
+                }
+            }
+            
+            const redirectUrl = getRedirectUrl();
+            
+            // Update UI based on role for better user experience
+            const skipButton = document.getElementById('skip-button');
+            const redirectMessage = document.querySelector('.redirect-message');
+            
+            if (userRole === 'it_admin') {
+                skipButton.textContent = 'Go to IT Dashboard';
+                redirectMessage.textContent = "You'll be automatically redirected to the IT dashboard in a few seconds...";
+            } else if (userRole === 'hr_admin' || userRole === 'department_admin') {
+                skipButton.textContent = 'Go to Admin Dashboard';
+                redirectMessage.textContent = "You'll be automatically redirected to the admin dashboard in a few seconds...";
+            }
+            
+            // Set timeout for automatic redirect
+            let redirectTimeout = null;
+            
+            function startRedirectTimer() {
+                // Clear any existing timeout
+                if (redirectTimeout) {
+                    clearTimeout(redirectTimeout);
+                }
+                
+                // Set new timeout
+                redirectTimeout = setTimeout(() => {
+                    safeRedirect(redirectUrl);
+                }, 5000); // 5 seconds
+            }
+            
+            // Start the redirect timer
+            startRedirectTimer();
+            
+            // Skip button event listener
+            document.getElementById('skip-button').addEventListener('click', function() {
+                // Cancel the automatic redirect
+                if (redirectTimeout) {
+                    clearTimeout(redirectTimeout);
+                    redirectTimeout = null;
+                }
+                
+                // Manual redirect
+                safeRedirect(redirectUrl);
+            });
+            
+            // Clear welcome user data after usage
+            window.addEventListener('beforeunload', function() {
+                localStorage.removeItem('welcomeUser');
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,6 +1,12 @@
 const jwt = require('jsonwebtoken');
 
-const auth = (req, res, next) => {
+/**
+ * Middleware to authenticate JWT token
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
+ */
+const authenticateToken = (req, res, next) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
         
@@ -16,7 +22,12 @@ const auth = (req, res, next) => {
     }
 };
 
-const requireRole = (roles) => {
+/**
+ * Middleware to check if user has required role
+ * @param {Array} roles - Array of allowed roles
+ * @returns {Function} - Express middleware function
+ */
+const authorizeRoles = (roles) => {
     return (req, res, next) => {
         if (!req.user || !roles.includes(req.user.role)) {
             return res.status(403).json({ message: 'Access denied' });
@@ -25,4 +36,13 @@ const requireRole = (roles) => {
     };
 };
 
-module.exports = { auth, requireRole }; 
+// For backward compatibility
+const auth = authenticateToken;
+const requireRole = authorizeRoles;
+
+module.exports = { 
+    authenticateToken, 
+    authorizeRoles,
+    auth,  // backward compatibility
+    requireRole  // backward compatibility
+}; 

@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="/css/admin_dashboard.css">
     <link rel="stylesheet" href="/css/it_dashboard.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Include API client -->
+    <script src="/js/api.js"></script>
 </head>
 <body>
     <div class="branding">
@@ -91,7 +93,7 @@
                         <i class="fas fa-cog"></i>
                         Settings
                     </a>
-                    <a href="index.html">
+                    <a href="#" id="logout-link">
                         <i class="fas fa-sign-out-alt"></i>
                         Logout
                     </a>
@@ -103,7 +105,7 @@
             <!-- Dashboard Overview -->
             <section id="dashboard" class="dashboard-section">
                 <div class="dashboard-header">
-                    <h2>IT Operations Overview</h2>
+                    <h2>Welcome <span id="user-name">to your IT Dashboard</span></h2>
                     <div class="date-time">
                         <span id="current-date"></span>
                         <span id="current-time"></span>
@@ -500,46 +502,146 @@
                     <h2>Access Management</h2>
                     <div class="action-bar">
                         <input type="search" placeholder="Search requests...">
+                        <div class="tab-buttons">
+                            <button class="tab-btn active" data-tab="access-requests">Access Requests</button>
+                            <button class="tab-btn" data-tab="asset-returns">Asset Returns</button>
+                            <button class="tab-btn" data-tab="account-deactivation">Account Deactivation</button>
+                        </div>
                         <button class="add-btn"><i class="fas fa-plus"></i> New Request</button>
                     </div>
                 </div>
 
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Employee</th>
-                                <th>Department</th>
-                                <th>Access Type</th>
-                                <th>Requested</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Sarah Johnson</td>
-                                <td>Marketing</td>
-                                <td>Design Software</td>
-                                <td>2024-03-15</td>
-                                <td><span class="status-badge onboarding">Pending</span></td>
-                                <td>
-                                    <button class="action-btn"><i class="fas fa-check"></i></button>
-                                    <button class="action-btn"><i class="fas fa-times"></i></button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Michael Chen</td>
-                                <td>Engineering</td>
-                                <td>Development Tools</td>
-                                <td>2024-03-14</td>
-                                <td><span class="status-badge active">Approved</span></td>
-                                <td>
-                                    <button class="action-btn"><i class="fas fa-eye"></i></button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <!-- Access Requests Tab -->
+                <div class="tab-content active" id="access-requests">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Department</th>
+                                    <th>Access Type</th>
+                                    <th>Requested</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Sarah Johnson</td>
+                                    <td>Marketing</td>
+                                    <td>Design Software</td>
+                                    <td>2024-03-15</td>
+                                    <td><span class="status-badge onboarding">Pending</span></td>
+                                    <td>
+                                        <button class="action-btn" title="Approve"><i class="fas fa-check"></i></button>
+                                        <button class="action-btn" title="Reject"><i class="fas fa-times"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Michael Chen</td>
+                                    <td>Engineering</td>
+                                    <td>Development Tools</td>
+                                    <td>2024-03-14</td>
+                                    <td><span class="status-badge active">Approved</span></td>
+                                    <td>
+                                        <button class="action-btn" title="View Details"><i class="fas fa-eye"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Asset Returns Tab -->
+                <div class="tab-content" id="asset-returns">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Department</th>
+                                    <th>Asset Type</th>
+                                    <th>Asset ID</th>
+                                    <th>Requested</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>James Wilson</td>
+                                    <td>Sales</td>
+                                    <td>Laptop</td>
+                                    <td>LAP-2023-045</td>
+                                    <td>2024-03-16</td>
+                                    <td><span class="status-badge warning">Pending</span></td>
+                                    <td>
+                                        <button class="action-btn mark-returned" title="Mark as Returned" data-employee="James Wilson" data-asset="LAP-2023-045"><i class="fas fa-check"></i></button>
+                                        <button class="action-btn mark-damaged" title="Mark as Damaged"><i class="fas fa-exclamation-triangle"></i></button>
+                                        <button class="action-btn" title="View Details"><i class="fas fa-eye"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Lisa Chen</td>
+                                    <td>Marketing</td>
+                                    <td>Mobile Phone</td>
+                                    <td>MOB-2023-018</td>
+                                    <td>2024-03-15</td>
+                                    <td><span class="status-badge warning">Pending</span></td>
+                                    <td>
+                                        <button class="action-btn mark-returned" title="Mark as Returned" data-employee="Lisa Chen" data-asset="MOB-2023-018"><i class="fas fa-check"></i></button>
+                                        <button class="action-btn mark-damaged" title="Mark as Damaged"><i class="fas fa-exclamation-triangle"></i></button>
+                                        <button class="action-btn" title="View Details"><i class="fas fa-eye"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Account Deactivation Tab -->
+                <div class="tab-content" id="account-deactivation">
+                    <div class="section-header">
+                        <h3>User Account Management</h3>
+                        <p>Manage user accounts, activate or deactivate accounts, and view detailed user information.</p>
+                    </div>
+                    <div class="action-bar">
+                        <input type="search" id="account-search" placeholder="Search users...">
+                        <select id="account-status-filter">
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                        <select id="account-role-filter">
+                            <option value="all">All Roles</option>
+                            <option value="employee">Employee</option>
+                            <option value="manager">Manager</option>
+                            <option value="hr_admin">HR Admin</option>
+                            <option value="it_admin">IT Admin</option>
+                        </select>
+                    </div>
+                    <div class="table-container">
+                        <table class="account-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Department</th>
+                                    <th>Role</th>
+                                    <th>Created Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- User accounts will be dynamically loaded here -->
+                                <tr>
+                                    <td colspan="6" class="loading-row">
+                                        <i class="fas fa-spinner fa-spin"></i> Loading user accounts...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 
@@ -977,21 +1079,27 @@
                     <div class="settings-card">
                         <h3><i class="fas fa-shield-alt"></i> Department Access Control</h3>
                         <div class="department-code-section">
+                            <!-- Role Tabs -->
+                            <div class="role-tabs">
+                                <button type="button" class="role-tab active" data-role="it_admin" onclick="(function(){const tabs=document.querySelectorAll('.role-tab');tabs.forEach(t=>t.classList.remove('active'));this.classList.add('active');const role=this.getAttribute('data-role');const codeInput=document.getElementById('department-code');const codeRoleText=document.getElementById('code-role-text');if(codeInput)codeInput.value='IT2024';if(codeRoleText)codeRoleText.textContent='IT Admin';console.log('Tab clicked: IT Admin');})()" style="cursor:pointer">IT Admin</button>
+                                <button type="button" class="role-tab" data-role="hr_admin" onclick="(function(){const tabs=document.querySelectorAll('.role-tab');tabs.forEach(t=>t.classList.remove('active'));this.classList.add('active');const role=this.getAttribute('data-role');const codeInput=document.getElementById('department-code');const codeRoleText=document.getElementById('code-role-text');if(codeInput)codeInput.value='HR2024';if(codeRoleText)codeRoleText.textContent='HR Admin';console.log('Tab clicked: HR Admin');})()" style="cursor:pointer">HR Admin</button>
+                                <button type="button" class="role-tab" data-role="employee" onclick="(function(){const tabs=document.querySelectorAll('.role-tab');tabs.forEach(t=>t.classList.remove('active'));this.classList.add('active');const role=this.getAttribute('data-role');const codeInput=document.getElementById('department-code');const codeRoleText=document.getElementById('code-role-text');if(codeInput)codeInput.value='EMP2024';if(codeRoleText)codeRoleText.textContent='Employee';console.log('Tab clicked: Employee');})()" style="cursor:pointer">Employee</button>
+                            </div>
                             <div class="current-code">
                                 <label>Current Department Code</label>
                                 <div class="code-display">
                                     <input type="password" id="department-code" value="IT2024" readonly>
-                                    <button class="action-btn" id="toggle-code-visibility">
+                                    <button type="button" class="action-btn" id="toggle-code-visibility" onclick="(function(){const input=document.getElementById('department-code');if(input){input.type=input.type==='password'?'text':'password';this.innerHTML=`<i class='fas fa-eye${input.type==='password'?'':'-slash'}'></i>`;console.log('Code visibility toggled');}})()" style="cursor:pointer">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button class="action-btn" id="copy-code">
+                                    <button type="button" class="action-btn" id="copy-code" onclick="(function(){const input=document.getElementById('department-code');if(input){navigator.clipboard.writeText(input.value).then(()=>{console.log('Code copied to clipboard!');alert('Code copied to clipboard!');}).catch(()=>{console.error('Failed to copy code');alert('Failed to copy code');});}})()" style="cursor:pointer">
                                         <i class="fas fa-copy"></i>
                                     </button>
                                 </div>
-                                <p class="code-info">Share this code with new IT personnel for registration</p>
+                                <p class="code-info">Share this code with new <span id="code-role-text">IT</span> personnel for registration</p>
                             </div>
                             <div class="code-actions mt-3">
-                                <button class="add-btn" id="generate-new-code">
+                                <button type="button" class="add-btn" id="generate-new-code" onclick="(function(){const activeTab=document.querySelector('.role-tab.active');if(!activeTab)return;const activeRole=activeTab.getAttribute('data-role')||'it_admin';console.log('Generating code for role: ' + activeRole);const roleName=activeRole==='it_admin'?'IT Admin':activeRole==='hr_admin'?'HR Admin':'Employee';if(confirm(`Generate new department code for ${roleName}? This will invalidate the current code.`)){this.innerHTML='<i class=\\'fas fa-spinner fa-spin\\'></i> Generating...';this.disabled=true;const prefix=activeRole==='it_admin'?'IT':activeRole==='hr_admin'?'HR':'EMP';const year=new Date().getFullYear();const random=Math.floor(Math.random()*1000).toString().padStart(3,'0');const newCode=`${prefix}${year}${random}`;const codeInput=document.getElementById('department-code');if(codeInput)codeInput.value=newCode;alert(`New ${roleName} department code generated: ${newCode}`);console.log(`New code generated for ${roleName}: ${newCode}`);setTimeout(()=>{this.innerHTML='<i class=\\'fas fa-key\\'></i> Generate New Code';this.disabled=false;},500);}})()" style="cursor:pointer">
                                     <i class="fas fa-key"></i>
                                     Generate New Code
                                 </button>
@@ -1001,11 +1109,13 @@
                                 <div class="history-list">
                                     <div class="history-item">
                                         <span class="code-value">IT2024</span>
+                                        <span class="code-role">(IT Admin)</span>
                                         <span class="code-date">Current</span>
                                         <span class="code-status active">Active</span>
                                     </div>
                                     <div class="history-item">
                                         <span class="code-value">IT2023</span>
+                                        <span class="code-role">(IT Admin)</span>
                                         <span class="code-date">Expired: 01/01/2024</span>
                                         <span class="code-status expired">Expired</span>
                                     </div>
