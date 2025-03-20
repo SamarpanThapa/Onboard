@@ -730,45 +730,126 @@
 
             <!-- Documents Section -->
             <section id="documents" class="dashboard-section">
-                <div class="dashboard-header">
+                <div class="section-header">
                     <h2>Document Center</h2>
-                <div class="action-bar">
-                        <input type="search" placeholder="Search documents...">
-                        <button class="add-btn"><i class="fas fa-upload"></i> Upload Document</button>
+                    <div class="header-actions">
+                        <input type="search" id="document-search" placeholder="Search documents...">
+                        <button class="add-btn" id="upload-document-btn"><i class="fas fa-upload"></i> Upload Document</button>
                     </div>
                 </div>
+                
                 <div class="document-grid">
                     <div class="document-filters">
-                        <button class="filter-btn active" data-filter="all">All</button>
-                        <button class="filter-btn" data-filter="contracts">Contracts</button>
-                        <button class="filter-btn" data-filter="policies">Policies</button>
-                        <button class="filter-btn" data-filter="forms">Forms</button>
+                        <h4>Filter By</h4>
+                        <select id="document-type-filter">
+                            <option value="all">All Types</option>
+                            <option value="pdf">PDF</option>
+                            <option value="presentation">Presentations</option>
+                            <option value="spreadsheet">Spreadsheets</option>
+                            <option value="image">Images</option>
+                        </select>
+                        <select id="document-category-filter">
+                            <option value="all">All Categories</option>
+                            <option value="employee_resources">Employee Resources</option>
+                            <option value="onboarding">Onboarding</option>
+                            <option value="policies">Policies</option>
+                            <option value="training">Training</option>
+                        </select>
                     </div>
-                    <div class="document-list">
-                        <div class="document-item">
-                            <i class="fas fa-file-pdf"></i>
-                            <div class="document-info">
-                                <h4>Employee Handbook 2024</h4>
-                                <span>Last updated: Mar 15, 2024</span>
-                            </div>
-                            <button class="download-btn"><i class="fas fa-download"></i></button>
+                    
+                    <div class="document-list" id="admin-document-list">
+                        <!-- Documents will be loaded dynamically -->
+                        <div class="loading-indicator">
+                            <i class="fas fa-spinner fa-spin"></i> Loading documents...
                         </div>
-                        <div class="document-item">
-                            <i class="fas fa-file-contract"></i>
-                            <div class="document-info">
-                                <h4>Employment Contract Template</h4>
-                                <span>Last updated: Mar 10, 2024</span>
-                            </div>
-                            <button class="download-btn"><i class="fas fa-download"></i></button>
-                        </div>
-                        <div class="document-item">
-                            <i class="fas fa-file-alt"></i>
-                            <div class="document-info">
-                                <h4>Onboarding Checklist</h4>
-                                <span>Last updated: Mar 5, 2024</span>
-                            </div>
-                            <button class="download-btn"><i class="fas fa-download"></i></button>
                     </div>
+                </div>
+
+                <!-- Upload Document Modal -->
+                <div id="upload-document-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Upload Document</h3>
+                            <button class="close-modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="document-upload-form" enctype="multipart/form-data">
+                                <div class="form-group">
+                                    <label for="document-title">Title*</label>
+                                    <input type="text" id="document-title" name="title" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="document-description">Description</label>
+                                    <textarea id="document-description" name="description"></textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="document-type">Document Type*</label>
+                                    <select id="document-type" name="documentType" required>
+                                        <option value="">Select Document Type</option>
+                                        <option value="pdf">PDF</option>
+                                        <option value="presentation">Presentation</option>
+                                        <option value="spreadsheet">Spreadsheet</option>
+                                        <option value="text">Text Document</option>
+                                        <option value="image">Image</option>
+                                        <option value="video">Video</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="document-category">Category*</label>
+                                    <select id="document-category" name="category" required>
+                                        <option value="">Select Category</option>
+                                        <option value="employee_resources">Employee Resources</option>
+                                        <option value="onboarding">Onboarding</option>
+                                        <option value="policies">Policies</option>
+                                        <option value="training">Training</option>
+                                        <option value="compliance">Compliance</option>
+                                        <option value="finance">Finance</option>
+                                        <option value="legal">Legal</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="document-visibility">Visibility</label>
+                                    <select id="document-visibility" name="visibility">
+                                        <option value="all_employees">All Employees</option>
+                                        <option value="specific_department">Specific Department</option>
+                                        <option value="private">Private (HR/Admin Only)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group" id="department-visibility-group" style="display: none;">
+                                    <label for="document-departments">Visible to Departments</label>
+                                    <select id="document-departments" name="departments" multiple>
+                                        <option value="IT">IT</option>
+                                        <option value="HR">HR</option>
+                                        <option value="Finance">Finance</option>
+                                        <option value="Marketing">Marketing</option>
+                                        <option value="Engineering">Engineering</option>
+                                    </select>
+                                    <small>Hold Ctrl/Cmd to select multiple</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="document-file">Document File*</label>
+                                    <input type="file" id="document-file" name="file" required>
+                                    <small>Max file size: 10MB. Supported formats: PDF, DOCX, XLSX, JPG, PNG, etc.</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="document-tags">Tags</label>
+                                    <input type="text" id="document-tags" name="tags" placeholder="Separate tags with commas">
+                                    <small>Example: handbook, policy, reference</small>
+                                </div>
+                                
+                                <div class="form-buttons">
+                                    <button type="button" class="btn-secondary cancel-upload">Cancel</button>
+                                    <button type="submit" class="btn-primary">Upload Document</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -778,120 +859,45 @@
                 <div class="dashboard-header">
                     <h2>Document Templates</h2>
                     <div class="action-bar">
-                        <input type="search" placeholder="Search templates...">
-                        <select class="template-filter">
+                        <input type="search" placeholder="Search templates..." id="template-search">
+                        <select class="template-filter" id="template-category-filter">
                             <option value="all">All Categories</option>
                             <option value="onboarding">Onboarding</option>
-                            <option value="offboarding">Offboarding</option>
                             <option value="hr">HR Documents</option>
                             <option value="legal">Legal</option>
+                            <option value="training">Training</option>
+                            <option value="compliance">Compliance</option>
                         </select>
-                        <button class="add-btn"><i class="fas fa-plus"></i> New Template</button>
+                        <button class="add-btn new-template-btn" id="new-template-btn"><i class="fas fa-plus"></i> New Template</button>
                     </div>
                 </div>
                 <div class="template-grid">
                     <div class="template-category">
                         <h3>Onboarding Templates</h3>
-                        <div class="template-list">
-                            <div class="template-card">
-                                <div class="template-icon">
-                                    <i class="fas fa-file-contract"></i>
-                                </div>
-                                <div class="template-info">
-                                    <h4>Employment Contract</h4>
-                                    <p>Standard employment agreement template</p>
-                                    <div class="template-meta">
-                                        <span><i class="fas fa-clock"></i> Updated: Mar 15, 2024</span>
-                                        <span><i class="fas fa-download"></i> 45 uses</span>
-                                    </div>
-                                </div>
-                                <div class="template-actions">
-                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
-                                    <button class="action-btn"><i class="fas fa-copy"></i></button>
-                                    <button class="action-btn"><i class="fas fa-download"></i></button>
-                                </div>
-                            </div>
-                            <div class="template-card">
-                                <div class="template-icon">
-                                    <i class="fas fa-clipboard-list"></i>
-                                </div>
-                                <div class="template-info">
-                                    <h4>Onboarding Checklist</h4>
-                                    <p>Complete new hire process checklist</p>
-                                    <div class="template-meta">
-                                        <span><i class="fas fa-clock"></i> Updated: Mar 10, 2024</span>
-                                        <span><i class="fas fa-download"></i> 32 uses</span>
-                                    </div>
-                                </div>
-                                <div class="template-actions">
-                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
-                                    <button class="action-btn"><i class="fas fa-copy"></i></button>
-                                    <button class="action-btn"><i class="fas fa-download"></i></button>
-                                </div>
+                        <div id="onboarding-templates" class="template-list">
+                            <!-- Template items will be loaded dynamically -->
+                            <div class="loading-indicator">
+                                <i class="fas fa-spinner fa-spin"></i> Loading templates...
                             </div>
                         </div>
                     </div>
+                    
                     <div class="template-category">
                         <h3>HR Documents</h3>
-                        <div class="template-list">
-                            <div class="template-card">
-                                <div class="template-icon">
-                                    <i class="fas fa-file-alt"></i>
-                                </div>
-                                <div class="template-info">
-                                    <h4>Performance Review</h4>
-                                    <p>Annual performance evaluation form</p>
-                                    <div class="template-meta">
-                                        <span><i class="fas fa-clock"></i> Updated: Mar 5, 2024</span>
-                                        <span><i class="fas fa-download"></i> 28 uses</span>
-                                    </div>
-                                </div>
-                                <div class="template-actions">
-                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
-                                    <button class="action-btn"><i class="fas fa-copy"></i></button>
-                                    <button class="action-btn"><i class="fas fa-download"></i></button>
-                                </div>
-                            </div>
-                            <div class="template-card">
-                                <div class="template-icon">
-                                    <i class="fas fa-file-medical"></i>
-                                </div>
-                                <div class="template-info">
-                                    <h4>Benefits Enrollment</h4>
-                                    <p>Employee benefits selection form</p>
-                                    <div class="template-meta">
-                                        <span><i class="fas fa-clock"></i> Updated: Mar 1, 2024</span>
-                                        <span><i class="fas fa-download"></i> 20 uses</span>
-                                    </div>
-                                </div>
-                                <div class="template-actions">
-                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
-                                    <button class="action-btn"><i class="fas fa-copy"></i></button>
-                                    <button class="action-btn"><i class="fas fa-download"></i></button>
-                                </div>
+                        <div id="hr-documents" class="template-list">
+                            <!-- Template items will be loaded dynamically -->
+                            <div class="loading-indicator">
+                                <i class="fas fa-spinner fa-spin"></i> Loading templates...
                             </div>
                         </div>
                     </div>
+                    
                     <div class="template-category">
                         <h3>Legal Documents</h3>
-                        <div class="template-list">
-                            <div class="template-card">
-                                <div class="template-icon">
-                                    <i class="fas fa-file-signature"></i>
-                                </div>
-                                <div class="template-info">
-                                    <h4>NDA Agreement</h4>
-                                    <p>Non-disclosure agreement template</p>
-                                    <div class="template-meta">
-                                        <span><i class="fas fa-clock"></i> Updated: Feb 28, 2024</span>
-                                        <span><i class="fas fa-download"></i> 15 uses</span>
-                                    </div>
-                                </div>
-                                <div class="template-actions">
-                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
-                                    <button class="action-btn"><i class="fas fa-copy"></i></button>
-                                    <button class="action-btn"><i class="fas fa-download"></i></button>
-                                </div>
+                        <div id="legal-documents" class="template-list">
+                            <!-- Template items will be loaded dynamically -->
+                            <div class="loading-indicator">
+                                <i class="fas fa-spinner fa-spin"></i> Loading templates...
                             </div>
                         </div>
                     </div>

@@ -602,6 +602,77 @@ exports.addDocumentNote = async (req, res) => {
   }
 };
 
+// @desc    Duplicate a document (primarily for templates)
+// @route   POST /api/documents/:id/duplicate
+// @access  Private
+exports.duplicateDocument = async (req, res) => {
+  try {
+    // Find the original document
+    const originalDocument = await Document.findById(req.params.id);
+    
+    if (!originalDocument) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+    
+    // Check permissions - simple check: you can duplicate if you can view
+    // More complex permission systems would go here
+    
+    // Extract file information
+    const originalFilePath = originalDocument.file.filePath;
+    const fileExt = path.extname(originalFilePath);
+    const newFileName = `${path.basename(originalFilePath, fileExt)}-copy-${Date.now()}${fileExt}`;
+    const uploadDir = path.join(__dirname, '../../uploads/documents');
+    const newFilePath = path.join(uploadDir, newFileName);
+    
+    // Create uploads directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    
+    // Copy the file
+    fs.copyFileSync(originalFilePath, newFilePath);
+    
+    // Create new document with copied data
+    const newDocument = new Document({
+      title: req.body.title || `${originalDocument.title} (Copy)`,
+      description: req.body.description || originalDocument.description,
+      documentType: req.body.documentType || originalDocument.documentType,
+      category: req.body.category || originalDocument.category,
+      file: {
+        fileName: newFileName,
+        filePath: newFilePath,
+        fileType: originalDocument.file.fileType,
+        fileSize: originalDocument.file.fileSize,
+        uploadedAt: new Date(),
+        uploadedBy: req.user._id
+      },
+      visibility: req.body.visibility || originalDocument.visibility,
+      tags: req.body.tags || originalDocument.tags,
+      isTemplate: req.body.isTemplate !== undefined ? req.body.isTemplate : originalDocument.isTemplate,
+      createdBy: req.user._id,
+      createdAt: new Date()
+    });
+    
+    await newDocument.save();
+    
+    res.status(201).json({
+      success: true,
+      message: 'Document duplicated successfully',
+      data: newDocument
+    });
+    
+  } catch (error) {
+    console.error('Error duplicating document:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
+};
+
 // Helper function to check document access permissions
 const checkDocumentAccess = (document, user) => {
   // Admin always has access
@@ -636,4 +707,6 @@ const checkDocumentAccess = (document, user) => {
     default:
       return false;
   }
-}; 
+};
+
+module.exports = exports; 

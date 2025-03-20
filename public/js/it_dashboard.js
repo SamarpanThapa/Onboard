@@ -976,7 +976,7 @@ function initializeAccessManagement() {
 }
 
 /**
- * Load and display all user accounts for the account deactivation tab
+ * Load all user accounts for the account management section
  */
 async function loadAllUserAccounts() {
     const accountDeactivationTab = document.getElementById('account-deactivation');
@@ -995,14 +995,40 @@ async function loadAllUserAccounts() {
     `;
     
     try {
-        // Load all users from the API
-        const users = await api.users.getUsers();
+        // Load all users from the API with a high limit to get all users
+        const usersResponse = await api.users.getUsers({
+            limit: 100,  // Set a high limit to get more users
+            page: 1
+        });
+        
+        // Check if we need to load more pages
+        let allUsers = usersResponse.data;
+        const totalUsers = usersResponse.total;
+        
+        // If there are more users than the first page
+        if (allUsers.length < totalUsers) {
+            // Calculate how many more pages we need
+            const totalPages = Math.ceil(totalUsers / 100);
+            
+            // Load remaining pages
+            for (let page = 2; page <= totalPages; page++) {
+                const nextPageResponse = await api.users.getUsers({
+                    limit: 100,
+                    page: page
+                });
+                
+                // Add users from this page to our collection
+                allUsers = [...allUsers, ...nextPageResponse.data];
+            }
+        }
+        
+        console.log(`Loaded ${allUsers.length} users from database`);
         
         // Store users in a global variable for filtering
-        window.allUsers = users.data;
+        window.allUsers = allUsers;
         
         // Display the users
-        displayUsers(users.data);
+        displayUsers(allUsers);
         
         // Set up search and filters
         setupUserFilters();
@@ -1012,7 +1038,7 @@ async function loadAllUserAccounts() {
         tableBody.innerHTML = `
             <tr>
                 <td colspan="6" class="error-row">
-                    <i class="fas fa-exclamation-triangle"></i> Failed to load user accounts. Please try again.
+                    <i class="fas fa-exclamation-triangle"></i> Failed to load user accounts: ${error.message}. Please try again.
                 </td>
             </tr>
         `;
@@ -1704,14 +1730,14 @@ function addDirectButtonHandlers() {
         
         // Update code input and role text based on selected role
         if (currentRole === 'it_admin') {
-            if (codeInput) codeInput.value = 'IT2024';
-            if (codeRoleText) codeRoleText.textContent = 'IT';
+            codeInput.value = 'IT2024';
+            codeRoleText.textContent = 'IT';
         } else if (currentRole === 'hr_admin') {
-            if (codeInput) codeInput.value = 'HR2024';
-            if (codeRoleText) codeRoleText.textContent = 'HR';
+            codeInput.value = 'HR2024';
+            codeRoleText.textContent = 'HR';
         } else if (currentRole === 'employee') {
-            if (codeInput) codeInput.value = 'EMP2024';
-            if (codeRoleText) codeRoleText.textContent = 'Employee';
+            codeInput.value = 'EMP2024';
+            codeRoleText.textContent = 'Employee';
         }
         
         // Update the generate button's handler to use the new role

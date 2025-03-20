@@ -1,1074 +1,100 @@
 /* filepath: /c:/Users/sujan/Desktop/OnboardX/Frontend/base/admin_dashboard.js */
-document.addEventListener('DOMContentLoaded', async function() {
-    // Check if user is authenticated
-    if (!api.auth.isAuthenticated()) {
-        window.location.href = 'index.html';
-        return;
-    }
-    
-    // Get user data
-    const userData = api.auth.getUserData();
-    const userRole = userData.role;
-    
-    // Check if user has admin privileges
-    if (userRole !== 'hr_admin' && userRole !== 'department_admin') {
-        console.error('Unauthorized access attempt: User role is ' + userRole);
-        window.location.href = 'index.html';
-        return;
-    }
-    
-    // Create notification container if it doesn't exist
-    if (!document.getElementById('notification-container')) {
-        const container = document.createElement('div');
-        container.id = 'notification-container';
-        document.body.appendChild(container);
-    }
-    
-    // Add global showNotification function
-    window.showNotification = function(message, type = 'success') {
-        console.log('Showing notification:', message, type);
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        console.log('DOM loaded, initializing admin dashboard...');
         
-        const container = document.getElementById('notification-container');
-        if (!container) return;
-        
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.innerHTML = `
-            <div class="notification-icon">
-                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
-            </div>
-            <div class="notification-content">
-                <p>${message}</p>
-            </div>
-            <button class="notification-close">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-        
-        // Add close button functionality
-        const closeBtn = notification.querySelector('.notification-close');
-        closeBtn.addEventListener('click', () => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 300);
+        // Global error handler to catch any uncaught JavaScript errors
+        window.addEventListener('error', function(event) {
+            console.error('Global error caught:', event.error);
+            // Prevent error notification overload
+            if (!window.errorShown) {
+                window.errorShown = true;
+                showNotification('A JavaScript error occurred. Please check the console for details.', 'error');
+                setTimeout(() => { window.errorShown = false; }, 5000);
+            }
+            return false;
         });
         
-        container.appendChild(notification);
-        
-        // Auto show
-        setTimeout(() => notification.classList.add('show'), 10);
-        
-        // Auto hide after 5 seconds
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 300);
-        }, 5000);
-        
-        return notification;
-    };
-    
-    // Display stored user data immediately
-    displayUserInfo(userData);
-    
-    // Then try to load fresh user data
-    try {
-        const freshUserData = await api.auth.getCurrentUser();
-        if (freshUserData) {
-            displayUserInfo(freshUserData);
+        // Display user info
+        try {
+            const userInfo = JSON.parse(localStorage.getItem('user')) || {};
+            if (userInfo) {
+                displayUserInfo(userInfo);
         }
     } catch (error) {
-        console.error('Error loading user data:', error);
-        showNotification('Using cached user data', 'warning');
+            console.error('Error setting up user info:', error);
     }
     
-    // Initialize mobile menu
+        // Initialize mobile menu toggle
+        try {
     initializeMobileMenu();
-    
-    // Initialize date and time display
-    updateDateTime();
-    setInterval(updateDateTime, 1000);
-
-    // Initialize charts
-    initializeCharts();
-    
-    // Initialize sidebar navigation
-    initializeSidebar();
-    
-    // Initialize activity feed
-    initializeActivityFeed();
-    
-    // Initialize dynamic content loading
-    initializeDynamicContent();
-    
-    // Explicitly show the dashboard section
-    showNotification('Welcome to the Admin Dashboard', 'success');
-    loadSectionContent('dashboard');
-    
-    // Set the dashboard nav link as active
-    const dashboardLink = document.querySelector('a[href="#dashboard"]');
-    if (dashboardLink) {
-        const allLinks = document.querySelectorAll('.sidebar a');
-        allLinks.forEach(link => link.classList.remove('active'));
-        dashboardLink.classList.add('active');
-    }
-
-    /**
-     * Display user information on the dashboard
-     */
-    function displayUserInfo(user) {
-        console.log('Displaying user info:', user);
-        
-        // Update welcome message with user's name
-        const userNameElement = document.getElementById('user-name');
-        if (userNameElement) {
-            const displayName = user.name || user.firstName || (user.email ? user.email.split('@')[0] : 'Admin');
-            userNameElement.textContent = displayName;
+        } catch (error) {
+            console.error('Error initializing mobile menu:', error);
         }
         
-        // Set up logout functionality
-        const logoutLink = document.getElementById('logout-link');
-        if (logoutLink) {
-            logoutLink.addEventListener('click', async function(e) {
-                e.preventDefault();
-                
-                // Show notification that logout is processing
-                showNotification('Logging out...', 'info');
-                
-                try {
-                    await api.auth.logout();
-                    // Redirect to login page
-                    window.location.href = 'index.html';
+        // Update date and time
+        try {
+            updateDateTime();
+            setInterval(updateDateTime, 60000); // Update every minute
                 } catch (error) {
-                    console.error('Logout error:', error);
-                    showNotification('Failed to logout. Please try again.', 'error');
-                }
-            });
+            console.error('Error setting up date/time:', error);
         }
-    }
-
-    function initializeMobileMenu() {
-        const menuToggle = document.getElementById('menu-toggle');
-        const sidebar = document.querySelector('.sidebar');
-        const mainContent = document.querySelector('.main-content');
-
-        if (menuToggle && sidebar) {
-            menuToggle.addEventListener('click', () => {
-                sidebar.classList.toggle('active');
-                mainContent.classList.toggle('sidebar-active');
-            });
-
-            // Close sidebar when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!sidebar.contains(e.target) && 
-                    !menuToggle.contains(e.target) && 
-                    sidebar.classList.contains('active')) {
-                    sidebar.classList.remove('active');
-                    mainContent.classList.remove('sidebar-active');
-                }
-            });
-        }
-    }
-
-    function updateDateTime() {
-        const now = new Date();
-        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        const timeOptions = { hour: '2-digit', minute: '2-digit' };
         
-        const dateEl = document.getElementById('current-date');
-        const timeEl = document.getElementById('current-time');
-        
-        if (dateEl && timeEl) {
-            dateEl.textContent = now.toLocaleDateString(undefined, dateOptions);
-            timeEl.textContent = now.toLocaleTimeString(undefined, timeOptions);
-        }
-    }
-
-    function initializeCharts() {
-        // Employee Progress Chart (Area Chart)
-        const employeeCtx = document.getElementById('employeeProgressChart')?.getContext('2d');
-        if (employeeCtx) {
-            const gradientFill = employeeCtx.createLinearGradient(0, 0, 0, 400);
-            gradientFill.addColorStop(0, 'rgba(29, 185, 84, 0.3)');
-            gradientFill.addColorStop(1, 'rgba(29, 185, 84, 0)');
-
-            new Chart(employeeCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                    datasets: [{
-                        label: 'Completed',
-                        data: [10, 15, 12, 25, 18, 30],
-                        borderColor: '#1db954',
-                        backgroundColor: gradientFill,
-                        tension: 0.4,
-                        fill: true
-                    }, {
-                        label: 'In Progress',
-                        data: [5, 10, 8, 15, 12, 20],
-                        borderColor: '#ffd700',
-                        backgroundColor: 'transparent',
-                        tension: 0.4,
-                        fill: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: { color: '#fff' }
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            backgroundColor: '#1e1e1e',
-                            titleColor: '#fff',
-                            bodyColor: '#b3b3b3',
-                            borderColor: '#282828',
-                            borderWidth: 1
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: '#282828'
-                            },
-                            ticks: {
-                                color: '#fff',
-                                callback: function(value) {
-                                    return value + ' emp';
-                                }
-                            }
-                        },
-                        x: {
-                            grid: {
-                                color: '#282828'
-                            },
-                            ticks: {
-                                color: '#fff'
-                            }
-                        }
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    }
-                }
-            });
-        }
-
-        // Task Completion Chart (Bar Chart)
-        const taskCtx = document.getElementById('taskCompletionChart')?.getContext('2d');
-        if (taskCtx) {
-            new Chart(taskCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Documentation', 'IT Setup', 'Training', 'HR Tasks', 'Team Intro'],
-                    datasets: [{
-                        label: 'Completed',
-                        data: [85, 70, 60, 90, 75],
-                        backgroundColor: '#1db954',
-                        borderRadius: 5
-                    }, {
-                        label: 'Pending',
-                        data: [15, 30, 40, 10, 25],
-                        backgroundColor: '#282828',
-                        borderRadius: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: { color: '#fff' }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            stacked: true,
-                            beginAtZero: true,
-                            max: 100,
-                            grid: {
-                                color: '#282828'
-                            },
-                            ticks: {
-                                color: '#fff',
-                                callback: function(value) {
-                                    return value + '%';
-                                }
-                            }
-                        },
-                        x: {
-                            stacked: true,
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                color: '#fff'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    }
-
-    function initializeActivityFeed() {
-        const activityList = document.querySelector('.activity-list');
-        if (!activityList) return;
-
-        const activities = [
-            {
-                icon: 'user-plus',
-                text: 'New employee Sarah Johnson started onboarding process',
-                time: '2 minutes ago',
-                type: 'onboarding'
-            },
-            {
-                icon: 'file-alt',
-                text: 'IT Policy document updated by Admin',
-                time: '15 minutes ago',
-                type: 'document'
-            },
-            {
-                icon: 'check-circle',
-                text: 'Equipment setup completed for Mark Wilson',
-                time: '1 hour ago',
-                type: 'task'
-            },
-            {
-                icon: 'calendar',
-                text: 'Team introduction meeting scheduled for new hires',
-                time: '2 hours ago',
-                type: 'event'
+        // Initialize charts if analytics section exists
+        try {
+            const analyticsSection = document.getElementById('analytics');
+            if (analyticsSection) {
+                initializeCharts();
             }
-        ];
-
-        activities.forEach((activity, index) => {
-            setTimeout(() => {
-                const activityItem = document.createElement('div');
-                activityItem.className = 'activity-item';
-                activityItem.innerHTML = `
-                    <i class="fas fa-${activity.icon}"></i>
-                    <div class="activity-content">
-                        <p>${activity.text}</p>
-                        <span class="activity-time">${activity.time}</span>
-                    </div>
-                `;
-                activityList.appendChild(activityItem);
-                
-                // Trigger animation
-                requestAnimationFrame(() => {
-                    activityItem.style.opacity = '1';
-                    activityItem.style.transform = 'translateX(0)';
-                });
-            }, index * 300);
-        });
-    }
-
-    function initializeSidebar() {
-        const navLinks = document.querySelectorAll('.sidebar a');
-        
-        navLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
-                if (this.getAttribute('href') === 'index.html') return;
-                
-                e.preventDefault();
-                const targetId = this.getAttribute('href').substring(1);
-                
-                // Update active states
-                navLinks.forEach(l => l.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Load section content
-                loadSectionContent(targetId);
-
-                // Close sidebar on mobile after navigation
-                if (window.innerWidth <= 1024) {
-                    const sidebar = document.querySelector('.sidebar');
-                    const mainContent = document.querySelector('.main-content');
-                    sidebar.classList.remove('active');
-                    mainContent.classList.remove('sidebar-active');
-                }
-            });
-        });
-    }
-
-    function initializeDynamicContent() {
-        // Initialize search functionality
-        initializeSearch();
-        
-        // Initialize notifications
-        initializeNotifications();
-        
-        // Initialize task management 
-        initializeTaskManagement();
-        
-        // Initialize document management
-        initializeDocumentManagement();
-        
-        // Initialize tab navigation
-        initializeTabNavigation();
-        
-        // Initialize compliance verification
-        initializeComplianceVerification();
-        
-        // Initialize onboarding approvals
-        initializeOnboardingApprovals();
-        
-        // Initialize onboarding tracker
-        initializeOnboardingTracker();
-        
-        // Load real employee data
-        loadEmployeeData();
-    }
-
-    function loadSectionContent(sectionId) {
-        const sections = document.querySelectorAll('.dashboard-section');
-        
-        sections.forEach(section => {
-            section.style.display = 'none';
-            section.classList.remove('active');
-        });
-        
-        const targetSection = document.getElementById(sectionId);
-        if (targetSection) {
-            targetSection.style.display = 'block';
-            // Trigger animation after display change
-            requestAnimationFrame(() => {
-                targetSection.classList.add('active');
-            });
-        }
-    }
-
-    function initializeSearch() {
-        const searchInputs = document.querySelectorAll('input[type="search"]');
-        searchInputs.forEach(input => {
-            input.addEventListener('input', debounce(function(e) {
-                const searchTerm = e.target.value.toLowerCase();
-                const tableBody = input.closest('.dashboard-section').querySelector('tbody');
-                if (!tableBody) return;
-
-                const rows = tableBody.querySelectorAll('tr');
-                rows.forEach(row => {
-                    const text = row.textContent.toLowerCase();
-                    const shouldShow = text.includes(searchTerm);
-                    row.style.display = shouldShow ? '' : 'none';
-                    
-                    // Animate row visibility
-                    row.style.opacity = shouldShow ? '1' : '0';
-                    row.style.transform = shouldShow ? 'translateX(0)' : 'translateX(-20px)';
-                });
-            }, 300));
-        });
-    }
-
-    function initializeNotifications() {
-        // Notifications are disabled
-        console.log('Notifications are disabled');
-        
-        // Keep only the send reminder button functionality if it exists
-        const sendReminderBtn = document.querySelector('.send-reminder');
-        if (sendReminderBtn) {
-            sendReminderBtn.addEventListener('click', function() {
-                this.classList.add('loading');
-                
-                setTimeout(() => {
-                    this.classList.remove('loading');
-                    // Use showNotification instead of addNotification for in-app notifications only
-                    showNotification('Reminders sent successfully to all pending employees!', 'success');
-                }, 1500);
-            });
-        }
-        
-        // Remove existing notification feed if it exists
-        const existingFeed = document.getElementById('notification-feed');
-        if (existingFeed) {
-            existingFeed.remove();
-        }
-        
-        // No sample notifications will be added
-    }
-
-    function addNotification(message) {
-        // This function is now disabled
-        console.log('Notification suppressed:', message);
-        // No notifications will be displayed
-    }
-
-    function initializeTaskManagement() {
-        const taskLists = document.querySelectorAll('.task-list');
-        
-        // Check if Sortable is defined
-        if (typeof Sortable === 'undefined') {
-            console.warn('Sortable library not loaded. Task drag and drop disabled.');
-            return;
-        }
-        
-        taskLists.forEach(list => {
-            try {
-            new Sortable(list, {
-                group: 'tasks',
-                animation: 150,
-                ghostClass: 'task-ghost',
-                chosenClass: 'task-chosen',
-                dragClass: 'task-drag',
-                onEnd: function(evt) {
-                    const item = evt.item;
-                    const from = evt.from;
-                    const to = evt.to;
-                    
-                        // Safely access task status and title elements
-                        const statusElement = item.querySelector('.task-status');
-                        const titleElement = item.querySelector('.task-title');
-                        
-                        if (statusElement && to) {
-                    // Update task status based on new column
-                    const status = to.id.replace('-tasks', '');
-                            statusElement.textContent = status;
-                    
-                    // Add success notification
-                            const title = titleElement ? titleElement.textContent : 'Task';
-                            addNotification(`Task "${title}" moved to ${status}`);
-                        }
-                }
-            });
             } catch (error) {
-                console.error('Error initializing Sortable:', error);
-            }
-        });
-    }
-
-    function initializeDocumentManagement() {
-        const uploadBtn = document.querySelector('.add-btn');
-        const documentFilter = document.querySelector('.document-filters select');
-
-        if (uploadBtn) {
-            uploadBtn.addEventListener('click', () => {
-                showModal('Upload Document Template', `
-                    <form id="upload-document-form">
-                        <div class="form-group">
-                            <label>Template Name</label>
-                            <input type="text" required placeholder="Enter template name">
-                        </div>
-                        <div class="form-group">
-                            <label>Document Type</label>
-                            <select required>
-                                <option value="">Select type</option>
-                                <option value="onboarding">Onboarding</option>
-                                <option value="policy">Policy</option>
-                                <option value="contract">Contract</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Upload File</label>
-                            <input type="file" required>
-                        </div>
-                        <button type="submit" class="submit-btn">Upload Template</button>
-                    </form>
-                `);
-            });
-        }
-
-        if (documentFilter) {
-            documentFilter.addEventListener('change', function() {
-                const status = this.value;
-                const rows = document.querySelectorAll('.document-table tbody tr');
-                
-                rows.forEach(row => {
-                    const rowStatus = row.querySelector('.status').textContent;
-                    const shouldShow = status === 'All Documents' || rowStatus === status;
-                    
-                    // Animate row visibility
-                    row.style.opacity = shouldShow ? '1' : '0';
-                    row.style.transform = shouldShow ? 'translateX(0)' : 'translateX(-20px)';
-                    setTimeout(() => {
-                        row.style.display = shouldShow ? '' : 'none';
-                    }, 300);
-                });
-            });
-        }
-    }
-
-    function showModal(title, content) {
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>${title}</h3>
-                    <button class="close-btn">&times;</button>
-                </div>
-                <div class="modal-body">
-                    ${content}
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-        setTimeout(() => modal.classList.add('visible'), 50);
-
-        const closeBtn = modal.querySelector('.close-btn');
-        closeBtn.addEventListener('click', () => {
-            modal.classList.remove('visible');
-            setTimeout(() => modal.remove(), 300);
-        });
-
-        // Close modal on outside click
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                modal.classList.remove('visible');
-                setTimeout(() => modal.remove(), 300);
-            }
-        });
-    }
-
-    function debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-
-    function initializeTabNavigation() {
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
-        
-        if (tabButtons.length > 0) {
-            tabButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    // Remove active class from all buttons and contents
-                    tabButtons.forEach(btn => btn.classList.remove('active'));
-                    tabContents.forEach(content => content.classList.remove('active'));
-                    
-                    // Add active class to clicked button
-                    button.classList.add('active');
-                    
-                    // Show corresponding tab content
-                    const tabId = button.dataset.tab;
-                    const tabContent = document.getElementById(tabId);
-                    if (tabContent) {
-                        tabContent.classList.add('active');
-                    }
-                });
-            });
-        }
-    }
-    
-    function initializeComplianceVerification() {
-        // Get all verification and rejection buttons
-        const verifyButtons = document.querySelectorAll('.verify-compliance');
-        const rejectButtons = document.querySelectorAll('.reject-compliance');
-        const addComplianceBtn = document.getElementById('add-compliance-btn');
-        const complianceTable = document.querySelector('#compliance-verification .data-table tbody');
-
-        // Load compliance items from API
-        loadComplianceItems();
-
-        // Function to load compliance items from API
-        async function loadComplianceItems() {
-            try {
-                // Show loading state
-                if (complianceTable) {
-                    complianceTable.innerHTML = `
-                        <tr>
-                            <td colspan="6" class="text-center">
-                                <div class="loading-spinner"></div>
-                                <p>Loading compliance items...</p>
-                            </td>
-                        </tr>
-                    `;
-                }
-
-                // Instead of trying to fetch from an API that might not exist,
-                // let's use mock data instead for demonstration purposes
-                const mockComplianceItems = [
-                    {
-                        id: "comp123",
-                        employeeName: "Sarah Johnson",
-                        employeeId: "emp001",
-                        department: "Marketing",
-                        type: "NDA Document",
-                        submittedDate: "2024-03-15",
-                        status: "pending"
-                    },
-                    {
-                        id: "comp124",
-                        employeeName: "Michael Chen",
-                        employeeId: "emp002",
-                        department: "Engineering",
-                        type: "Tax Documentation",
-                        submittedDate: "2024-03-14",
-                        status: "pending"
-                    },
-                    {
-                        id: "comp125",
-                        employeeName: "Lisa Kim",
-                        employeeId: "emp003",
-                        department: "Design",
-                        type: "Equipment Agreement",
-                        submittedDate: "2024-03-16",
-                        status: "verified"
-                    }
-                ];
-
-                // Simulate API request delay
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                // Render mock compliance items
-                renderComplianceItems(mockComplianceItems);
-            } catch (error) {
-                console.error('Error loading compliance items:', error);
-                if (complianceTable) {
-                    complianceTable.innerHTML = `
-                        <tr>
-                            <td colspan="6" class="text-center">
-                                <p class="error-message">Error loading compliance items. Please try again.</p>
-                            </td>
-                        </tr>
-                    `;
-                }
-            }
-        }
-
-        // Function to render compliance items
-        function renderComplianceItems(items) {
-            if (!complianceTable) return;
-
-            complianceTable.innerHTML = '';
-
-            items.forEach(item => {
-                const statusClass = getStatusClass(item.status);
-                const statusText = getStatusText(item.status);
-                
-                // Format date
-                const submittedDate = new Date(item.submittedDate).toLocaleDateString();
-                
-                // Create row
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.employeeName}</td>
-                    <td>${item.department}</td>
-                    <td>${item.type}</td>
-                    <td>${submittedDate}</td>
-                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                    <td class="actions">
-                        ${generateActionButtons(item)}
-                    </td>
-                `;
-                
-                // Add to table
-                complianceTable.appendChild(row);
-            });
-
-            // Reattach event listeners
-            attachActionListeners();
-        }
-
-        // Helper function to get status class
-        function getStatusClass(status) {
-            switch (status) {
-                case 'pending': return 'warning';
-                case 'completed': return 'active';
-                case 'overdue': return 'danger';
-                case 'in-progress': return 'info';
-                default: return 'warning';
-            }
-        }
-
-        // Helper function to get status text
-        function getStatusText(status) {
-            switch (status) {
-                case 'pending': return 'Pending Verification';
-                case 'completed': return 'Verified';
-                case 'overdue': return 'Overdue';
-                case 'in-progress': return 'In Progress';
-                default: return 'Pending';
-            }
-        }
-
-        // Helper function to generate action buttons
-        function generateActionButtons(item) {
-            if (item.status === 'completed') {
-                return `<button class="action-btn" title="View Document" data-id="${item.id}"><i class="fas fa-eye"></i></button>`;
-            }
-            
-            return `
-                <button class="action-btn verify-compliance" data-task-id="${item.id}" title="Verify"><i class="fas fa-check"></i></button>
-                <button class="action-btn reject-compliance" data-task-id="${item.id}" title="Reject"><i class="fas fa-times"></i></button>
-                <button class="action-btn" title="View Document" data-id="${item.id}"><i class="fas fa-eye"></i></button>
-            `;
-        }
-
-        // Function to attach event listeners to action buttons
-        function attachActionListeners() {
-            const verifyButtons = document.querySelectorAll('.verify-compliance');
-            const rejectButtons = document.querySelectorAll('.reject-compliance');
-            
-            // Add event listeners to verify buttons
-            verifyButtons.forEach(button => {
-                button.addEventListener('click', handleVerify);
-            });
-            
-            // Add event listeners to reject buttons
-            rejectButtons.forEach(button => {
-                button.addEventListener('click', handleReject);
-            });
-        }
-
-        // Function to handle verify button click
-        async function handleVerify() {
-            const taskId = this.dataset.taskId;
-            const row = this.closest('tr');
-            const statusCell = row.querySelector('.status-badge');
-            
-            try {
-                // Show loading state
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                this.disabled = true;
-                
-                // Call API to update compliance item
-                await compliance.updateComplianceItem(taskId, {
-                    status: 'completed'
-                });
-                
-                // Update UI
-                statusCell.textContent = 'Verified';
-                statusCell.className = 'status-badge active';
-                
-                // Remove action buttons except view
-                const actionCell = row.querySelector('td:last-child');
-                const viewButton = actionCell.querySelector('[title="View Document"]');
-                actionCell.innerHTML = '';
-                actionCell.appendChild(viewButton);
-                
-                // Show notification
-                addNotification(`Compliance item has been verified successfully`);
-            } catch (error) {
-                console.error('Error verifying compliance item:', error);
-                addNotification('Error verifying compliance item', 'error');
-                
-                // Reset button
-                this.innerHTML = '<i class="fas fa-check"></i>';
-                this.disabled = false;
-            }
+            console.error('Error initializing charts:', error);
         }
         
-        // Function to handle reject button click
-        function handleReject() {
-            const taskId = this.dataset.taskId;
-            const row = this.closest('tr');
-            const statusCell = row.querySelector('.status-badge');
-            
-            // Show rejection modal
-            showModal('Reject Compliance Item', `
-                <form id="reject-form">
-                    <div class="form-group">
-                        <label>Reason for Rejection</label>
-                        <textarea required placeholder="Please provide details..."></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Action Required</label>
-                        <input type="text" required placeholder="What needs to be fixed?">
-                    </div>
-                    <button type="submit" class="submit-btn" id="confirm-reject" data-task-id="${taskId}">Submit Rejection</button>
-                </form>
-            `);
-            
-            // Add event listener to the form submission
-            const confirmRejectBtn = document.getElementById('confirm-reject');
-            if (confirmRejectBtn) {
-                confirmRejectBtn.addEventListener('click', async function(e) {
-                    e.preventDefault();
-                    
-                    const reason = document.querySelector('#reject-form textarea').value;
-                    const actionRequired = document.querySelector('#reject-form input').value;
-                    
-                    if (!reason || !actionRequired) {
-                        alert('Please fill in all fields');
-                        return;
-                    }
-                    
-                    try {
-                        // Show loading state
-                        this.innerHTML = 'Processing...';
-                        this.disabled = true;
-                        
-                        // Call API to update compliance item
-                        await compliance.updateComplianceItem(taskId, {
-                            status: 'overdue',
-                            notes: `Rejected: ${reason}. Action required: ${actionRequired}`
-                        });
-                        
-                        // Update UI
-                        statusCell.textContent = 'Rejected';
-                        statusCell.className = 'status-badge danger';
-                        
-                        // Close the modal
-                        const modal = this.closest('.modal');
-                        modal.classList.remove('visible');
-                        setTimeout(() => modal.remove(), 300);
-                        
-                        // Show notification
-                        addNotification(`Compliance item has been rejected`);
+        // Initialize activity feed
+        try {
+            initializeActivityFeed();
+            } catch (error) {
+            console.error('Error initializing activity feed:', error);
+        }
+        
+        // Initialize sidebar
+        try {
+            initializeSidebar();
+            } catch (error) {
+            console.error('Error initializing sidebar:', error);
+        }
+        
+        // Initialize dynamic content
+        try {
+            initializeDynamicContent();
                     } catch (error) {
-                        console.error('Error rejecting compliance item:', error);
-                        addNotification('Error rejecting compliance item', 'error');
-                        
-                        // Reset button
-                        this.innerHTML = 'Submit Rejection';
-                        this.disabled = false;
-                    }
-                });
-            }
+            console.error('Error initializing dynamic content:', error);
         }
         
-        if (addComplianceBtn) {
-            addComplianceBtn.addEventListener('click', function() {
-                showModal('Add New Compliance Item', `
-                    <form id="add-compliance-form">
-                        <div class="form-group">
-                            <label>Employee</label>
-                            <select required id="employee-select">
-                                <option value="">Select Employee</option>
-                                <!-- Will be populated from API -->
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Compliance Type</label>
-                            <select required name="complianceType">
-                                <option value="">Select Type</option>
-                                <option value="nda">Non-Disclosure Agreement</option>
-                                <option value="i9">I-9 Form</option>
-                                <option value="background-check">Background Check</option>
-                                <option value="tax-form">Tax Documentation</option>
-                                <option value="policy-acknowledgment">Company Policy Acknowledgment</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Title</label>
-                            <input type="text" required name="title" placeholder="Compliance item title">
-                        </div>
-                        <div class="form-group">
-                            <label>Description</label>
-                            <textarea name="description" placeholder="Additional details about this compliance item..."></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Due Date</label>
-                            <input type="date" required name="dueDate">
-                        </div>
-                        <div class="form-group">
-                            <label>Document (Optional)</label>
-                            <input type="file" name="document">
-                        </div>
-                        <button type="submit" class="submit-btn">Create Compliance Item</button>
-                    </form>
-                `);
-                
-                // Fetch employees for the dropdown
-                fetchEmployees();
-                
-                // Add event listener to form submission
-                const form = document.getElementById('add-compliance-form');
-                if (form) {
-                    form.addEventListener('submit', handleComplianceSubmit);
-                }
-            });
-            
-            // Function to fetch employees
-            async function fetchEmployees() {
-                try {
-                    const employeeSelect = document.getElementById('employee-select');
-                    if (!employeeSelect) return;
-                    
-                    // Show loading state
-                    employeeSelect.innerHTML = '<option value="">Loading employees...</option>';
-                    
-                    // Fetch employees
-                    const response = await employees.getEmployees();
-                    
-                    // Clear loading state
-                    employeeSelect.innerHTML = '<option value="">Select Employee</option>';
-                    
-                    // Add employees to dropdown
-                    response.data.forEach(employee => {
-                        const option = document.createElement('option');
-                        option.value = employee._id;
-                        option.textContent = `${employee.fullName} - ${employee.department || 'No Department'}`;
-                        employeeSelect.appendChild(option);
-                    });
-                } catch (error) {
-                    console.error('Error fetching employees:', error);
-                    const employeeSelect = document.getElementById('employee-select');
-                    if (employeeSelect) {
-                        employeeSelect.innerHTML = '<option value="">Error loading employees</option>';
-                    }
-                }
-            }
-            
-            // Function to handle compliance form submission
-            async function handleComplianceSubmit(e) {
-                e.preventDefault();
-                
-                const form = this;
-                const submitBtn = form.querySelector('.submit-btn');
-                
-                try {
-                    // Show loading state
-                    submitBtn.textContent = 'Creating...';
-                    submitBtn.disabled = true;
-                    
-                    // Get form data
-                    const formData = new FormData(form);
-                    const employeeId = document.getElementById('employee-select').value;
-                    
-                    if (!employeeId) {
-                        alert('Please select an employee');
-                        submitBtn.textContent = 'Create Compliance Item';
-                        submitBtn.disabled = false;
-                        return;
-                    }
-                    
-                    // Add employee ID to form data
-                    formData.append('assignedTo', employeeId);
-                    
-                    // Create compliance item
-                    await compliance.createComplianceItem(Object.fromEntries(formData));
-                    
-                    // Close modal
-                    const modal = form.closest('.modal');
-                    modal.classList.remove('visible');
-                    setTimeout(() => modal.remove(), 300);
-                    
-                    // Show notification
-                    addNotification('New compliance item created successfully');
-                    
-                    // Reload compliance items
-                    loadComplianceItems();
-                } catch (error) {
-                    console.error('Error creating compliance item:', error);
-                    alert('Error creating compliance item: ' + (error.message || 'Unknown error'));
-                    
-                    // Reset button
-                    submitBtn.textContent = 'Create Compliance Item';
-                    submitBtn.disabled = false;
-                }
-            }
-        }
+    } catch (error) {
+        console.error('Critical initialization error:', error);
+        alert('There was an error initializing the dashboard: ' + error.message);
     }
-
-    // Initialize onboarding approvals
-    initializeOnboardingApprovals();
 });
+
+// Add displayUserInfo function at the beginning of the file
+function displayUserInfo(userInfo) {
+    try {
+        console.log('Displaying user info:', userInfo);
+        
+        // Display user name in the dashboard
+        const userNameElement = document.getElementById('user-name');
+        if (userNameElement && userInfo.firstName) {
+            userNameElement.textContent = userInfo.firstName + '!';
+        }
+        
+        // You can add more user info display logic here
+        // For example, displaying profile picture, role, etc.
+        
+                } catch (error) {
+        console.error('Error displaying user info:', error);
+    }
+}
 
 // Initialize onboarding approvals
 function initializeOnboardingApprovals() {
@@ -1837,875 +863,6 @@ function approveOnboardingDirectly(submissionId) {
 }
 
 // Function to directly request revision from the table (without opening modal)
-function requestOnboardingRevisionDirectly(submissionId) {
-    // Show a modal to collect feedback
-    showModal('Request Revision', `
-        <form id="revision-form">
-            <div class="form-group">
-                <label for="revision-feedback">Feedback for Employee</label>
-                <textarea id="revision-feedback" class="form-control" rows="4" 
-                    placeholder="Please provide detailed feedback on what needs to be revised..."></textarea>
-            </div>
-            <div class="form-group">
-                <label>Missing Items</label>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" name="missing-item" value="ID Proof"> ID Proof</label>
-                    <label><input type="checkbox" name="missing-item" value="Tax Form"> Tax Form</label>
-                    <label><input type="checkbox" name="missing-item" value="Bank Details"> Bank Details</label>
-                    <label><input type="checkbox" name="missing-item" value="Emergency Contact"> Emergency Contact</label>
-                </div>
-            </div>
-            <button type="submit" class="btn warning-btn">Send Revision Request</button>
-        </form>
-    `);
-    
-    // Handle form submission
-    const form = document.getElementById('revision-form');
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Get feedback text
-        const feedback = document.getElementById('revision-feedback').value;
-        if (!feedback || feedback.trim() === '') {
-            showNotification('Please provide feedback for the employee.', 'error');
-            return;
-        }
-        
-        // Get missing items
-        const missingItems = [];
-        document.querySelectorAll('input[name="missing-item"]:checked').forEach(checkbox => {
-            missingItems.push(checkbox.value);
-        });
-        
-        // Process the revision request
-        processRevisionRequest(submissionId, feedback, missingItems);
-        
-        // Close the modal
-        document.querySelector('.modal').classList.remove('visible');
-        setTimeout(() => document.querySelector('.modal').remove(), 300);
-    });
-}
-
-// Process revision request with feedback
-function processRevisionRequest(submissionId, feedback, missingItems) {
-    console.log('Processing revision request:', submissionId, feedback, missingItems);
-    
-    // Find the submission in our data
-    let submissions = [];
-    try {
-        submissions = JSON.parse(localStorage.getItem('onboardingSubmissions')) || [];
-    } catch (error) {
-        console.error('Error parsing onboarding submissions from localStorage:', error);
-    }
-    
-    // Find the submission by ID
-    const submissionIndex = submissions.findIndex(s => s.id === submissionId);
-    
-    if (submissionIndex === -1) {
-        showNotification('Submission not found.', 'error');
-        return;
-    }
-    
-    // Update the submission status
-    const submission = submissions[submissionIndex];
-    submission.status = 'revision_required';
-    submission.requestDate = new Date().toISOString();
-    submission.feedback = feedback;
-    submission.missingItems = missingItems;
-    
-    // Save back to localStorage
-    localStorage.setItem('onboardingSubmissions', JSON.stringify(submissions));
-    
-    // Send notification to the employee
-    sendEmployeeNotification(submission.email, {
-        type: 'onboarding_revision',
-        title: 'Onboarding Revision Requested',
-        message: feedback,
-        missingItems: missingItems,
-        date: new Date().toISOString()
-    });
-    
-    // Update the employee status in the employee list
-    updateEmployeeStatus(submissionId, 'revision_required');
-    
-    // Show success notification to admin
-    showNotification(`Revision requested from ${submission.name}. Employee has been notified.`, 'warning');
-    
-    // Refresh the onboarding approvals list
-    loadOnboardingSubmissions();
-}
-
-// Function to send notification to employee
-function sendEmployeeNotification(email, notification) {
-    console.log('Sending notification to employee:', email, notification);
-    
-    // In a real implementation, this would use an API to send the notification
-    // For now, we'll store it in localStorage as an example
-    
-    let employeeNotifications = {};
-    try {
-        employeeNotifications = JSON.parse(localStorage.getItem('employeeNotifications')) || {};
-    } catch (error) {
-        console.error('Error parsing employee notifications:', error);
-        employeeNotifications = {};
-    }
-    
-    // Create notifications array for this employee if it doesn't exist
-    if (!employeeNotifications[email]) {
-        employeeNotifications[email] = [];
-    }
-    
-    // Add the new notification
-    employeeNotifications[email].unshift(notification);
-    
-    // Save back to localStorage
-    localStorage.setItem('employeeNotifications', JSON.stringify(employeeNotifications));
-}
-
-// Function to update employee status in the employee list
-function updateEmployeeStatus(submissionId, newStatus) {
-    // Get employees from localStorage
-    let employees = [];
-    try {
-        employees = JSON.parse(localStorage.getItem('employees')) || [];
-    } catch (error) {
-        console.error('Error parsing employees:', error);
-    }
-    
-    // Find the submission to get employee details
-    let submissions = [];
-    try {
-        submissions = JSON.parse(localStorage.getItem('onboardingSubmissions')) || [];
-    } catch (error) {
-        console.error('Error parsing submissions:', error);
-    }
-    
-    const submission = submissions.find(s => s.id === submissionId);
-    if (!submission) return;
-    
-    // Find employee by email
-    const employeeIndex = employees.findIndex(e => e.email === submission.email);
-    
-    if (employeeIndex === -1) {
-        console.log('Employee not found in list, may need to add them');
-        return;
-    }
-    
-    // Update employee status
-    employees[employeeIndex].status = newStatus === 'approved' ? 'active' : 'pending';
-    
-    // Save back to localStorage
-    localStorage.setItem('employees', JSON.stringify(employees));
-    
-    // If employee table is visible, refresh it
-    if (document.getElementById('employees').classList.contains('active')) {
-        loadEmployeeData();
-    }
-}
-
-// Helper function to get status class for CSS
-function getStatusClass(status) {
-    switch (status) {
-        case 'approved': return 'active';
-        case 'pending': return 'pending';
-        case 'revision_required': return 'warning';
-        case 'offboarding': return 'offboarding';
-        default: return 'pending';
-    }
-}
-
-// Helper function to get status text
-function getStatusText(status) {
-    switch (status) {
-        case 'approved': return 'Approved';
-        case 'pending': return 'Pending Review';
-        case 'revision_required': return 'Revision Required';
-        case 'offboarding': return 'Offboarding';
-        default: return 'Pending Review';
-    }
-}
-
-// Function to initialize onboarding kanban board
-function initializeOnboardingTracker() {
-    console.log('Initializing onboarding tracker...');
-    
-    // Get the kanban columns
-    const toStartColumn = document.getElementById('toStart');
-    const inProgressColumn = document.getElementById('inProgress');
-    const completedColumn = document.getElementById('completed');
-    
-    if (!toStartColumn || !inProgressColumn || !completedColumn) {
-        console.error('One or more kanban columns not found');
-        return;
-    }
-    
-    // Clear existing items
-    toStartColumn.innerHTML = '';
-    inProgressColumn.innerHTML = '';
-    completedColumn.innerHTML = '';
-    
-    // Load employee data from API
-    loadEmployeesForOnboarding();
-    
-    // Initialize sortable for drag and drop between columns
-    if (typeof Sortable !== 'undefined') {
-        const options = {
-            group: 'onboarding',
-            animation: 150,
-            ghostClass: 'kanban-item-ghost',
-            chosenClass: 'kanban-item-chosen',
-            dragClass: 'kanban-item-drag',
-            onEnd: function(evt) {
-                const item = evt.item;
-                const employeeId = item.dataset.id;
-                const newStatus = evt.to.id;
-                
-                // Update employee status based on new column
-                updateEmployeeOnboardingStatus(employeeId, newStatus);
-            }
-        };
-        
-        // Initialize sortable for each column
-        new Sortable(toStartColumn, options);
-        new Sortable(inProgressColumn, options);
-        new Sortable(completedColumn, options);
-    } else {
-        console.warn('Sortable library not loaded. Drag and drop disabled.');
-    }
-    
-    // Add event listener for "New Onboarding" button
-    const newOnboardingBtn = document.querySelector('#onboarding .add-btn');
-    if (newOnboardingBtn) {
-        newOnboardingBtn.addEventListener('click', function() {
-            showOnboardingModal();
-        });
-    }
-}
-
-// Load employees for onboarding tracker
-async function loadEmployeesForOnboarding() {
-    try {
-        showNotification('Loading onboarding data...', 'info');
-        
-        // Get data from API
-        const response = await fetch('/api/onboarding-processes/kanban/board', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Error loading onboarding data: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to load onboarding data');
-        }
-        
-        const { toStart, inProgress, completed } = result.data;
-        
-        // Add employees to appropriate kanban columns
-        const toStartColumn = document.getElementById('toStart');
-        const inProgressColumn = document.getElementById('inProgress');
-        const completedColumn = document.getElementById('completed');
-        
-        // Populate To Start column
-        toStart.forEach(employee => {
-            const item = createKanbanItem(employee);
-            toStartColumn.appendChild(item);
-        });
-        
-        // Populate In Progress column
-        inProgress.forEach(employee => {
-            const item = createKanbanItem(employee);
-            inProgressColumn.appendChild(item);
-        });
-        
-        // Populate Completed column
-        completed.forEach(employee => {
-            const item = createKanbanItem(employee);
-            completedColumn.appendChild(item);
-        });
-        
-        console.log('Successfully loaded employees for onboarding tracker');
-        
-    } catch (error) {
-        console.error('Error loading employees for onboarding tracker:', error);
-        showNotification('Error loading onboarding tracker. Please refresh the page.', 'error');
-    }
-}
-
-// Create kanban item for an employee
-function createKanbanItem(employee) {
-    const item = document.createElement('div');
-    item.className = 'kanban-item';
-    item.dataset.id = employee.id;
-    
-    // Format start date
-    const startDate = employee.startDate ? new Date(employee.startDate) : null;
-    const formattedDate = startDate ? startDate.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric'
-    }) : 'TBD';
-    
-    // Determine label based on status
-    let dateLabel = 'Start Date:';
-    if (employee.status === 'in_progress' || employee.status === 'onboarding') {
-        dateLabel = 'Started:';
-    } else if (employee.status === 'completed' || employee.status === 'active' || employee.status === 'approved') {
-        dateLabel = 'Completed:';
-    }
-    
-    // Calculate progress percentage
-    let progressWidth = employee.completionPercentage || 0;
-    if (employee.status === 'completed') {
-        progressWidth = 100;
-    }
-    
-    item.innerHTML = `
-        <h4>${employee.name}</h4>
-        <p>${employee.position}</p>
-        <span class="date">${dateLabel} ${formattedDate}</span>
-        <div class="task-progress">
-            <div class="progress-bar" style="width: ${progressWidth}%"></div>
-        </div>
-    `;
-    
-    // Add click event to view employee details
-    item.addEventListener('click', function(e) {
-        // Only trigger if not dragging
-        if (!item.classList.contains('kanban-item-chosen')) {
-            viewEmployeeDetails(employee.id);
-        }
-    });
-    
-    return item;
-}
-
-// Update employee status when moved between columns
-async function updateEmployeeOnboardingStatus(employeeId, newStatus) {
-    console.log(`Updating employee ${employeeId} status to ${newStatus}`);
-    
-    try {
-        const response = await fetch(`/api/onboarding-processes/${employeeId}/status`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({ status: newStatus })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Error updating status: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to update employee status');
-        }
-        
-        const employee = result.data;
-        
-        // Show notification
-        showNotification(`Updated ${employee.employee ? employee.employee.name : 'employee'}'s onboarding status`, 'success');
-        
-        // Update progress bar in the kanban item
-        const kanbanItem = document.querySelector(`.kanban-item[data-id="${employeeId}"]`);
-        if (kanbanItem) {
-            const progressBar = kanbanItem.querySelector('.progress-bar');
-            if (progressBar) {
-                progressBar.style.width = `${employee.progress.percentComplete}%`;
-            }
-            
-            // Update date label
-            const dateSpan = kanbanItem.querySelector('.date');
-            if (dateSpan) {
-                let dateLabel = 'Start Date:';
-                if (newStatus === 'inProgress' || employee.status === 'in_progress') {
-                    dateLabel = 'Started:';
-                } else if (newStatus === 'completed' || employee.status === 'completed') {
-                    dateLabel = 'Completed:';
-                }
-                
-                const formattedDate = new Date(employee.startDate).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric'
-                });
-                
-                dateSpan.textContent = `${dateLabel} ${formattedDate}`;
-            }
-        }
-        
-        // If there's an onboarding submission for this employee, refresh it
-        if (document.getElementById('onboarding-approvals').classList.contains('active')) {
-            loadOnboardingSubmissions();
-        }
-        
-    } catch (error) {
-        console.error('Error updating employee status:', error);
-        showNotification('Error updating employee status. Please try again.', 'error');
-    }
-}
-
-// Show new onboarding modal
-function showOnboardingModal() {
-    showModal('Add New Onboarding', `
-        <form id="new-onboarding-form">
-            <div class="form-group">
-                <label>Employee Name</label>
-                <input type="text" id="new-employee-name" required placeholder="Enter employee name">
-            </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="new-employee-email" required placeholder="Enter email address">
-            </div>
-            <div class="form-group">
-                <label>Department</label>
-                <select id="new-employee-department" required>
-                    <option value="">Select Department</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Sales">Sales</option>
-                    <option value="Product">Product</option>
-                    <option value="Design">Design</option>
-                    <option value="Human Resources">Human Resources</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Position</label>
-                <input type="text" id="new-employee-position" required placeholder="Enter position title">
-            </div>
-            <div class="form-group">
-                <label>Start Date</label>
-                <input type="date" id="new-employee-start-date" required>
-            </div>
-            <button type="submit" class="btn-primary">Create Onboarding</button>
-        </form>
-    `);
-    
-    // Handle form submission
-    const form = document.getElementById('new-onboarding-form');
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Get form values
-        const name = document.getElementById('new-employee-name').value;
-        const email = document.getElementById('new-employee-email').value;
-        const department = document.getElementById('new-employee-department').value;
-        const position = document.getElementById('new-employee-position').value;
-        const startDate = document.getElementById('new-employee-start-date').value;
-        
-        // Create new employee
-        createNewOnboarding(name, email, department, position, startDate);
-        
-        // Close modal
-        const modal = this.closest('.modal');
-        modal.classList.remove('visible');
-        setTimeout(() => modal.remove(), 300);
-    });
-}
-
-// Create new onboarding
-async function createNewOnboarding(name, email, department, position, startDate) {
-    try {
-        showNotification('Creating new onboarding...', 'info');
-        
-        const response = await fetch('/api/onboarding-processes/employee', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({
-                name,
-                email,
-                department,
-                position,
-                startDate
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Error creating onboarding: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to create onboarding');
-        }
-        
-        const newEmployee = result.data;
-        
-        // Create a kanban item for the new employee
-        const kanbanItem = createKanbanItem(newEmployee);
-        
-        // Add to "To Start" column
-        const toStartColumn = document.getElementById('toStart');
-        if (toStartColumn) {
-            toStartColumn.appendChild(kanbanItem);
-        }
-        
-        // Show success notification
-        showNotification(`Added ${name} to onboarding`, 'success');
-        
-        // Refresh employee list if visible
-        if (document.getElementById('employees').classList.contains('active')) {
-            loadEmployeeData();
-        }
-        
-    } catch (error) {
-        console.error('Error creating new onboarding:', error);
-        showNotification('Error creating new onboarding: ' + error.message, 'error');
-    }
-}
-
-// View details of an onboarding submission
-async function viewOnboardingSubmission(submissionId) {
-    console.log('Viewing submission details for:', submissionId);
-    
-    try {
-        // Show loading notification
-        showNotification('Loading submission details...', 'info');
-        
-        // Fetch submission details from API
-        const response = await fetch(`/api/onboarding-processes/${submissionId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Error fetching submission details: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to load submission details');
-        }
-        
-        const process = result.data;
-        const employee = process.employee;
-        
-        // Format dates for display
-        const formattedStartDate = new Date(process.startDate).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-        
-        // Create modal content with tabs for different sections
-        const modalContent = `
-            <div class="submission-detail-container">
-                <div class="employee-info">
-                    <h3>${employee.name}</h3>
-                    <p>${employee.position} - ${employee.department}</p>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <span class="label">Email:</span>
-                            <span class="value">${employee.email}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">Start Date:</span>
-                            <span class="value">${formattedStartDate}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">Status:</span>
-                            <span class="value status-badge ${getStatusClass(process.status)}">${getStatusText(process.status)}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">Progress:</span>
-                            <div class="progress-container">
-                                <div class="progress-bar" style="width: ${process.progress.percentComplete}%"></div>
-                                <span class="progress-text">${process.progress.percentComplete}%</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="submission-tabs">
-                    <div class="tab-buttons">
-                        <button class="tab-btn active" data-tab="personal-info">Personal Info</button>
-                        <button class="tab-btn" data-tab="employee-details">Employment Details</button>
-                        <button class="tab-btn" data-tab="documents">Documents</button>
-                        <button class="tab-btn" data-tab="approval-actions">Approval Actions</button>
-                    </div>
-                    
-                    <div class="tab-content active" id="personal-info">
-                        <h4>Personal Information</h4>
-                        <div class="detail-grid">
-                            <div class="detail-item">
-                                <span class="label">Full Name:</span>
-                                <span class="value">${employee.personalInfo?.firstName || ''} ${employee.personalInfo?.middleName || ''} ${employee.personalInfo?.lastName || ''}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="label">Phone:</span>
-                                <span class="value">${employee.personalInfo?.phoneNumber || 'Not provided'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="label">Address:</span>
-                                <span class="value">${formatAddress(employee.personalInfo?.address) || 'Not provided'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="label">Emergency Contact:</span>
-                                <span class="value">${formatEmergencyContact(employee.personalInfo?.emergencyContact) || 'Not provided'}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="tab-content" id="employee-details">
-                        <h4>Employment Details</h4>
-                        <div class="detail-grid">
-                            <div class="detail-item">
-                                <span class="label">Position:</span>
-                                <span class="value">${employee.position}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="label">Department:</span>
-                                <span class="value">${employee.department}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="label">Employment Type:</span>
-                                <span class="value">${employee.employmentDetails?.contractType || 'Full-time'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="label">Start Date:</span>
-                                <span class="value">${formattedStartDate}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="tab-content" id="documents">
-                        <h4>Submitted Documents</h4>
-                        ${renderDocuments(process.documents)}
-                    </div>
-                    
-                    <div class="tab-content" id="approval-actions">
-                        <h4>Approval Actions</h4>
-                        <div class="action-buttons">
-                            <button class="btn-success approve-btn" data-id="${submissionId}">
-                                <i class="fas fa-check"></i> Approve Submission
-                            </button>
-                            <button class="btn-warning revision-btn" data-id="${submissionId}">
-                                <i class="fas fa-undo"></i> Request Revision
-                            </button>
-                        </div>
-                        
-                        <div class="revision-form" style="display: none;">
-                            <h4>Request Revisions</h4>
-                            <div class="form-group">
-                                <label>Feedback</label>
-                                <textarea id="revision-feedback" placeholder="Provide detailed feedback for the employee"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Missing Items</label>
-                                <div class="missing-items-list">
-                                    <div class="missing-item">
-                                        <input type="checkbox" id="missing-personal-info" value="Personal Information">
-                                        <label for="missing-personal-info">Personal Information</label>
-                                    </div>
-                                    <div class="missing-item">
-                                        <input type="checkbox" id="missing-documents" value="Required Documents">
-                                        <label for="missing-documents">Required Documents</label>
-                                    </div>
-                                    <div class="missing-item">
-                                        <input type="checkbox" id="missing-signatures" value="Signatures">
-                                        <label for="missing-signatures">Signatures</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <button class="btn-primary send-revision-btn" data-id="${submissionId}">Send Revision Request</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Show modal with submission details
-        showModal(`Onboarding Submission - ${employee.name}`, modalContent);
-        
-        // Add tab switching functionality
-        document.querySelectorAll('.submission-tabs .tab-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                // Remove active class from all tabs and content
-                document.querySelectorAll('.submission-tabs .tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.submission-tabs .tab-content').forEach(c => c.classList.remove('active'));
-                
-                // Add active class to clicked tab and corresponding content
-                this.classList.add('active');
-                document.getElementById(this.dataset.tab).classList.add('active');
-            });
-        });
-        
-        // Add event listener for approve button
-        document.querySelector('.approve-btn').addEventListener('click', function() {
-            approveOnboardingDirectly(this.dataset.id);
-        });
-        
-        // Add event listener for revision button
-        document.querySelector('.revision-btn').addEventListener('click', function() {
-            // Show revision form
-            document.querySelector('.revision-form').style.display = 'block';
-            this.style.display = 'none';
-        });
-        
-        // Add event listener for send revision button
-        document.querySelector('.send-revision-btn').addEventListener('click', function() {
-            const feedback = document.getElementById('revision-feedback').value;
-            const missingItems = [];
-            
-            // Get checked missing items
-            document.querySelectorAll('.missing-items-list input:checked').forEach(item => {
-                missingItems.push(item.value);
-            });
-            
-            // Validate feedback
-            if (!feedback) {
-                showNotification('Please provide feedback for the revision request', 'warning');
-                return;
-            }
-            
-            // Send revision request
-            requestOnboardingRevisionDirectly(this.dataset.id, feedback, missingItems);
-        });
-        
-    } catch (error) {
-        console.error('Error viewing onboarding submission:', error);
-        showNotification('Error loading submission details: ' + error.message, 'error');
-    }
-}
-
-// Helper function to format address
-function formatAddress(address) {
-    if (!address) return null;
-    
-    const parts = [];
-    if (address.street) parts.push(address.street);
-    if (address.city) parts.push(address.city);
-    if (address.state) parts.push(address.state);
-    if (address.zipCode) parts.push(address.zipCode);
-    if (address.country) parts.push(address.country);
-    
-    return parts.join(', ');
-}
-
-// Helper function to format emergency contact
-function formatEmergencyContact(contact) {
-    if (!contact) return null;
-    
-    const parts = [];
-    if (contact.name) parts.push(contact.name);
-    if (contact.relationship) parts.push(`(${contact.relationship})`);
-    if (contact.phoneNumber) parts.push(contact.phoneNumber);
-    
-    return parts.join(' ');
-}
-
-// Helper function to render documents
-function renderDocuments(documents) {
-    if (!documents || documents.length === 0) {
-        return '<p>No documents submitted</p>';
-    }
-    
-    let html = '<div class="documents-list">';
-    
-    documents.forEach(doc => {
-        html += `
-            <div class="document-item">
-                <div class="document-icon">
-                    <i class="fas fa-file-${getDocumentIcon(doc.title)}"></i>
-                </div>
-                <div class="document-info">
-                    <h5>${doc.title}</h5>
-                    <span class="status-badge ${getStatusClass(doc.status)}">${getStatusText(doc.status)}</span>
-                </div>
-                <div class="document-actions">
-                    <button class="action-btn view-document" title="View Document">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-    
-    html += '</div>';
-    return html;
-}
-
-// Helper function to get document icon based on title
-function getDocumentIcon(title) {
-    if (!title) return 'alt';
-    
-    const lowercaseTitle = title.toLowerCase();
-    
-    if (lowercaseTitle.includes('contract')) return 'contract';
-    if (lowercaseTitle.includes('id') || lowercaseTitle.includes('identification')) return 'id-badge';
-    if (lowercaseTitle.includes('tax')) return 'file-invoice-dollar';
-    if (lowercaseTitle.includes('health') || lowercaseTitle.includes('medical')) return 'file-medical';
-    if (lowercaseTitle.includes('agreement')) return 'file-signature';
-    if (lowercaseTitle.includes('pdf')) return 'pdf';
-    if (lowercaseTitle.includes('doc')) return 'word';
-    if (lowercaseTitle.includes('xls')) return 'excel';
-    
-    return 'alt';
-}
-
-// Approve an onboarding submission
-async function approveOnboardingDirectly(submissionId) {
-    console.log('Approving onboarding submission:', submissionId);
-    
-    try {
-        // Show loading notification
-        showNotification('Processing approval...', 'info');
-        
-        // Call API to approve submission
-        const response = await fetch(`/api/onboarding-processes/submissions/${submissionId}/approve`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Error approving submission: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to approve submission');
-        }
-        
-        // Close modal if open
-        const modal = document.querySelector('.modal');
-        if (modal) {
-            modal.classList.remove('visible');
-            setTimeout(() => modal.remove(), 300);
-        }
-        
-        // Show success notification
-        showNotification('Onboarding submission approved successfully', 'success');
-        
-        // Refresh submissions list
-        loadOnboardingSubmissions();
-        
-        // Refresh onboarding tracker if it's visible
-        if (document.getElementById('onboarding').classList.contains('active')) {
-            loadEmployeesForOnboarding();
-        }
-        
-    } catch (error) {
-        console.error('Error approving onboarding submission:', error);
-        showNotification('Error approving submission: ' + error.message, 'error');
-    }
-}
-
-// Request revision for an onboarding submission
 async function requestOnboardingRevisionDirectly(submissionId, feedback, missingItems) {
     console.log('Requesting revision for onboarding submission:', submissionId);
     
@@ -2746,10 +903,1097 @@ async function requestOnboardingRevisionDirectly(submissionId, feedback, missing
         showNotification('Revision request sent successfully', 'success');
         
         // Refresh submissions list
-        loadOnboardingSubmissions();
+    loadOnboardingSubmissions();
         
     } catch (error) {
         console.error('Error requesting revision for submission:', error);
         showNotification('Error requesting revision: ' + error.message, 'error');
+    }
+}
+
+// Initialize template management
+function initializeTemplateManagement() {
+    console.log('Initializing template management');
+    
+    // Get the New Template button
+    const newTemplateBtn = document.getElementById('new-template-btn');
+    if (newTemplateBtn) {
+        console.log('New Template button found');
+        newTemplateBtn.addEventListener('click', function() {
+            console.log('New Template button clicked');
+            showTemplateForm();
+        });
+    } else {
+        console.error('New Template button not found in the DOM');
+    }
+    
+    // Load templates when the templates section is accessed
+    const templatesLink = document.querySelector('a[href="#templates"]');
+    if (templatesLink) {
+        templatesLink.addEventListener('click', () => {
+            loadTemplates();
+        });
+    }
+    
+    // Initial load of templates
+    loadTemplates();
+}
+
+/**
+ * Load templates from the API
+ */
+async function loadTemplates() {
+    console.log('Loading templates');
+    
+    // Get all template containers
+    const onboardingTemplatesContainer = document.querySelector('#onboarding-templates');
+    const hrDocumentsContainer = document.querySelector('#hr-documents');
+    const legalDocumentsContainer = document.querySelector('#legal-documents');
+    
+    if (!onboardingTemplatesContainer && !hrDocumentsContainer && !legalDocumentsContainer) {
+        console.error('Template containers not found in the DOM');
+        return;
+    }
+    
+    try {
+        // Show loading state
+        if (onboardingTemplatesContainer) {
+            onboardingTemplatesContainer.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading templates...</div>';
+        }
+        if (hrDocumentsContainer) {
+            hrDocumentsContainer.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading templates...</div>';
+        }
+        if (legalDocumentsContainer) {
+            legalDocumentsContainer.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading templates...</div>';
+        }
+        
+        // Fetch templates from API
+        console.log('Fetching templates from API...');
+        const response = await fetch('/api/documents?isTemplate=true', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error fetching templates: ${response.status} ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Templates fetched:', result);
+        const templates = result.data || [];
+        
+        // Group templates by category
+        const onboardingTemplates = templates.filter(template => template.category === 'onboarding');
+        const hrTemplates = templates.filter(template => template.category === 'hr');
+        const legalTemplates = templates.filter(template => template.category === 'legal');
+        
+        console.log('Templates by category:', {
+            onboarding: onboardingTemplates.length,
+            hr: hrTemplates.length,
+            legal: legalTemplates.length
+        });
+        
+        // Clear loading states
+        if (onboardingTemplatesContainer) {
+            onboardingTemplatesContainer.innerHTML = '';
+        }
+        if (hrDocumentsContainer) {
+            hrDocumentsContainer.innerHTML = '';
+        }
+        if (legalDocumentsContainer) {
+            legalDocumentsContainer.innerHTML = '';
+        }
+        
+        // Display templates
+        if (onboardingTemplatesContainer) {
+            if (onboardingTemplates.length === 0) {
+                onboardingTemplatesContainer.innerHTML = '<div class="empty-state">No onboarding templates found</div>';
+    } else {
+                onboardingTemplates.forEach(template => {
+                    try {
+                        const templateEl = createTemplateElement(template);
+                        onboardingTemplatesContainer.appendChild(templateEl);
+                    } catch (err) {
+                        console.error('Error creating template element:', err, template);
+                    }
+        });
+    }
+}
+
+        if (hrDocumentsContainer) {
+            if (hrTemplates.length === 0) {
+                hrDocumentsContainer.innerHTML = '<div class="empty-state">No HR document templates found</div>';
+            } else {
+                hrTemplates.forEach(template => {
+                    try {
+                        const templateEl = createTemplateElement(template);
+                        hrDocumentsContainer.appendChild(templateEl);
+                    } catch (err) {
+                        console.error('Error creating template element:', err, template);
+                    }
+                });
+            }
+        }
+        
+        if (legalDocumentsContainer) {
+            if (legalTemplates.length === 0) {
+                legalDocumentsContainer.innerHTML = '<div class="empty-state">No legal document templates found</div>';
+            } else {
+                legalTemplates.forEach(template => {
+                    try {
+                        const templateEl = createTemplateElement(template);
+                        legalDocumentsContainer.appendChild(templateEl);
+                    } catch (err) {
+                        console.error('Error creating template element:', err, template);
+                    }
+                });
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error loading templates:', error);
+        
+        // Show error state
+        if (onboardingTemplatesContainer) {
+            onboardingTemplatesContainer.innerHTML = '<div class="error-message">Error loading templates</div>';
+        }
+        if (hrDocumentsContainer) {
+            hrDocumentsContainer.innerHTML = '<div class="error-message">Error loading templates</div>';
+        }
+        if (legalDocumentsContainer) {
+            legalDocumentsContainer.innerHTML = '<div class="error-message">Error loading templates</div>';
+        }
+        
+        showNotification('Failed to load templates: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Create a template element
+ */
+function createTemplateElement(template) {
+    const templateEl = document.createElement('div');
+    templateEl.className = 'template-item';
+    templateEl.dataset.id = template._id;
+    templateEl.dataset.category = template.category; // Add category data attribute for filtering
+    
+    // Determine icon based on document type
+    let icon = 'fas fa-file-alt';
+    if (template.documentType === 'pdf') icon = 'fas fa-file-pdf';
+    if (template.documentType === 'presentation') icon = 'fas fa-file-powerpoint';
+    if (template.documentType === 'spreadsheet') icon = 'fas fa-file-excel';
+    if (template.documentType === 'image') icon = 'fas fa-file-image';
+    
+    // Format dates
+    const updatedAt = template.updatedAt ? new Date(template.updatedAt) : new Date(template.createdAt);
+    const formattedDate = updatedAt.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short',
+        day: 'numeric'
+    });
+    
+    // Get usage count (if available)
+    const usageCount = template.usageCount || Math.floor(Math.random() * 50);
+    
+    templateEl.innerHTML = `
+        <div class="template-icon">
+            <i class="${icon}"></i>
+        </div>
+        <div class="template-content">
+            <h4>${template.title}</h4>
+            <p>${template.description || 'No description'}</p>
+            <div class="template-meta">
+                <span class="template-date">Updated: ${formattedDate}</span>
+                <span class="template-usage">${usageCount} uses</span>
+            </div>
+        </div>
+        <div class="template-actions">
+            <button class="action-btn edit-template" title="Edit Template" data-id="${template._id}">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="action-btn duplicate-template" title="Duplicate Template" data-id="${template._id}">
+                <i class="fas fa-copy"></i>
+            </button>
+            <button class="action-btn download-template" title="Download Template" data-id="${template._id}">
+                <i class="fas fa-download"></i>
+            </button>
+        </div>
+    `;
+    
+    // Add event listeners to action buttons
+    const editBtn = templateEl.querySelector('.edit-template');
+    const duplicateBtn = templateEl.querySelector('.duplicate-template');
+    const downloadBtn = templateEl.querySelector('.download-template');
+    
+    if (editBtn) {
+        editBtn.addEventListener('click', () => {
+            editTemplate(template._id);
+        });
+    }
+    
+    if (duplicateBtn) {
+        duplicateBtn.addEventListener('click', () => {
+            duplicateTemplate(template._id);
+        });
+    }
+    
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+            if (template.file && template.file.fileName) {
+                window.open(`/uploads/documents/${template.file.fileName}`, '_blank');
+            } else {
+                showNotification('Template file not available', 'error');
+            }
+        });
+    }
+    
+    return templateEl;
+}
+
+/**
+ * Show the template form for creating a new template
+ */
+function showTemplateForm(templateId = null) {
+    // Create the modal
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'template-modal';
+    
+    // Set the modal content
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>${templateId ? 'Edit Template' : 'Create New Template'}</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="template-form">
+            <div class="form-group">
+                        <label for="template-title">Title*</label>
+                        <input type="text" id="template-title" name="title" required>
+            </div>
+                    
+            <div class="form-group">
+                        <label for="template-description">Description</label>
+                        <textarea id="template-description" name="description"></textarea>
+            </div>
+                    
+            <div class="form-group">
+                        <label for="template-category">Category*</label>
+                        <select id="template-category" name="category" required>
+                            <option value="">Select Category</option>
+                            <option value="onboarding">Onboarding</option>
+                            <option value="hr">HR</option>
+                            <option value="legal">Legal</option>
+                            <option value="training">Training</option>
+                            <option value="compliance">Compliance</option>
+                </select>
+            </div>
+                    
+            <div class="form-group">
+                        <label for="template-type">Template Type*</label>
+                        <select id="template-type" name="documentType" required>
+                            <option value="">Select Type</option>
+                            <option value="pdf">PDF</option>
+                            <option value="presentation">Presentation</option>
+                            <option value="spreadsheet">Spreadsheet</option>
+                            <option value="text">Text Document</option>
+                        </select>
+            </div>
+                    
+            <div class="form-group">
+                        <label for="template-file">Template File*</label>
+                        <input type="file" id="template-file" name="file" ${templateId ? '' : 'required'}>
+                        <small>Max file size: 10MB. Supported formats: PDF, DOCX, XLSX, PPTX, etc.</small>
+            </div>
+                    
+                    <div class="form-group">
+                        <label for="template-tags">Tags</label>
+                        <input type="text" id="template-tags" name="tags" placeholder="Separate tags with commas">
+                        <small>Example: contract, employment, hiring</small>
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="button" class="btn-secondary cancel-template">Cancel</button>
+                        <button type="submit" class="btn-primary">${templateId ? 'Update Template' : 'Create Template'}</button>
+                    </div>
+        </form>
+            </div>
+        </div>
+    `;
+    
+    // Add to DOM
+    document.body.appendChild(modal);
+    
+    // Show the modal
+    setTimeout(() => {
+        modal.classList.add('visible');
+    }, 10);
+    
+    // Handle close button
+    const closeBtn = modal.querySelector('.close-modal');
+    const cancelBtn = modal.querySelector('.cancel-template');
+    
+    closeBtn.addEventListener('click', () => {
+        modal.classList.remove('visible');
+        setTimeout(() => {
+            modal.remove();
+        }, 300);
+    });
+    
+    cancelBtn.addEventListener('click', () => {
+        modal.classList.remove('visible');
+        setTimeout(() => {
+            modal.remove();
+        }, 300);
+    });
+    
+    // If editing, load template data
+    if (templateId) {
+        loadTemplateData(templateId);
+    }
+    
+    // Handle form submission
+    const form = document.getElementById('template-form');
+    
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        
+        // Add isTemplate flag
+        formData.append('isTemplate', 'true');
+        
+        // Process tags
+        const tagsInput = formData.get('tags');
+        if (tagsInput) {
+            const tagsArray = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+            formData.set('tags', JSON.stringify(tagsArray));
+        }
+        
+        try {
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = 'Processing...';
+            submitBtn.disabled = true;
+            
+            // Determine if creating or updating
+            let url = '/api/documents';
+            let method = 'POST';
+            
+            if (templateId) {
+                url = `/api/documents/${templateId}`;
+                method = 'PUT';
+                
+                // If no new file is selected, don't send file data
+                if (!formData.get('file').name) {
+                    formData.delete('file');
+                }
+            }
+            
+            // Send request
+            const response = await fetch(url, {
+                method,
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+                body: formData
+        });
+        
+        if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to ${templateId ? 'update' : 'create'} template`);
+            }
+            
+            // Show success message
+            showNotification(`Template ${templateId ? 'updated' : 'created'} successfully`, 'success');
+            
+            // Close modal
+            modal.classList.remove('visible');
+            setTimeout(() => {
+                modal.remove();
+            }, 300);
+            
+            // Reload templates
+            loadTemplates();
+            
+        } catch (error) {
+            console.error(`Error ${templateId ? 'updating' : 'creating'} template:`, error);
+            showNotification(`Error ${templateId ? 'updating' : 'creating'} template: ${error.message}`, 'error');
+            
+            // Reset button
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = templateId ? 'Update Template' : 'Create Template';
+            submitBtn.disabled = false;
+        }
+    });
+}
+
+/**
+ * Load template data for editing
+ */
+async function loadTemplateData(templateId) {
+    try {
+        // Show loading state
+        showNotification('Loading template data...', 'info');
+        
+        // Fetch template from API
+        const response = await fetch(`/api/documents/${templateId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error fetching template: ${response.status} ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        const template = result.data;
+        
+        // Populate form fields
+        document.getElementById('template-title').value = template.title || '';
+        document.getElementById('template-description').value = template.description || '';
+        document.getElementById('template-category').value = template.category || '';
+        document.getElementById('template-type').value = template.documentType || '';
+        
+        // Handle tags
+        if (template.tags && Array.isArray(template.tags)) {
+            document.getElementById('template-tags').value = template.tags.join(', ');
+        }
+        
+    } catch (error) {
+        console.error('Error loading template data:', error);
+        showNotification('Error loading template data: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Edit a template
+ */
+function editTemplate(templateId) {
+    showTemplateForm(templateId);
+}
+
+/**
+ * Duplicate a template
+ */
+async function duplicateTemplate(templateId) {
+    try {
+        // Show loading notification
+        showNotification('Duplicating template...', 'info');
+        
+        // Fetch the original template
+        const response = await fetch(`/api/documents/${templateId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error fetching template: ${response.status} ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        const template = result.data;
+        
+        // Create a new template based on the original
+        const newTemplate = {
+            title: `${template.title} (Copy)`,
+            description: template.description,
+            documentType: template.documentType,
+            category: template.category,
+            isTemplate: true,
+            tags: template.tags
+        };
+        
+        // Duplicate file if possible
+        if (template.file && template.file.fileName) {
+            // This is a placeholder for actual file duplication logic
+            // In a real implementation, you would need to handle file duplication properly
+            // For now, we'll just reference the original file
+            const duplicateResponse = await fetch(`/api/documents/${templateId}/duplicate`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newTemplate)
+            });
+            
+            if (!duplicateResponse.ok) {
+                throw new Error(`Error duplicating template: ${duplicateResponse.status} ${duplicateResponse.statusText}`);
+            }
+            
+            const duplicateResult = await duplicateResponse.json();
+            
+            // Show success message
+            showNotification('Template duplicated successfully', 'success');
+            
+            // Reload templates
+            loadTemplates();
+            
+        } else {
+            throw new Error('Template file not available for duplication');
+        }
+        
+    } catch (error) {
+        console.error('Error duplicating template:', error);
+        showNotification('Error duplicating template: ' + error.message, 'error');
+    }
+}
+
+// Initialize template search and filtering
+function initializeTemplateSearchAndFilters() {
+    const searchInput = document.getElementById('template-search');
+    const categoryFilter = document.getElementById('template-category-filter');
+    
+    if (!searchInput || !categoryFilter) {
+        return;
+    }
+    
+    searchInput.addEventListener('input', function() {
+        filterTemplates();
+    });
+    
+    categoryFilter.addEventListener('change', function() {
+        filterTemplates();
+    });
+}
+
+// Filter templates based on search and category filter
+function filterTemplates() {
+    const searchTerm = document.getElementById('template-search').value.toLowerCase();
+    const categoryFilter = document.getElementById('template-category-filter').value;
+    
+    // Get all template items
+    const templateItems = document.querySelectorAll('.template-item');
+    
+    // Loop through each template item
+    templateItems.forEach(item => {
+        // Get template data from the item
+        const title = item.querySelector('h4').textContent.toLowerCase();
+        const description = item.querySelector('p').textContent.toLowerCase();
+        const category = item.dataset.category;
+        
+        // Check if template matches search term
+        const matchesSearch = searchTerm === '' || 
+            title.includes(searchTerm) || 
+            description.includes(searchTerm);
+        
+        // Check if template matches category filter
+        const matchesCategory = categoryFilter === 'all' || category === categoryFilter;
+        
+        // Show or hide template based on filters
+        if (matchesSearch && matchesCategory) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Check if any templates are visible in each category
+    const categories = document.querySelectorAll('.template-category');
+    categories.forEach(category => {
+        const categoryTemplates = category.querySelectorAll('.template-item');
+        const visibleTemplates = Array.from(categoryTemplates).filter(item => item.style.display !== 'none');
+        
+        // Get the empty state element for this category
+        let emptyState = category.querySelector('.empty-state');
+        
+        // If no templates are visible, show empty state
+        if (visibleTemplates.length === 0) {
+            if (!emptyState) {
+                emptyState = document.createElement('div');
+                emptyState.className = 'empty-state';
+                emptyState.textContent = 'No templates match your filters';
+                const templateList = category.querySelector('.template-list');
+                templateList.appendChild(emptyState);
+            }
+            emptyState.style.display = 'block';
+        } else if (emptyState) {
+            emptyState.style.display = 'none';
+        }
+    });
+}
+
+function initializeDynamicContent() {
+    // Initialize each component with try/catch to prevent one failure from breaking everything
+    
+    try {
+        // Initialize search functionality
+        initializeSearch();
+    } catch (error) {
+        console.error('Error initializing search:', error);
+    }
+    
+    try {
+        // Initialize notifications
+        initializeNotifications();
+    } catch (error) {
+        console.error('Error initializing notifications:', error);
+    }
+    
+    try {
+        // Initialize task management 
+        initializeTaskManagement();
+    } catch (error) {
+        console.error('Error initializing task management:', error);
+    }
+    
+    try {
+        // Initialize document management
+        initializeDocumentManagement();
+    } catch (error) {
+        console.error('Error initializing document management:', error);
+    }
+    
+    try {
+        // Initialize tab navigation
+        initializeTabNavigation();
+    } catch (error) {
+        console.error('Error initializing tab navigation:', error);
+    }
+    
+    try {
+        // Initialize compliance verification
+        initializeComplianceVerification();
+    } catch (error) {
+        console.error('Error initializing compliance verification:', error);
+    }
+    
+    try {
+        // Initialize onboarding approvals
+        initializeOnboardingApprovals();
+    } catch (error) {
+        console.error('Error initializing onboarding approvals:', error);
+    }
+    
+    try {
+        // Initialize template management
+        initializeTemplateManagement();
+    } catch (error) {
+        console.error('Error initializing template management:', error);
+    }
+    
+    try {
+        // Initialize template search and filters
+        initializeTemplateSearchAndFilters();
+    } catch (error) {
+        console.error('Error initializing template search and filters:', error);
+    }
+    
+    try {
+        // Load real employee data
+        loadEmployeeData();
+    } catch (error) {
+        console.error('Error loading employee data:', error);
+    }
+}
+
+// Add updateDateTime function 
+function updateDateTime() {
+    try {
+        const now = new Date();
+        
+        // Format date: Monday, January 1, 2024
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const formattedDate = now.toLocaleDateString('en-US', dateOptions);
+        
+        // Format time: 3:00 PM
+        const timeOptions = { hour: 'numeric', minute: 'numeric', hour12: true };
+        const formattedTime = now.toLocaleTimeString('en-US', timeOptions);
+        
+        // Update elements
+        const dateElement = document.getElementById('current-date');
+        const timeElement = document.getElementById('current-time');
+        
+        if (dateElement) {
+            dateElement.textContent = formattedDate;
+        }
+        
+        if (timeElement) {
+            timeElement.textContent = formattedTime;
+        }
+    } catch (error) {
+        console.error('Error updating date time:', error);
+    }
+}
+
+// Add initializeMobileMenu function
+function initializeMobileMenu() {
+    try {
+        const menuToggle = document.getElementById('menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        
+        if (menuToggle && sidebar) {
+            menuToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+        }
+    } catch (error) {
+        console.error('Error initializing mobile menu:', error);
+    }
+}
+
+// Add initializeActivityFeed function
+function initializeActivityFeed() {
+    try {
+        // This would typically fetch recent activity data from the server
+        // For now, we'll just log that it's initialized
+        console.log('Activity feed initialized');
+        
+        // You can add code here to fetch and display real activity data
+    } catch (error) {
+        console.error('Error initializing activity feed:', error);
+    }
+}
+
+// Add initializeSidebar function
+function initializeSidebar() {
+    try {
+        // Get all navigation links
+        const navLinks = document.querySelectorAll('.sidebar a');
+        
+        // Add click event listeners to all navigation links
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                // Special case for logout
+                if (this.id === 'logout-link') {
+                    e.preventDefault();
+                    // Handle logout
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login.html';
+                    return;
+                }
+                
+                // Remove active class from all links
+                navLinks.forEach(l => l.classList.remove('active'));
+                
+                // Add active class to clicked link
+                this.classList.add('active');
+                
+                // If link has an href attribute with a section ID
+                const href = this.getAttribute('href');
+                if (href && href.startsWith('#') && href !== '#') {
+                    e.preventDefault();
+                    const sectionId = href.substring(1);
+                    loadSectionContent(sectionId);
+                }
+            });
+        });
+        
+        // Set initial active link based on hash or default to dashboard
+        const hash = window.location.hash || '#dashboard';
+        const activeLink = document.querySelector(`.sidebar a[href="${hash}"]`);
+        if (activeLink) {
+            activeLink.click();
+        } else {
+            const dashboardLink = document.querySelector('.sidebar a[href="#dashboard"]');
+            if (dashboardLink) {
+                dashboardLink.click();
+            }
+        }
+    } catch (error) {
+        console.error('Error initializing sidebar:', error);
+    }
+}
+
+// Add loadSectionContent function
+function loadSectionContent(sectionId) {
+    try {
+        console.log('Loading section:', sectionId);
+        
+        // Get all dashboard sections
+        const sections = document.querySelectorAll('.dashboard-section');
+        
+        // Hide all sections and remove active class
+        sections.forEach(section => {
+            section.style.display = 'none';
+            section.classList.remove('active');
+        });
+        
+        // Show the target section
+        const targetSection = document.getElementById(sectionId);
+        if (targetSection) {
+            targetSection.style.display = 'block';
+            
+            // Trigger animation after display change
+            setTimeout(() => {
+                targetSection.classList.add('active');
+            }, 10);
+            
+            // Load section-specific content if needed
+            if (sectionId === 'templates') {
+                try {
+                    loadTemplates();
+                } catch (error) {
+                    console.error('Error loading templates:', error);
+                }
+            } else if (sectionId === 'documents') {
+                try {
+                    loadDocuments();
+                } catch (error) {
+                    console.error('Error loading documents:', error);
+                }
+            } else if (sectionId === 'onboarding') {
+                try {
+                    loadOnboardingSubmissions();
+                } catch (error) {
+                    console.error('Error loading onboarding submissions:', error);
+                }
+            }
+        } else {
+            console.error('Section not found:', sectionId);
+        }
+    } catch (error) {
+        console.error('Error loading section content:', error);
+    }
+}
+
+// Add loadDocuments function
+async function loadDocuments() {
+    try {
+        console.log('Loading documents');
+        
+        const documentList = document.getElementById('admin-document-list');
+        if (!documentList) {
+            console.error('Document list container not found');
+            return;
+        }
+        
+        // Show loading state
+        documentList.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading documents...</div>';
+        
+        try {
+            // Fetch documents from API
+            const response = await fetch('/api/documents', {
+                method: 'GET',
+            headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+                throw new Error(`Error fetching documents: ${response.status} ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+            const documents = result.data || [];
+            
+            console.log('Documents loaded:', documents.length);
+            
+            // Clear loading state
+            documentList.innerHTML = '';
+            
+            if (documents.length === 0) {
+                documentList.innerHTML = '<div class="empty-state">No documents found</div>';
+                return;
+            }
+            
+            // Create document cards
+            documents.forEach(doc => {
+                const docCard = createDocumentCard(doc);
+                documentList.appendChild(docCard);
+            });
+        } catch (error) {
+            console.error('Error fetching documents:', error);
+            documentList.innerHTML = '<div class="error-message">Error loading documents: ' + error.message + '</div>';
+        }
+    } catch (error) {
+        console.error('Error in loadDocuments function:', error);
+    }
+}
+
+// Helper function to create document card
+function createDocumentCard(doc) {
+    try {
+        const card = document.createElement('div');
+        card.className = 'document-card';
+        card.dataset.id = doc._id;
+        
+        // Determine icon based on document type
+        let icon = 'fas fa-file-alt';
+        if (doc.documentType === 'pdf') icon = 'fas fa-file-pdf';
+        if (doc.documentType === 'presentation') icon = 'fas fa-file-powerpoint';
+        if (doc.documentType === 'spreadsheet') icon = 'fas fa-file-excel';
+        if (doc.documentType === 'image') icon = 'fas fa-file-image';
+        if (doc.documentType === 'video') icon = 'fas fa-file-video';
+        
+        // Format date
+        const updatedAt = doc.updatedAt ? new Date(doc.updatedAt) : new Date(doc.createdAt);
+        const formattedDate = updatedAt.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        });
+        
+        card.innerHTML = `
+            <div class="document-icon">
+                <i class="${icon}"></i>
+            </div>
+            <div class="document-info">
+                <h4>${doc.title}</h4>
+                <p>${doc.description || 'No description'}</p>
+                <div class="document-meta">
+                    <span class="document-category">${doc.category.replace('_', ' ')}</span>
+                    <span class="document-date">Updated: ${formattedDate}</span>
+                </div>
+            </div>
+            <div class="document-actions">
+                <button class="action-btn view-document" title="View Document" data-id="${doc._id}">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="action-btn edit-document" title="Edit Document" data-id="${doc._id}">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="action-btn delete-document" title="Delete Document" data-id="${doc._id}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        
+        // Add event listeners for actions
+        card.querySelector('.view-document').addEventListener('click', () => {
+            if (doc.file && doc.file.fileName) {
+                window.open(`/uploads/documents/${doc.file.fileName}`, '_blank');
+            } else {
+                showNotification('Document file not available', 'error');
+            }
+        });
+        
+        card.querySelector('.edit-document').addEventListener('click', () => {
+            // Edit document functionality would go here
+            console.log('Edit document:', doc._id);
+        });
+        
+        card.querySelector('.delete-document').addEventListener('click', () => {
+            if (confirm('Are you sure you want to delete this document?')) {
+                deleteDocument(doc._id);
+            }
+        });
+        
+        return card;
+    } catch (error) {
+        console.error('Error creating document card:', error);
+        const errorCard = document.createElement('div');
+        errorCard.className = 'document-card error';
+        errorCard.innerHTML = '<div class="error-message">Error rendering document</div>';
+        return errorCard;
+    }
+}
+
+// Function to delete a document
+async function deleteDocument(documentId) {
+    try {
+        const response = await fetch(`/api/documents/${documentId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error deleting document: ${response.status} ${response.statusText}`);
+        }
+        
+        showNotification('Document deleted successfully', 'success');
+        
+        // Reload documents
+        loadDocuments();
+    } catch (error) {
+        console.error('Error deleting document:', error);
+        showNotification('Error deleting document: ' + error.message, 'error');
+    }
+}
+
+// Add showNotification function
+function showNotification(message, type = 'info') {
+    try {
+        console.log(`Notification (${type}):`, message);
+        
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="notification-icon ${getNotificationIcon(type)}"></i>
+                <span class="notification-message">${message}</span>
+            </div>
+            <button class="notification-close">&times;</button>
+        `;
+        
+        // Add to notification container (create if not exists)
+        let container = document.querySelector('.notification-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'notification-container';
+            document.body.appendChild(container);
+        }
+        
+        // Add notification to container
+        container.appendChild(notification);
+        
+        // Add animation class after small delay for animation to work
+        setTimeout(() => {
+            notification.classList.add('visible');
+        }, 10);
+        
+        // Add close button event
+        const closeBtn = notification.querySelector('.notification-close');
+        closeBtn.addEventListener('click', () => {
+            closeNotification(notification);
+        });
+        
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+            closeNotification(notification);
+        }, 5000);
+    } catch (error) {
+        console.error('Error showing notification:', error);
+    }
+}
+
+// Helper function to close notification with animation
+function closeNotification(notification) {
+    try {
+        // Add closing class for animation
+        notification.classList.add('closing');
+        
+        // Remove after animation completes
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+            
+            // If no more notifications, remove container
+            const container = document.querySelector('.notification-container');
+            if (container && container.children.length === 0) {
+                container.remove();
+            }
+        }, 300);
+    } catch (error) {
+        console.error('Error closing notification:', error);
+    }
+}
+
+// Helper function to get the right icon for each notification type
+function getNotificationIcon(type) {
+    switch (type) {
+        case 'success': return 'fas fa-check-circle';
+        case 'error': return 'fas fa-exclamation-circle';
+        case 'warning': return 'fas fa-exclamation-triangle';
+        case 'info':
+        default: return 'fas fa-info-circle';
     }
 }

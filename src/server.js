@@ -60,6 +60,9 @@ try {
   // Document management
   app.use('/api/documents', require('./routes/documentRoutes'));
   
+  // Training and orientation
+  app.use('/api/trainings', require('./routes/trainingRoutes'));
+  
   // Notifications and messaging
   app.use('/api/notifications', require('./routes/notificationRoutes'));
   app.use('/api/messages', require('./routes/messageRoutes'));

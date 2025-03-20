@@ -12,7 +12,8 @@ const {
   deleteDocument,
   signDocument,
   getPendingSignatures,
-  addDocumentNote
+  addDocumentNote,
+  duplicateDocument
 } = require('../controllers/documentController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -124,6 +125,15 @@ router.post(
     check('text', 'Note text is required').not().isEmpty()
   ],
   addDocumentNote
+);
+
+// @route   POST /api/documents/:id/duplicate
+// @desc    Duplicate a document (primarily for templates)
+// @access  Private
+router.post(
+  '/:id/duplicate',
+  protect,
+  duplicateDocument
 );
 
 // Error handler for multer file uploads

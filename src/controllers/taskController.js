@@ -714,6 +714,363 @@ const batchUpdateTasks = async (req, res) => {
   }
 };
 
+/**
+ * Create automated tasks for onboarding/offboarding processes
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+const createAutomatedTasks = async (req, res) => {
+  try {
+    const { userId, process, stage } = req.body;
+    
+    // Validate input
+    if (!userId || !process || !['onboarding', 'offboarding'].includes(process)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid input. userId and valid process (onboarding/offboarding) are required'
+      });
+    }
+    
+    // Get the user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Define task templates based on process type and stage
+    const taskTemplates = {
+      onboarding: {
+        // Initial onboarding stage
+        initial: [
+          {
+            title: 'Create email account',
+            description: 'Set up company email account for the new employee',
+            taskType: 'email_setup',
+            category: 'it',
+            priority: 'high',
+            dueDate: 2, // days from now
+            assignToRole: 'it_admin',
+            department: user.department
+          },
+          {
+            title: 'Set up user profiles',
+            description: 'Create user accounts in necessary systems',
+            taskType: 'user_profile_creation',
+            category: 'it',
+            priority: 'high',
+            dueDate: 2, // days from now
+            assignToRole: 'it_admin',
+            department: user.department
+          },
+          {
+            title: 'Prepare welcome package',
+            description: 'Prepare welcome kit with company merchandise and information materials',
+            taskType: 'other',
+            category: 'hr',
+            priority: 'medium',
+            dueDate: 3, // days from now
+            assignToRole: 'hr_admin',
+            department: 'HR'
+          }
+        ],
+        // Documentation stage
+        documentation: [
+          {
+            title: 'Collect tax information',
+            description: 'Ensure all tax forms are completed and submitted',
+            taskType: 'document_submission',
+            category: 'hr',
+            priority: 'high',
+            dueDate: 5, // days from now
+            assignToRole: 'hr_admin',
+            department: 'HR'
+          },
+          {
+            title: 'Complete I-9 verification',
+            description: 'Verify employment eligibility documentation',
+            taskType: 'compliance',
+            category: 'hr',
+            priority: 'high',
+            dueDate: 3, // days from now
+            assignToRole: 'hr_admin',
+            department: 'HR'
+          }
+        ],
+        // Equipment stage
+        equipment: [
+          {
+            title: 'Assign computer equipment',
+            description: 'Prepare and assign laptop/desktop computer',
+            taskType: 'equipment_assignment',
+            category: 'it',
+            priority: 'high',
+            dueDate: 3, // days from now
+            assignToRole: 'it_admin',
+            department: user.department
+          },
+          {
+            title: 'Set up phone/communication tools',
+            description: 'Provide mobile phone or set up communication software',
+            taskType: 'equipment_assignment',
+            category: 'it',
+            priority: 'medium',
+            dueDate: 3, // days from now
+            assignToRole: 'it_admin',
+            department: user.department
+          }
+        ],
+        // Training stage
+        training: [
+          {
+            title: 'Schedule orientation session',
+            description: 'Schedule initial orientation and introduction to company culture',
+            taskType: 'orientation',
+            category: 'hr',
+            priority: 'medium',
+            dueDate: 5, // days from now
+            assignToRole: 'hr_admin',
+            department: 'HR'
+          },
+          {
+            title: 'Assign training modules',
+            description: 'Set up required training modules in LMS',
+            taskType: 'training_assignment',
+            category: 'hr',
+            priority: 'medium',
+            dueDate: 3, // days from now
+            assignToRole: 'hr_admin',
+            department: 'HR'
+          }
+        ],
+        // Integration stage
+        integration: [
+          {
+            title: 'Schedule team introductions',
+            description: 'Arrange meetings with team members and key stakeholders',
+            taskType: 'intro_meeting',
+            category: 'hr',
+            priority: 'medium',
+            dueDate: 5, // days from now
+            assignToRole: 'manager',
+            department: user.department
+          },
+          {
+            title: 'Assign initial project/tasks',
+            description: 'Provide initial assignments to help employee get started',
+            taskType: 'other',
+            category: 'other',
+            priority: 'medium',
+            dueDate: 7, // days from now
+            assignToRole: 'manager',
+            department: user.department
+          }
+        ]
+      },
+      offboarding: {
+        // Initial offboarding stage
+        initial: [
+          {
+            title: 'Schedule exit interview',
+            description: 'Arrange exit interview with HR',
+            taskType: 'exit_interview',
+            category: 'hr',
+            priority: 'high',
+            dueDate: 5, // days from now
+            assignToRole: 'hr_admin',
+            department: 'HR'
+          },
+          {
+            title: 'Prepare final documentation',
+            description: 'Prepare final pay, benefits information, and release documents',
+            taskType: 'other',
+            category: 'hr',
+            priority: 'high',
+            dueDate: 3, // days from now
+            assignToRole: 'hr_admin',
+            department: 'HR'
+          }
+        ],
+        // Access stage
+        access: [
+          {
+            title: 'Revoke system access',
+            description: 'Remove access to company systems and applications',
+            taskType: 'revoke_access',
+            category: 'it',
+            priority: 'high',
+            dueDate: 1, // day from now
+            assignToRole: 'it_admin',
+            department: user.department
+          },
+          {
+            title: 'Disable email account',
+            description: 'Disable email account and set up forwarding if necessary',
+            taskType: 'email_setup',
+            category: 'it',
+            priority: 'high',
+            dueDate: 1, // day from now
+            assignToRole: 'it_admin',
+            department: user.department
+          }
+        ],
+        // Equipment stage
+        equipment: [
+          {
+            title: 'Collect company equipment',
+            description: 'Collect laptop, phone, and other company property',
+            taskType: 'asset_return',
+            category: 'it',
+            priority: 'high',
+            dueDate: 2, // days from now
+            assignToRole: 'it_admin',
+            department: user.department
+          },
+          {
+            title: 'Return access badges/keys',
+            description: 'Collect physical access items like badges, keys, etc.',
+            taskType: 'asset_return',
+            category: 'hr',
+            priority: 'high',
+            dueDate: 2, // days from now
+            assignToRole: 'hr_admin',
+            department: 'HR'
+          }
+        ],
+        // Knowledge transfer
+        knowledge: [
+          {
+            title: 'Schedule knowledge transfer sessions',
+            description: 'Arrange meetings for knowledge transfer to team members',
+            taskType: 'knowledge_transfer',
+            category: 'other',
+            priority: 'high',
+            dueDate: 5, // days from now
+            assignToRole: 'manager',
+            department: user.department
+          },
+          {
+            title: 'Document current projects',
+            description: 'Ensure documentation of current projects and status',
+            taskType: 'knowledge_transfer',
+            category: 'other',
+            priority: 'high',
+            dueDate: 3, // days from now
+            assignToRole: 'manager',
+            department: user.department
+          }
+        ],
+        // Final stage
+        final: [
+          {
+            title: 'Process final payment',
+            description: 'Ensure final paycheck, benefits, and reimbursements are processed',
+            taskType: 'final_payment',
+            category: 'hr',
+            priority: 'high',
+            dueDate: 5, // days from now
+            assignToRole: 'hr_admin',
+            department: 'HR'
+          },
+          {
+            title: 'Send exit survey',
+            description: 'Send exit survey for feedback collection',
+            taskType: 'other',
+            category: 'hr',
+            priority: 'medium',
+            dueDate: 7, // days from now
+            assignToRole: 'hr_admin',
+            department: 'HR'
+          }
+        ]
+      }
+    };
+
+    // Get the specific templates to use (default to initial if no stage provided)
+    const templates = taskTemplates[process][stage || 'initial'] || [];
+    
+    // Create the tasks
+    const createdTasks = [];
+    const currentDate = new Date();
+    
+    for (const template of templates) {
+      // Find an appropriate assignee based on role and department
+      let assignee = null;
+      
+      if (template.assignToRole === 'manager' && user.manager) {
+        assignee = user.manager;
+      } else {
+        // Find a user with the specified role in the specified department
+        const potentialAssignees = await User.find({
+          role: template.assignToRole,
+          department: template.department
+        });
+        
+        if (potentialAssignees.length > 0) {
+          // For now, just assign to the first found user with matching criteria
+          assignee = potentialAssignees[0]._id;
+        }
+      }
+      
+      // Calculate due date
+      const dueDate = new Date(currentDate);
+      dueDate.setDate(dueDate.getDate() + template.dueDate);
+      
+      // Create the task
+      const task = new EmployeeTask({
+        title: template.title,
+        description: template.description,
+        taskType: template.taskType,
+        category: template.category,
+        status: 'pending',
+        priority: template.priority,
+        assignedTo: assignee,
+        relatedUser: userId,
+        dueDate: dueDate,
+        isAutomated: true,
+        createdBy: req.user._id
+      });
+      
+      await task.save();
+      createdTasks.push(task);
+      
+      // Send notification to assignee if available
+      if (assignee) {
+        await Notification.create({
+          recipient: assignee,
+          type: 'task',
+          title: `New ${process} Task Assigned`,
+          message: `You have been assigned a new task: ${template.title}`,
+          relatedObject: {
+            objectType: 'task',
+            objectId: task._id
+          },
+          isRead: false,
+          sender: req.user._id
+        });
+      }
+    }
+    
+    res.status(201).json({
+      success: true,
+      data: {
+        tasks: createdTasks,
+        count: createdTasks.length
+      },
+      message: `Created ${createdTasks.length} automated tasks for ${process} process`
+    });
+  } catch (error) {
+    console.error('Error creating automated tasks:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while creating automated tasks',
+      error: process.env.NODE_ENV === 'production' ? null : error.message
+    });
+  }
+};
+
 module.exports = {
   getTasks,
   createTask,
@@ -722,5 +1079,6 @@ module.exports = {
   deleteTask,
   updateTaskStatus,
   addComment,
-  batchUpdateTasks
+  batchUpdateTasks,
+  createAutomatedTasks
 }; 

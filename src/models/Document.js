@@ -14,8 +14,9 @@ const DocumentSchema = new mongoose.Schema({
   documentType: {
     type: String,
     enum: [
+      'pdf', 'presentation', 'spreadsheet', 'text', 'image', 'video',
       'policy', 'procedure', 'form', 'contract', 'template', 
-      'identification', 'certificate', 'training', 'other'
+      'identification', 'certificate', 'training', 'calendar', 'other'
     ],
     default: 'other',
     required: true
@@ -24,7 +25,8 @@ const DocumentSchema = new mongoose.Schema({
   category: {
     type: String,
     enum: [
-      'onboarding', 'employee', 'compliance', 'hr', 'it', 
+      'employee_resources', 'onboarding', 'policies', 'training', 
+      'compliance', 'finance', 'legal', 'hr', 'it', 
       'payroll', 'benefits', 'performance', 'offboarding', 'other'
     ],
     default: 'other',
@@ -42,7 +44,7 @@ const DocumentSchema = new mongoose.Schema({
     },
     fileType: {
       type: String,
-      enum: ['pdf', 'docx', 'xlsx', 'pptx', 'txt', 'jpg', 'png', 'other'],
+      enum: ['pdf', 'docx', 'xlsx', 'pptx', 'txt', 'jpg', 'png', 'mp4', 'other'],
       default: 'pdf'
     },
     fileSize: Number, // in bytes
@@ -68,7 +70,7 @@ const DocumentSchema = new mongoose.Schema({
   },
   visibility: {
     type: String,
-    enum: ['private', 'employee', 'department', 'company', 'public'],
+    enum: ['private', 'employee', 'department', 'company', 'public', 'all_employees', 'specific_department'],
     default: 'private'
   },
   // For templates
@@ -78,11 +80,7 @@ const DocumentSchema = new mongoose.Schema({
   },
   // Access control
   accessibleTo: [{
-    role: {
-      type: String,
-      enum: ['admin', 'hr', 'manager', 'employee', 'it']
-    },
-    department: String
+    type: String
   }],
   // For documents that need signatures/approvals
   requiresSignature: {
