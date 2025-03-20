@@ -107,6 +107,11 @@ exports.getDocuments = async (req, res) => {
       query.documentType = req.query.documentType;
     }
 
+    // Filter by isTemplate
+    if (req.query.isTemplate !== undefined) {
+      query.isTemplate = req.query.isTemplate === 'true';
+    }
+
     // Filter by category
     if (req.query.category) {
       query.category = req.query.category;

@@ -5,105 +5,341 @@ const Notification = require('../models/Notification');
 
 /**
  * Submit new feedback
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
+ * @route   POST /api/feedback
+ * @access  Private
  */
-const submitFeedback = async (req, res) => {
+exports.submitFeedback = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
   try {
-    const { rating, comments, category = 'general' } = req.body;
+    const { rating, comments, category } = req.body;
 
     // Create new feedback
     const newFeedback = new Feedback({
+      user: req.user.id,
       rating,
       comments,
       category,
-      user: req.user.id,
       date: new Date()
     });
 
-    // Save feedback
+    // Save feedback to database
     await newFeedback.save();
 
+    // Get user details for the notification
+    const user = await User.findById(req.user.id).select('name email department');
+
+    // Create notification for HR admins
+    const notification = new Notification({
+      title: 'New Feedback Submitted',
+      message: `${user.name} has submitted feedback about the ${category} process.`,
+      type: 'feedback',
+      priority: 'medium',
+      sender: req.user.id,
+      recipients: [], // Will be populated with HR admin IDs
+      relatedTo: {
+        model: 'Feedback',
+        id: newFeedback._id
+      }
+    });
+
+    // Find HR admin users to send notifications to
+    const hrAdmins = await User.find({ role: 'hr_admin' }).select('_id');
+    notification.recipients = hrAdmins.map(admin => admin._id);
+
+    // Save notification
+    await notification.save();
+
     return res.status(201).json({
+      success: true,
       message: 'Feedback submitted successfully',
-      feedback: newFeedback
+      data: newFeedback
     });
   } catch (error) {
     console.error('Error submitting feedback:', error);
-    return res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ 
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 };
 
 /**
- * Get all feedback (for admin/hr)
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
+ * Get all feedback (admin/hr only)
+ * @route   GET /api/feedback
+ * @access  Private (Admin, HR)
  */
-const getFeedback = async (req, res) => {
+exports.getFeedback = async (req, res) => {
   try {
-    const { 
-      category, 
-      rating, 
-      startDate, 
-      endDate,
-      page = 1, 
-      limit = 20,
-      sort = '-date' 
-    } = req.query;
+    // Build query with filters
+    const queryObj = {};
 
-    // Build filter object
-    const filter = {};
-
-    if (category) {
-      filter.category = category;
+    // Category filter
+    if (req.query.category) {
+      queryObj.category = req.query.category;
     }
 
-    if (rating) {
-      filter.rating = parseInt(rating);
+    // Rating filter
+    if (req.query.rating) {
+      queryObj.rating = parseInt(req.query.rating);
     }
 
-    // Date filtering
-    if (startDate || endDate) {
-      filter.date = {};
+    // Status filter
+    if (req.query.status) {
+      queryObj.status = req.query.status;
+    }
+
+    // Date range filter
+    if (req.query.startDate || req.query.endDate) {
+      queryObj.date = {};
       
-      if (startDate) {
-        filter.date.$gte = new Date(startDate);
+      if (req.query.startDate) {
+        queryObj.date.$gte = new Date(req.query.startDate);
       }
       
-      if (endDate) {
-        filter.date.$lte = new Date(endDate);
+      if (req.query.endDate) {
+        queryObj.date.$lte = new Date(req.query.endDate);
       }
     }
 
-    // Count total feedback with the filter
-    const totalFeedback = await Feedback.countDocuments(filter);
+    // Pagination
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
 
-    // Parse sorting
-    const sortField = sort.startsWith('-') ? sort.substring(1) : sort;
-    const sortOrder = sort.startsWith('-') ? -1 : 1;
-    const sortOptions = { [sortField]: sortOrder };
+    // Get total count
+    const total = await Feedback.countDocuments(queryObj);
 
-    // Fetch feedback with pagination and populate user details
-    const feedback = await Feedback.find(filter)
-      .sort(sortOptions)
-      .skip((page - 1) * limit)
-      .limit(Number(limit))
-      .populate('user', 'firstName lastName email department');
+    // Get feedback with pagination and populate user details
+    const feedback = await Feedback.find(queryObj)
+      .populate('user', 'name email department')
+      .populate('reviewedBy', 'name email')
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(limit);
 
-    return res.json({
-      feedback,
-      totalPages: Math.ceil(totalFeedback / limit),
-      currentPage: Number(page),
-      totalFeedback
+    return res.status(200).json({
+      success: true,
+      count: feedback.length,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit)
+      },
+      data: feedback
     });
   } catch (error) {
     console.error('Error fetching feedback:', error);
-    return res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ 
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get feedback submitted by current user
+ * @route   GET /api/feedback/user
+ * @access  Private
+ */
+exports.getUserFeedback = async (req, res) => {
+  try {
+    const feedback = await Feedback.find({ user: req.user.id })
+      .sort({ date: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: feedback.length,
+      data: feedback
+    });
+  } catch (error) {
+    console.error('Error fetching user feedback:', error);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get feedback by ID
+ * @route   GET /api/feedback/:id
+ * @access  Private (Admin, HR or feedback owner)
+ */
+exports.getFeedbackById = async (req, res) => {
+  try {
+    const feedback = await Feedback.findById(req.params.id)
+      .populate('user', 'name email department')
+      .populate('reviewedBy', 'name email');
+
+    if (!feedback) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Feedback not found' 
+      });
+    }
+
+    // Check if user is authorized to view this feedback
+    const isAdmin = ['admin', 'hr_admin'].includes(req.user.role);
+    const isOwner = feedback.user._id.toString() === req.user.id;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Not authorized to access this feedback' 
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: feedback
+    });
+  } catch (error) {
+    console.error('Error fetching feedback:', error);
+    if (error.kind === 'ObjectId') {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Feedback not found' 
+      });
+    }
+    return res.status(500).json({ 
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Update feedback status, add response
+ * @route   PUT /api/feedback/:id
+ * @access  Private (Admin, HR)
+ */
+exports.updateFeedbackStatus = async (req, res) => {
+  try {
+    const { status, responseMessage } = req.body;
+
+    // Validate inputs
+    if (!status || !['pending', 'reviewed', 'archived'].includes(status)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid status value' 
+      });
+    }
+
+    // Find feedback
+    let feedback = await Feedback.findById(req.params.id);
+
+    if (!feedback) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Feedback not found' 
+      });
+    }
+
+    // Update feedback
+    feedback.status = status;
+    
+    if (status === 'reviewed') {
+      feedback.reviewedBy = req.user.id;
+      feedback.reviewedAt = new Date();
+    }
+    
+    if (responseMessage) {
+      feedback.responseMessage = responseMessage;
+    }
+
+    await feedback.save();
+
+    // If status changed to reviewed, create notification for the feedback submitter
+    if (status === 'reviewed' && responseMessage) {
+      const notification = new Notification({
+        recipient: feedback.user,
+        title: 'Feedback Response',
+        message: 'Your feedback has been reviewed. Click to view the response.',
+        type: 'feedback_response',
+        sender: req.user.id,
+        relatedTo: {
+          model: 'Feedback',
+          id: feedback._id
+        }
+      });
+
+      await notification.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: feedback
+    });
+  } catch (error) {
+    console.error('Error updating feedback:', error);
+    if (error.kind === 'ObjectId') {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Feedback not found' 
+      });
+    }
+    return res.status(500).json({ 
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Delete feedback
+ * @route   DELETE /api/feedback/:id
+ * @access  Private (Admin, HR or feedback owner)
+ */
+exports.deleteFeedback = async (req, res) => {
+  try {
+    const feedback = await Feedback.findById(req.params.id);
+
+    if (!feedback) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Feedback not found' 
+      });
+    }
+
+    // Check if user is authorized to delete this feedback
+    const isAdmin = ['admin', 'hr_admin'].includes(req.user.role);
+    const isOwner = feedback.user.toString() === req.user.id;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Not authorized to delete this feedback' 
+      });
+    }
+
+    await feedback.remove();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Feedback deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting feedback:', error);
+    if (error.kind === 'ObjectId') {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Feedback not found' 
+      });
+    }
+    return res.status(500).json({ 
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 };
 
@@ -112,7 +348,7 @@ const getFeedback = async (req, res) => {
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-const getFeedbackSummary = async (req, res) => {
+exports.getFeedbackSummary = async (req, res) => {
   try {
     const { category, startDate, endDate } = req.query;
 
@@ -201,53 +437,11 @@ const getFeedbackSummary = async (req, res) => {
 };
 
 /**
- * Get feedback submitted by the current user
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- */
-const getUserFeedback = async (req, res) => {
-  try {
-    const feedback = await Feedback.find({ user: req.user.id })
-      .sort({ date: -1 });
-
-    return res.json(feedback);
-  } catch (error) {
-    console.error('Error fetching user feedback:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-};
-
-/**
- * Delete feedback
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- */
-const deleteFeedback = async (req, res) => {
-  try {
-    const feedback = await Feedback.findById(req.params.id);
-
-    if (!feedback) {
-      return res.status(404).json({ message: 'Feedback not found' });
-    }
-
-    await feedback.deleteOne();
-
-    return res.json({ message: 'Feedback deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting feedback:', error);
-    if (error.kind === 'ObjectId') {
-      return res.status(404).json({ message: 'Feedback not found' });
-    }
-    return res.status(500).json({ message: 'Server error' });
-  }
-};
-
-/**
  * Submit exit interview feedback
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-const submitExitInterview = async (req, res) => {
+exports.submitExitInterview = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -308,7 +502,7 @@ const submitExitInterview = async (req, res) => {
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-const getExitInterview = async (req, res) => {
+exports.getExitInterview = async (req, res) => {
   try {
     const employeeId = req.params.employeeId;
 
@@ -356,7 +550,7 @@ const getExitInterview = async (req, res) => {
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-const sendExitSurvey = async (req, res) => {
+exports.sendExitSurvey = async (req, res) => {
   try {
     const { employeeId, customMessage } = req.body;
     
@@ -406,7 +600,7 @@ const sendExitSurvey = async (req, res) => {
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-const getExitSurveyAnalytics = async (req, res) => {
+exports.getExitSurveyAnalytics = async (req, res) => {
   try {
     const { 
       startDate, 
@@ -542,16 +736,4 @@ function extractCommonTerms(text) {
     .map(([text, value]) => ({ text, value }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 30); // Return top 30 words
-}
-
-module.exports = {
-  submitFeedback,
-  getFeedback,
-  getFeedbackSummary,
-  getUserFeedback,
-  deleteFeedback,
-  submitExitInterview,
-  getExitInterview,
-  sendExitSurvey,
-  getExitSurveyAnalytics
-}; 
+} 

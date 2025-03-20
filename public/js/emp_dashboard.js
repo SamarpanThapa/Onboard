@@ -613,31 +613,234 @@ function getCurrentUserId() {
     return userData ? userData._id : null;
 }
 
-// Helper function to get current user data
+// Get current user data
 async function getCurrentUser() {
     try {
+        // First try to get from localStorage
+        const userData = JSON.parse(localStorage.getItem('user')) || {};
+        
+        // If we have the cached user data, return it
+        if (userData && userData.name) {
+            return userData;
+        }
+        
+        // Otherwise, fetch from API
         const response = await fetch('/api/users/current', {
-            method: 'GET',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
         });
         
         if (!response.ok) {
-            throw new Error('Failed to get user data');
+            throw new Error('Failed to fetch user data');
         }
         
         const data = await response.json();
         return data.data;
     } catch (error) {
         console.error('Error getting user data:', error);
-        return {};
+        // Return minimal user data from localStorage as fallback
+        return JSON.parse(localStorage.getItem('user')) || {};
     }
+}
+
+// Initialize feedback functionality
+function initializeFeedback() {
+    console.log('Initializing feedback functionality');
+    
+    const provideFeedbackBtn = document.getElementById('provide-feedback');
+    
+    if (provideFeedbackBtn) {
+        provideFeedbackBtn.addEventListener('click', function() {
+            showFeedbackForm();
+        });
+    }
+}
+
+// Show feedback form modal
+function showFeedbackForm() {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Provide Feedback</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Your feedback helps us improve our onboarding experience. Please share your thoughts.</p>
+                <form id="feedback-form">
+                    <div class="form-group">
+                        <label for="feedback-rating">Overall experience rating:</label>
+                        <div class="rating-container">
+                            <div class="rating">
+                                <input type="radio" id="star5" name="rating" value="5" />
+                                <label for="star5">5</label>
+                                <input type="radio" id="star4" name="rating" value="4" />
+                                <label for="star4">4</label>
+                                <input type="radio" id="star3" name="rating" value="3" />
+                                <label for="star3">3</label>
+                                <input type="radio" id="star2" name="rating" value="2" />
+                                <label for="star2">2</label>
+                                <input type="radio" id="star1" name="rating" value="1" />
+                                <label for="star1">1</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="feedback-category">Feedback category:</label>
+                        <select id="feedback-category" name="category" required>
+                            <option value="onboarding">Onboarding Process</option>
+                            <option value="system">System Usability</option>
+                            <option value="support">Support Services</option>
+                            <option value="documentation">Documentation</option>
+                            <option value="general">General</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="feedback-comments">Your feedback:</label>
+                        <textarea id="feedback-comments" name="comments" rows="5" placeholder="Please share your experience, suggestions, or concerns..." required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary-button" id="cancel-feedback">Cancel</button>
+                <button class="primary-button" id="submit-feedback">Submit Feedback</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'block';
+    
+    // Handle modal close
+    const closeBtn = modal.querySelector('.close');
+    const cancelBtn = modal.querySelector('#cancel-feedback');
+    const submitBtn = modal.querySelector('#submit-feedback');
+    
+    closeBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+        modal.remove();
+    });
+    
+    cancelBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+        modal.remove();
+    });
+    
+    submitBtn.addEventListener('click', async () => {
+        const form = document.getElementById('feedback-form');
+        const rating = form.querySelector('input[name="rating"]:checked')?.value;
+        const category = document.getElementById('feedback-category').value;
+        const comments = document.getElementById('feedback-comments').value;
+        
+        if (!rating || !comments) {
+            alert('Please provide a rating and your feedback');
+            return;
+        }
+        
+        try {
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            submitBtn.disabled = true;
+            
+            // Get user data for the notification
+            const userData = await getCurrentUser();
+            
+            // Submit feedback
+            const response = await fetch('/api/feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    rating: parseInt(rating),
+                    category,
+                    comments
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to submit feedback');
+            }
+            
+            console.log('Feedback submitted successfully');
+            
+            // Close modal and show success message
+            modal.style.display = 'none';
+            modal.remove();
+            
+            // Show success message
+            showNotification('Thank you for your feedback! Your input helps us improve.', 'success');
+            
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            showNotification('Error submitting feedback: ' + error.message, 'error');
+        } finally {
+            // Reset button state
+            submitBtn.innerHTML = 'Submit Feedback';
+            submitBtn.disabled = false;
+        }
+    });
+}
+
+// Show notification
+function showNotification(message, type = 'info') {
+    const notificationContainer = document.getElementById('notification-container');
+    if (!notificationContainer) {
+        // Create notification container if it doesn't exist
+        const container = document.createElement('div');
+        container.id = 'notification-container';
+        container.className = 'notification-container';
+        document.body.appendChild(container);
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    
+    // Set icon based on type
+    let iconClass = 'fa-info-circle';
+    if (type === 'success') iconClass = 'fa-check-circle';
+    if (type === 'error') iconClass = 'fa-exclamation-circle';
+    if (type === 'warning') iconClass = 'fa-exclamation-triangle';
+    
+    notification.innerHTML = `
+        <div class="notification-icon">
+            <i class="fas ${iconClass}"></i>
+        </div>
+        <div class="notification-content">
+            <p>${message}</p>
+        </div>
+        <button class="notification-close">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    // Add close button functionality
+    const closeBtn = notification.querySelector('.notification-close');
+    closeBtn.addEventListener('click', () => {
+        notification.classList.add('fade-out');
+        setTimeout(() => notification.remove(), 300);
+    });
+    
+    // Add to container
+    document.getElementById('notification-container').appendChild(notification);
+    
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+        notification.classList.add('fade-out');
+        setTimeout(() => notification.remove(), 300);
+    }, 5000);
 }
 
 // Initialize offboarding when document is ready
 document.addEventListener('DOMContentLoaded', function() {
     // ... existing code ...
+    
+    // Initialize feedback functionality
+    initializeFeedback();
     
     // Initialize offboarding functionality
     initializeOffboarding();

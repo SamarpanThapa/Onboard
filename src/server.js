@@ -34,7 +34,9 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
 
 // Connect to MongoDB unless explicitly disabled
 if (!process.env.NO_DB) {
-  mongoose.connect(process.env.MONGO_URI)
+  mongoose.connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 5000 // Timeout after 5s instead of 30s
+  })
     .then(() => console.log('MongoDB Connected'))
     .catch(err => {
       console.error('MongoDB Connection Error:', err);
@@ -61,6 +63,7 @@ try {
   
   // Document management
   app.use('/api/documents', require('./routes/documentRoutes'));
+  app.use('/api/templates', require('./routes/templateRoutes'));
   
   // Training and orientation
   app.use('/api/trainings', require('./routes/trainingRoutes'));

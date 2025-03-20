@@ -209,6 +209,13 @@ exports.loginUser = async (req, res) => {
       }
     }
     
+    // Update onboarding status for employees when they log in
+    if (user.role === 'employee' && user.onboarding && user.onboarding.status === 'not_started') {
+      user.onboarding.status = 'in_progress';
+      user.onboarding.updatedAt = new Date();
+      console.log(`Updating onboarding status for ${user.email} from 'not_started' to 'in_progress'`);
+    }
+    
     await user.save();
 
     // Determine which dashboard to redirect to based on role

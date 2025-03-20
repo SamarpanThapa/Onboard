@@ -20,7 +20,9 @@ const getEmployees = async (req, res) => {
       limit = 20 
     } = req.query;
 
-    // Build filter object
+    console.log('Query parameters:', req.query);
+
+    // Build filter object - match any employee role type including those with department_admin role
     const filter = { 
       role: { $in: ['employee', 'manager'] } 
     };
@@ -33,7 +35,7 @@ const getEmployees = async (req, res) => {
       filter.status = status;
     }
 
-    if (onboardingStatus) {
+    if (onboardingStatus && onboardingStatus !== 'all') {
       filter['onboarding.status'] = onboardingStatus;
     }
 
@@ -42,21 +44,24 @@ const getEmployees = async (req, res) => {
       filter.$or = [
         { firstName: { $regex: search, $options: 'i' } },
         { lastName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { email: { $regex: search, $options: 'i' } },
+        { name: { $regex: search, $options: 'i' } }
       ];
     }
+
+    console.log('Query filter:', JSON.stringify(filter, null, 2));
 
     // Count total employees with the filter
     const totalEmployees = await User.countDocuments(filter);
 
-    // Fetch employees with pagination and populate references
+    // Fetch employees with pagination without problematic populate calls
     const employees = await User.find(filter)
       .select('-password')
-      .populate('department', 'name description')
-      .populate('manager', 'firstName lastName email')
       .sort({ lastName: 1, firstName: 1 })
       .skip((page - 1) * limit)
       .limit(Number(limit));
+
+    console.log(`Found ${employees.length} employees`);
 
     return res.json({
       employees,
@@ -78,9 +83,7 @@ const getEmployees = async (req, res) => {
 const getCurrentEmployee = async (req, res) => {
   try {
     const employee = await User.findById(req.user.id)
-      .select('-password')
-      .populate('department', 'name description')
-      .populate('manager', 'firstName lastName email');
+      .select('-password');
 
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
@@ -193,9 +196,7 @@ const updateStatus = async (req, res) => {
 const getEmployeeById = async (req, res) => {
   try {
     const employee = await User.findById(req.params.id)
-      .select('-password')
-      .populate('department', 'name description')
-      .populate('manager', 'firstName lastName email');
+      .select('-password');
 
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
@@ -417,6 +418,121 @@ const getEmployeeTasks = async (req, res) => {
   }
 };
 
+/**
+ * Approve employee onboarding
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+const approveOnboarding = async (req, res) => {
+  try {
+    // Find the employee
+    const employee = await User.findById(req.params.id);
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    // Update onboarding status to completed
+    employee.onboarding.status = 'completed';
+    employee.onboarding.approvedBy = req.user.id;
+    employee.onboarding.approvedAt = new Date();
+    employee.onboarding.isApproved = true;
+
+    // Save changes
+    await employee.save();
+
+    // Create notification for the employee
+    try {
+      const Notification = require('../models/Notification');
+      await Notification.create({
+        title: 'Onboarding Approved',
+        message: 'Your onboarding has been approved. Welcome to the team!',
+        type: 'system', // Use valid enum value
+        recipient: employee._id,
+        isRead: false
+      });
+    } catch (notifError) {
+      console.error('Error creating notification:', notifError);
+      // Continue execution even if notification creation fails
+    }
+
+    return res.json({
+      message: 'Onboarding approved successfully',
+      employee: {
+        _id: employee._id,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        email: employee.email,
+        onboarding: employee.onboarding
+      }
+    });
+  } catch (error) {
+    console.error('Error approving onboarding:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+/**
+ * Reject employee onboarding
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+const rejectOnboarding = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const { reason, feedback } = req.body;
+
+    // Find the employee
+    const employee = await User.findById(req.params.id);
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    // Update onboarding status
+    employee.onboarding.status = 'in_progress';
+    employee.onboarding.rejectedBy = req.user.id;
+    employee.onboarding.rejectedAt = new Date();
+    employee.onboarding.rejectionReason = reason;
+    employee.onboarding.feedback = feedback;
+    employee.onboarding.isApproved = false;
+
+    // Save changes
+    await employee.save();
+
+    // Create notification for the employee
+    try {
+      const Notification = require('../models/Notification');
+      await Notification.create({
+        title: 'Onboarding Needs Attention',
+        message: `Your onboarding requires some updates: ${feedback}`,
+        type: 'system', // Use valid enum value
+        recipient: employee._id,
+        isRead: false
+      });
+    } catch (notifError) {
+      console.error('Error creating notification:', notifError);
+      // Continue execution even if notification creation fails
+    }
+
+    return res.json({
+      message: 'Onboarding rejected with feedback',
+      employee: {
+        _id: employee._id,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        email: employee.email,
+        onboarding: employee.onboarding
+      }
+    });
+  } catch (error) {
+    console.error('Error rejecting onboarding:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   getEmployees,
   getCurrentEmployee,
@@ -426,5 +542,7 @@ module.exports = {
   updateEmployeeById,
   updateOnboardingStatus,
   getEmployeeDocuments,
-  getEmployeeTasks
+  getEmployeeTasks,
+  approveOnboarding,
+  rejectOnboarding
 }; 

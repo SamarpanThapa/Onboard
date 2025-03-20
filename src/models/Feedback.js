@@ -1,29 +1,44 @@
 const mongoose = require('mongoose');
 
 const FeedbackSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   rating: {
     type: Number,
     required: true,
     min: 1,
     max: 5
   },
-  comments: {
-    type: String,
-    trim: true
-  },
   category: {
     type: String,
-    enum: ['onboarding', 'offboarding', 'general', 'system', 'resources'],
-    default: 'general'
+    required: true,
+    enum: ['onboarding', 'system', 'support', 'documentation', 'general']
   },
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+  comments: {
+    type: String,
     required: true
   },
   date: {
     type: Date,
     default: Date.now
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'reviewed', 'archived'],
+    default: 'pending'
+  },
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  reviewedAt: {
+    type: Date
+  },
+  responseMessage: {
+    type: String
   }
 });
 

@@ -2,7 +2,10 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 console.log('Testing MongoDB connection...');
-console.log('Connection string:', process.env.MONGO_URI);
+// Hide password in logs for security
+const connectionString = process.env.MONGO_URI;
+const maskedConnectionString = connectionString.replace(/:([^:@]+)@/, ':********@');
+console.log('Connection string:', maskedConnectionString);
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {

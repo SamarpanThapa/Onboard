@@ -6,6 +6,8 @@ const {
   getFeedback, 
   getFeedbackSummary,
   getUserFeedback,
+  getFeedbackById,
+  updateFeedbackStatus,
   deleteFeedback,
   submitExitInterview,
   getExitInterview,
@@ -23,19 +25,21 @@ router.post('/',
   protect,
   [
     check('rating', 'Rating is required').isNumeric(),
-    check('rating', 'Rating must be between 1 and 5').isInt({ min: 1, max: 5 })
+    check('rating', 'Rating must be between 1 and 5').isInt({ min: 1, max: 5 }),
+    check('comments', 'Please provide your feedback').not().isEmpty(),
+    check('category', 'Category is required').isIn(['onboarding', 'system', 'support', 'documentation', 'general'])
   ],
   submitFeedback
 );
 
 /**
  * @route GET /api/feedback
- * @desc Get all feedback (for admin/hr)
- * @access Private (Admin/HR only)
+ * @desc Get all feedback (admin/hr only)
+ * @access Private (Admin, HR)
  */
-router.get('/',
-  protect,
-  authorize('admin', 'hr_admin'),
+router.get('/', 
+  protect, 
+  authorize('hr_admin', 'admin'),
   getFeedback
 );
 
@@ -51,23 +55,43 @@ router.get('/summary',
 );
 
 /**
- * @route GET /api/feedback/me
- * @desc Get feedback submitted by the current user
+ * @route GET /api/feedback/user
+ * @desc Get feedback submitted by current user
  * @access Private
  */
-router.get('/user',
-  protect,
+router.get('/user', 
+  protect, 
   getUserFeedback
+);
+
+/**
+ * @route GET /api/feedback/:id
+ * @desc Get feedback by ID
+ * @access Private (Admin, HR or feedback owner)
+ */
+router.get('/:id', 
+  protect,
+  getFeedbackById
+);
+
+/**
+ * @route PUT /api/feedback/:id
+ * @desc Update feedback status, add response
+ * @access Private (Admin, HR)
+ */
+router.put('/:id',
+  protect,
+  authorize('hr_admin', 'admin'),
+  updateFeedbackStatus
 );
 
 /**
  * @route DELETE /api/feedback/:id
  * @desc Delete feedback
- * @access Private (Admin only)
+ * @access Private (Admin, HR or feedback owner)
  */
 router.delete('/:id',
   protect,
-  authorize('admin', 'hr_admin'),
   deleteFeedback
 );
 

@@ -124,4 +124,34 @@ router.get('/:id/tasks',
   employeeController.getEmployeeTasks
 );
 
+/**
+ * @route PUT /api/employees/:id/onboarding/approve
+ * @desc Approve employee onboarding
+ * @access Private (Admin/HR)
+ */
+router.put('/:id/onboarding/approve',
+  auth.authenticateToken,
+  auth.authorizeRoles(['admin', 'hr']),
+  employeeController.approveOnboarding
+);
+
+/**
+ * @route PUT /api/employees/:id/onboarding/reject
+ * @desc Reject employee onboarding
+ * @access Private (Admin/HR)
+ */
+router.put('/:id/onboarding/reject',
+  auth.authenticateToken,
+  auth.authorizeRoles(['admin', 'hr']),
+  [
+    body('reason')
+      .notEmpty()
+      .withMessage('Reason is required'),
+    body('feedback')
+      .notEmpty()
+      .withMessage('Feedback is required')
+  ],
+  employeeController.rejectOnboarding
+);
+
 module.exports = router; 

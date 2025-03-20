@@ -1898,4 +1898,21 @@ api.documents = api.documents || {
             throw error;
         }
     }
-}; 
+};
+
+// Define missing functions used in admin.js
+function initializeOnboardingApprovals() {
+    console.log('Onboarding approvals initialized');
+}
+
+function initializeOnboardingTracker() {
+    console.log('Onboarding tracker initialized');
+}
+
+function initializeDashboardCharts() {
+    console.log('Dashboard charts initialized');
+}
+
+function initializeUserData() {
+    console.log('User data initialized');
+} 

@@ -1,0 +1,260 @@
+/* Alert container styling */
+.alert-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 350px;
+  z-index: 9999;
+}
+
+.alert-container .alert {
+  margin-bottom: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Template form section styling */
+#templateFormSection {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+#templateFormSection h3 {
+  margin-top: 0;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+#templateUploadForm .form-group {
+  margin-bottom: 15px;
+}
+
+#templateUploadForm label {
+  font-weight: 500;
+  display: block;
+  margin-bottom: 5px;
+}
+
+#templateUploadForm .form-control {
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+}
+
+#templateUploadForm .file-upload-area {
+  border: 2px dashed #ddd;
+  padding: 20px;
+  text-align: center;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#templateUploadForm .file-upload-area:hover {
+  border-color: #2196F3;
+  background-color: rgba(33, 150, 243, 0.05);
+}
+
+#templateUploadForm .file-upload-area p {
+  margin: 10px 0 0;
+  color: #666;
+}
+
+#templateUploadForm .file-info {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #666;
+}
+
+#templateUploadForm .btn-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Make sure the template form is hidden by default */
+#templateFormSection {
+  display: none;
+}
+
+/* Notification center styling */
+#notificationList {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 12px;
+  padding: 15px;
+  display: flex;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.notification-item:hover {
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.notification-item.unread {
+  border-left: 4px solid #1db954;
+}
+
+.notification-item.feedback {
+  border-left: 4px solid #ff9800;
+}
+
+.notification-icon {
+  flex: 0 0 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  border-radius: 50%;
+  margin-right: 15px;
+}
+
+.notification-icon i {
+  font-size: 18px;
+  color: #1db954;
+}
+
+.notification-item.feedback .notification-icon i {
+  color: #ff9800;
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 5px;
+}
+
+.notification-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.notification-time {
+  font-size: 12px;
+  color: #777;
+}
+
+.notification-content p {
+  margin: 5px 0;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.notification-actions {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.notification-action {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #777;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  padding: 5px;
+}
+
+.notification-action:hover {
+  color: #1db954;
+}
+
+.notification-action.delete-notification:hover {
+  color: #f44336;
+}
+
+/* Feedback specific styles */
+.feedback-rating {
+  margin: 8px 0;
+  color: #ff9800;
+  font-size: 18px;
+}
+
+.feedback-rating i {
+  margin-right: 2px;
+}
+
+.feedback-category {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.feedback-text {
+  background-color: #f9f9f9;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 8px !important;
+  border-left: 3px solid #ddd;
+}
+
+/* Feedback response modal */
+.feedback-details {
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.feedback-details p {
+  margin: 8px 0;
+}
+
+.response-form {
+  margin-top: 20px;
+}
+
+.response-form label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.response-form textarea, 
+.response-form select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+/* Empty state and loading */
+.empty-state, 
+.loading-spinner, 
+.error-message {
+  padding: 20px;
+  text-align: center;
+  color: #777;
+  font-style: italic;
+}
+
+.loading-spinner i {
+  margin-right: 8px;
+  color: #1db954;
+} 

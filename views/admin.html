@@ -4,11 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - OnboardX</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin_dashboard.css">
     <link rel="stylesheet" href="/css/document-viewer.css">
     <link rel="stylesheet" href="/css/admin_dashboard_debug.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Sortable.js for drag and drop functionality -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -18,6 +22,40 @@
         /* Hide notification feed */
         .notification-feed, #notification-feed {
             display: none !important;
+        }
+        
+        /* Custom styles for Onboarding Tracker */
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .kanban-column {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .kanban-items {
+            background-color: #fff;
+            border-radius: 0 0 8px 8px;
+            flex-grow: 1;
+            min-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .employee-card {
+            cursor: grab;
+        }
+        
+        .employee-card:active {
+            cursor: grabbing;
         }
     </style>
 </head>
@@ -99,6 +137,9 @@
         </div>
 
         <div class="main-content">
+            <!-- Alert Container -->
+            <div id="alertContainer" class="alert-container"></div>
+            
             <!-- Dashboard Overview -->
             <section id="dashboard" class="dashboard-section">
                 <div class="dashboard-header">
@@ -466,30 +507,35 @@
             <section id="onboarding" class="dashboard-section">
                 <div class="dashboard-header">
                     <h2>Onboarding Tracker</h2>
-                    <button class="add-btn"><i class="fas fa-plus"></i> New Onboarding</button>
+                    <button class="add-btn" id="new-onboarding-btn"><i class="fas fa-plus"></i> New Onboarding</button>
                 </div>
+                
+                <!-- Alert container for notifications -->
+                <div id="alert-container" class="mb-3"></div>
+                
                 <div class="kanban-board">
                     <div class="kanban-column">
-                        <h3>To Start</h3>
-                        <div class="kanban-items" id="toStart">
-                            <div class="loading-spinner"></div>
-                            <p>Loading employees...</p>
+                        <div class="kanban-header bg-light rounded-top p-2">
+                            <h3 class="mb-0"><i class="fas fa-hourglass-start me-2 text-secondary"></i>To Start</h3>
+                        </div>
+                        <div class="kanban-items p-2" id="toStart">
+                            <!-- Content will be loaded dynamically -->
                         </div>
                     </div>
                     <div class="kanban-column">
-                        <h3>In Progress</h3>
-                        <div class="kanban-items" id="inProgress">
-                            <div class="loading-spinner"></div>
-                            <p>Loading employees...</p>
+                        <div class="kanban-header bg-light rounded-top p-2">
+                            <h3 class="mb-0"><i class="fas fa-spinner me-2 text-warning"></i>In Progress</h3>
+                        </div>
+                        <div class="kanban-items p-2" id="inProgress">
+                            <!-- Content will be loaded dynamically -->
                         </div>
                     </div>
                     <div class="kanban-column">
-                        <h3>Completed</h3>
-                        <!-- Debug button - Remove in production -->
-                        <button id="test-onboarding-modal-btn" class="debug-button" style="margin-bottom: 10px; padding: 5px 10px; background-color: #6c5ce7; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick="debugShowOnboardingModal()">Test Modal</button>
-                        <div class="kanban-items" id="completed">
-                            <div class="loading-spinner"></div>
-                            <p>Loading employees...</p>
+                        <div class="kanban-header bg-light rounded-top p-2">
+                            <h3 class="mb-0"><i class="fas fa-check-circle me-2 text-success"></i>Completed</h3>
+                        </div>
+                        <div class="kanban-items p-2" id="completed">
+                            <!-- Content will be loaded dynamically -->
                         </div>
                     </div>
                 </div>
@@ -622,48 +668,131 @@
 
             <!-- Templates Section -->
             <section id="templates" class="dashboard-section">
-                <div class="dashboard-header">
+                <div class="section-title mb-4">
                     <h2>Document Templates</h2>
-                    <div class="action-bar">
-                        <input type="search" placeholder="Search templates..." id="template-search">
-                        <select class="template-filter" id="template-category-filter">
-                            <option value="all">All Categories</option>
-                            <option value="onboarding">Onboarding</option>
-                            <option value="hr">HR Documents</option>
-                            <option value="legal">Legal</option>
-                            <option value="training">Training</option>
-                            <option value="compliance">Compliance</option>
+                </div>
+
+                <!-- Filter bar -->
+                <div class="filter-bar mb-4 d-flex justify-content-between align-items-center">
+                    <div class="dropdown">
+                        <select class="form-select" id="filterCategory">
+                            <option value="All Categories">All Categories</option>
+                            <option value="Onboarding">Onboarding</option>
+                            <option value="HR">HR</option>
+                            <option value="Legal">Legal</option>
                         </select>
-                        <button class="add-btn new-template-btn" id="new-template-btn"><i class="fas fa-plus"></i> New Template</button>
+                    </div>
+                    <button id="newTemplateBtn" class="btn btn-primary" onclick="toggleTemplateForm()">
+                        <i class="fas fa-plus"></i> New Template
+                    </button>
+                </div>
+
+                <!-- Template Form (Hidden by Default) -->
+                <div id="templateFormSection" class="card mb-4" style="display: none;">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="m-0">Upload New Template</h5>
+                        <button type="button" class="btn-close" onclick="toggleTemplateForm()"></button>
+                    </div>
+                    <div class="card-body">
+                        <form id="templateUploadForm">
+                            <div class="form-group mb-3">
+                                <label for="templateTitle">Title</label>
+                                <input type="text" class="form-control" id="templateTitle" placeholder="Enter template title" required>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="templateDescription">Description</label>
+                                <textarea class="form-control" id="templateDescription" rows="3" placeholder="Enter template description" required></textarea>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="templateType">Document Type</label>
+                                    <select class="form-select" id="templateType" required>
+                                        <option value="">Select document type</option>
+                                        <option value="Policy">Policy</option>
+                                        <option value="Form">Form</option>
+                                        <option value="Guide">Guide</option>
+                                        <option value="Contract">Contract</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="templateCategory">Category</label>
+                                    <select class="form-select" id="templateCategory" required>
+                                        <option value="">Select category</option>
+                                        <option value="Onboarding">Onboarding</option>
+                                        <option value="HR">HR</option>
+                                        <option value="Legal">Legal</option>
+                                        <option value="Finance">Finance</option>
+                                        <option value="General">General</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="templateTags">Tags (optional)</label>
+                                <input type="text" class="form-control" id="templateTags" placeholder="Enter comma-separated tags">
+                                <small class="form-text text-muted">Example: onboarding, employee, contract</small>
+                            </div>
+                            <div class="mb-3">
+                                <label>File</label>
+                                <input type="file" class="form-control" id="templateFile" accept=".pdf,.doc,.docx" required>
+                                <small class="form-text text-muted">Supported formats: PDF, DOC, DOCX (Max 5MB)</small>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="button" class="btn btn-secondary me-2" onclick="toggleTemplateForm()">Cancel</button>
+                                <button type="button" class="btn btn-primary" id="uploadTemplateBtn">Upload Template</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-                <div class="template-grid">
-                    <div class="template-category">
-                        <h3>Onboarding Templates</h3>
-                        <div id="onboarding-templates" class="template-list">
-                            <!-- Template items will be loaded dynamically -->
-                            <div class="loading-indicator">
-                                <i class="fas fa-spinner fa-spin"></i> Loading templates...
+
+                <div class="row">
+                    <!-- Onboarding Templates -->
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h5 class="m-0"><i class="fas fa-clipboard-list mr-2"></i>Onboarding Templates</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="loading-templates" style="display: flex; justify-content: center; padding: 20px;">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                </div>
+                                <div id="toStart" class="templates-container"></div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="template-category">
-                        <h3>HR Documents</h3>
-                        <div id="hr-documents" class="template-list">
-                            <!-- Template items will be loaded dynamically -->
-                            <div class="loading-indicator">
-                                <i class="fas fa-spinner fa-spin"></i> Loading templates...
+
+                    <!-- HR Documents -->
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h5 class="m-0"><i class="fas fa-user-tie mr-2"></i>HR Documents</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="loading-templates" style="display: flex; justify-content: center; padding: 20px;">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                </div>
+                                <div id="inProgress" class="templates-container"></div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="template-category">
-                        <h3>Legal Documents</h3>
-                        <div id="legal-documents" class="template-list">
-                            <!-- Template items will be loaded dynamically -->
-                            <div class="loading-indicator">
-                                <i class="fas fa-spinner fa-spin"></i> Loading templates...
+
+                    <!-- Legal Documents -->
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h5 class="m-0"><i class="fas fa-gavel mr-2"></i>Legal Documents</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="loading-templates" style="display: flex; justify-content: center; padding: 20px;">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                </div>
+                                <div id="completed" class="templates-container"></div>
                             </div>
                         </div>
                     </div>
@@ -1243,6 +1372,10 @@
         </div>
     </div>
 
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    
     <script src="/js/admin.js" defer></script>
 </body>
 </html>

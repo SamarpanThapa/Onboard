@@ -1,0 +1,242 @@
+/* Document Templates Styles */
+.templates-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 10px;
+}
+
+.template-card {
+    display: flex;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 15px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.template-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.template-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    background-color: #f0f5ff;
+    border-radius: 8px;
+    color: #4a6cf7;
+    font-size: 20px;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.template-info {
+    flex: 1;
+}
+
+.template-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #333;
+}
+
+.template-description {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.template-meta {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.document-type,
+.document-category {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.document-type {
+    background-color: #e6f3ff;
+    color: #0066cc;
+}
+
+.document-category {
+    background-color: #e6fff0;
+    color: #00994d;
+}
+
+.template-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-left: 10px;
+}
+
+.btn-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    padding: 0;
+    font-size: 14px;
+}
+
+.btn-outline-primary {
+    color: #4a6cf7;
+    border: 1px solid #4a6cf7;
+    background-color: transparent;
+}
+
+.btn-outline-primary:hover {
+    background-color: #4a6cf7;
+    color: white;
+}
+
+.btn-outline-success {
+    color: #00994d;
+    border: 1px solid #00994d;
+    background-color: transparent;
+}
+
+.btn-outline-success:hover {
+    background-color: #00994d;
+    color: white;
+}
+
+.no-templates {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
+.error-message {
+    padding: 15px;
+    background-color: #fff1f0;
+    border-left: 4px solid #f5222d;
+    color: #f5222d;
+    margin-top: 10px;
+    border-radius: 4px;
+}
+
+/* Template Upload Modal */
+#templateUploadModal .modal-body {
+    padding: 20px;
+}
+
+.file-upload-container {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    margin-bottom: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.file-upload-container:hover {
+    border-color: #4a6cf7;
+}
+
+.file-upload-icon {
+    font-size: 48px;
+    color: #4a6cf7;
+    margin-bottom: 10px;
+}
+
+.file-upload-text {
+    color: #666;
+}
+
+.upload-preview {
+    margin-top: 15px;
+    background: #f9f9f9;
+    padding: 10px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.upload-preview-icon {
+    margin-right: 10px;
+    font-size: 24px;
+}
+
+.upload-preview-info {
+    flex: 1;
+}
+
+.upload-preview-name {
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.upload-preview-size {
+    font-size: 12px;
+    color: #666;
+}
+
+.upload-preview-remove {
+    color: #f5222d;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+/* Modal Styles */
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-header .fas {
+    margin-right: 0.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+    padding: 1rem;
+}
+
+/* Button Styles */
+.btn-primary {
+    background-color: #4a90e2;
+    border-color: #4a90e2;
+}
+
+.btn-primary:hover {
+    background-color: #357abd;
+    border-color: #357abd;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+} 

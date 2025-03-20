@@ -9,7 +9,9 @@ require('dotenv').config();
 const initDatabase = async () => {
   try {
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000 // Timeout after 5s instead of 30s
+    });
     console.log('MongoDB connected...');
 
     // Check if any department codes exist
