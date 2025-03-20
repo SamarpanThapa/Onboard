@@ -437,7 +437,17 @@ const submitOffboardingData = asyncHandler(async (req, res) => {
       existingProcess.reason = offboardingData.reason || existingProcess.reason;
       existingProcess.feedback = offboardingData.feedback || existingProcess.feedback;
       existingProcess.exitDate = offboardingData.exitDate || existingProcess.exitDate;
-      existingProcess.status = 'in_progress';
+      
+      // Update status if specified (important for completion)
+      if (offboardingData.status) {
+        existingProcess.status = offboardingData.status;
+        // If completed, set completion date
+        if (offboardingData.status === 'completed' && !existingProcess.keyDates.completedDate) {
+          existingProcess.keyDates.completedDate = new Date();
+        }
+      } else {
+        existingProcess.status = 'in_progress';
+      }
       
       // Update progress tracking
       if (!existingProcess.progress) {
@@ -484,18 +494,29 @@ const submitOffboardingData = asyncHandler(async (req, res) => {
       if (user) {
         user.offboarding = {
           ...user.offboarding,
-          status: 'in_progress',
+          status: existingProcess.status,
           reason: offboardingData.reason || user.offboarding.reason,
           exitDate: offboardingData.exitDate || user.offboarding.exitDate
         };
         await user.save();
       }
       
-      // Create notification for HR
+      // Create notification for HR based on status
+      let notificationTitle, notificationMessage;
+      
+      if (existingProcess.status === 'completed') {
+        notificationTitle = 'Offboarding Process Completed';
+        notificationMessage = `${userData.name} has completed their offboarding process. Reason: ${existingProcess.reason}`;
+      } else {
+        notificationTitle = 'Offboarding Updated';
+        notificationMessage = `${userData.name} has updated their offboarding information.`;
+      }
+      
       await Notification.create({
-        title: 'Offboarding Updated',
-        message: `${userData.name} has updated their offboarding information.`,
+        title: notificationTitle,
+        message: notificationMessage,
         type: 'system',
+        priority: existingProcess.status === 'completed' ? 'high' : 'medium',
         recipients: ['hr_admin'],
         sender: userData._id,
         relatedEntity: {
@@ -506,7 +527,9 @@ const submitOffboardingData = asyncHandler(async (req, res) => {
       
       return res.status(200).json({
         success: true,
-        message: 'Offboarding data updated successfully',
+        message: existingProcess.status === 'completed' ? 
+                'Offboarding process completed successfully' : 
+                'Offboarding data updated successfully',
         data: existingProcess
       });
     } else {
@@ -516,7 +539,7 @@ const submitOffboardingData = asyncHandler(async (req, res) => {
         exitDate: offboardingData.exitDate,
         reason: offboardingData.reason,
         feedback: offboardingData.feedback,
-        status: 'initiated',
+        status: offboardingData.status || 'initiated',
         companyAssetsReturned: offboardingData.companyAssetsReturned || [],
         accountDeactivation: offboardingData.accountDeactivation || { requested: false, status: false },
         finalDocumentation: offboardingData.finalDocumentation || { status: 'not_started', documents: [] },
@@ -524,7 +547,9 @@ const submitOffboardingData = asyncHandler(async (req, res) => {
         createdBy: userData._id,
         keyDates: {
           created: new Date(),
-          lastUpdated: new Date()
+          lastUpdated: new Date(),
+          // Set completed date if status is completed
+          completedDate: offboardingData.status === 'completed' ? new Date() : null
         }
       });
       
@@ -538,18 +563,27 @@ const submitOffboardingData = asyncHandler(async (req, res) => {
       const user = await User.findById(userData._id);
       if (user) {
         user.offboarding = {
-          status: 'in_progress',
+          status: newProcess.status,
           reason: offboardingData.reason,
           exitDate: offboardingData.exitDate
         };
         await user.save();
       }
       
-      // Create notification for HR
+      // Create notification for HR with appropriate message based on status
+      const notificationTitle = newProcess.status === 'completed' ? 
+                              'New Offboarding Process Completed' : 
+                              'New Offboarding Process';
+      
+      const notificationMessage = newProcess.status === 'completed' ?
+                                `${userData.name} has completed their offboarding process. Reason: ${offboardingData.reason}` :
+                                `${userData.name} has initiated the offboarding process. Reason: ${offboardingData.reason}`;
+      
       await Notification.create({
-        title: 'New Offboarding Process',
-        message: `${userData.name} has initiated the offboarding process. Reason: ${offboardingData.reason}`,
+        title: notificationTitle,
+        message: notificationMessage,
         type: 'system',
+        priority: newProcess.status === 'completed' ? 'high' : 'medium',
         recipients: ['hr_admin'],
         sender: userData._id,
         relatedEntity: {
@@ -560,7 +594,9 @@ const submitOffboardingData = asyncHandler(async (req, res) => {
       
       return res.status(201).json({
         success: true,
-        message: 'Offboarding process initiated successfully',
+        message: newProcess.status === 'completed' ? 
+                'Offboarding process completed successfully' :
+                'Offboarding process initiated successfully',
         data: newProcess
       });
     }

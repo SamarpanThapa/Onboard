@@ -209,7 +209,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 complianceAcknowledged: document.getElementById('confidentiality').checked && 
                                        document.getElementById('ip-agreement').checked && 
-                                       document.getElementById('final-confirmation').checked
+                                       document.getElementById('final-confirmation').checked,
+                status: 'completed' // Mark the offboarding as completed
             };
 
             try {
@@ -245,11 +246,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Update user status in local storage
                     const user = JSON.parse(localStorage.getItem('user')) || {};
                     user.offboarding = {
-                        status: 'in_progress',
+                        status: 'completed',
                         reason: offboardingData.reason,
                         exitDate: offboardingData.exitDate
                     };
                     localStorage.setItem('user', JSON.stringify(user));
+                    
+                    // Explicitly send completion notification to HR/Admin
+                    try {
+                        const notificationResponse = await fetch('/api/notifications/offboarding-completed', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            },
+                            body: JSON.stringify({
+                                processId: result.data._id,
+                                reason: offboardingData.reason
+                            })
+                        });
+                        
+                        if (notificationResponse.ok) {
+                            console.log('Offboarding completion notification sent to HR/Admin');
+                        }
+                    } catch (notificationError) {
+                        console.error('Failed to send offboarding completion notification:', notificationError);
+                    }
                     
                     // Show success message
                     form.style.display = 'none';

@@ -32,6 +32,61 @@ router.post(
   createNotification
 );
 
+// @route   POST /api/notifications/offboarding-completed
+// @desc    Send notification about completed offboarding
+// @access  Private
+router.post('/offboarding-completed', protect, async (req, res) => {
+  const { User, Notification } = require('../models');
+  try {
+    const { processId, reason } = req.body;
+    
+    // Find current user
+    const currentUser = await User.findById(req.user._id);
+    if (!currentUser) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // Find HR admins to notify
+    const hrAdmins = await User.find({ role: 'hr_admin', isActive: true });
+    if (hrAdmins.length === 0) {
+      return res.status(200).json({ 
+        success: true, 
+        message: 'No HR admins to notify',
+        recipientsFound: false
+      });
+    }
+    
+    // Create notifications for each HR admin
+    const notifications = await Promise.all(hrAdmins.map(admin => {
+      return Notification.create({
+        recipient: admin._id,
+        title: 'Offboarding Process Completed',
+        message: `${currentUser.name} has completed their offboarding process. Reason: ${reason}`,
+        type: 'system',
+        priority: 'high',
+        sender: req.user._id,
+        relatedEntity: {
+          type: 'offboarding',
+          id: processId
+        }
+      });
+    }));
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Offboarding completion notifications sent',
+      notificationsSent: notifications.length
+    });
+  } catch (error) {
+    console.error('Error sending offboarding notifications:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error sending notifications',
+      error: error.message
+    });
+  }
+});
+
 // @route   PUT /api/notifications/:id/read
 // @desc    Mark notification as read
 // @access  Private
