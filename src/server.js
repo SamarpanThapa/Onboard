@@ -55,10 +55,15 @@ try {
   
   // Onboarding and tasks
   app.use('/api/onboarding-processes', require('./routes/onboardingProcessRoutes'));
+  // Also register the external API route
+  app.use('/api/onboarding-processes', require('../routes/api/onboarding-processes'));
   app.use('/api/tasks', require('./routes/taskRoutes'));
   
   // Document management
   app.use('/api/documents', require('./routes/documentRoutes'));
+  
+  // Training and orientation
+  app.use('/api/trainings', require('./routes/trainingRoutes'));
   
   // Notifications and messaging
   app.use('/api/notifications', require('./routes/notificationRoutes'));

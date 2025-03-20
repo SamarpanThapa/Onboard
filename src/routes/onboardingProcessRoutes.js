@@ -18,7 +18,8 @@ const {
   addEmployeeToOnboarding,
   getPendingSubmissions,
   approveSubmission,
-  requestRevision
+  requestRevision,
+  getOnboardingProcessDetails
 } = require('../controllers/onboardingProcessController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const OnboardingProcess = require('../models/OnboardingProcess');
@@ -383,6 +384,16 @@ router.patch(
   protect,
   authorize('hr_admin'),
   requestRevision
+);
+
+// @route   GET /api/onboarding-processes/:id/details
+// @desc    Get a specific onboarding process with all documents and details
+// @access  Private (Admin, HR)
+router.get(
+  '/:id/details',
+  protect,
+  authorize('admin', 'hr_admin'),
+  getOnboardingProcessDetails
 );
 
 module.exports = router; 

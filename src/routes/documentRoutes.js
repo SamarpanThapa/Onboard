@@ -12,7 +12,8 @@ const {
   deleteDocument,
   signDocument,
   getPendingSignatures,
-  addDocumentNote
+  addDocumentNote,
+  duplicateDocument
 } = require('../controllers/documentController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -124,6 +125,104 @@ router.post(
     check('text', 'Note text is required').not().isEmpty()
   ],
   addDocumentNote
+);
+
+// @route   POST /api/documents/:id/duplicate
+// @desc    Duplicate a document (primarily for templates)
+// @access  Private
+router.post(
+  '/:id/duplicate',
+  protect,
+  duplicateDocument
+);
+
+// @route   GET /api/documents/:id/download
+// @desc    Download a document file
+// @access  Private
+router.get(
+  '/:id/download',
+  protect,
+  async (req, res) => {
+    try {
+      const documentId = req.params.id;
+      
+      // Find the document
+      const Document = require('../models/Document');
+      const document = await Document.findById(documentId);
+      
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Document not found'
+        });
+      }
+      
+      // Check if user has access to document
+      // This can be enhanced with more specific permission checks
+      const canAccess = (
+        // Document owner or uploaded by
+        document.createdBy.equals(req.user.id) || 
+        (document.file && document.file.uploadedBy && document.file.uploadedBy.equals(req.user.id)) ||
+        // Related to user
+        (document.relatedUser && document.relatedUser.equals(req.user.id)) ||
+        // Admin/HR has access to all documents
+        ['admin', 'hr_admin'].includes(req.user.role)
+      );
+      
+      if (!canAccess) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized to access this document'
+        });
+      }
+      
+      // Check if file exists
+      if (!document.file || !document.file.filePath) {
+        return res.status(404).json({
+          success: false,
+          message: 'Document file not found'
+        });
+      }
+      
+      // Get the file path
+      const filePath = path.join(__dirname, '../../', document.file.filePath);
+      
+      // Check if file exists in filesystem
+      if (!fs.existsSync(filePath)) {
+        // For demo purposes, send a placeholder document if real file doesn't exist
+        const placeholderPath = path.join(__dirname, '../../public/placeholder.pdf');
+        if (fs.existsSync(placeholderPath)) {
+          return res.download(placeholderPath, document.file.fileName || 'document.pdf');
+        } else {
+          return res.status(404).json({
+            success: false,
+            message: 'Document file not found on server'
+          });
+        }
+      }
+      
+      // Log file access
+      console.log(`User ${req.user.name} (${req.user.id}) downloading document: ${document.title} (${document._id})`);
+      
+      // Track document view
+      document.viewHistory.push({
+        user: req.user.id,
+        viewedAt: new Date(),
+        ipAddress: req.ip
+      });
+      
+      await document.save();
+      
+      // Send the file
+      res.download(filePath, document.file.fileName);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Server error while downloading document'
+      });
+    }
+  }
 );
 
 // Error handler for multer file uploads

@@ -1468,20 +1468,37 @@ const accessRequests = {
 const users = {
   // Get all users
   getUsers: async (filters = {}) => {
-    const queryParams = new URLSearchParams();
-    
-    // Add filters to query params
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) queryParams.append(key, value);
-    });
-    
-    const response = await fetch(`${API_URL}/users?${queryParams.toString()}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-    });
-    return handleResponse(response);
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Add filters to query params
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) 
+          queryParams.append(key, value);
+      });
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+      
+      const response = await fetch(`${API_URL}/users?${queryParams.toString()}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to fetch users: ${response.status} ${response.statusText}`);
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      throw error;
+    }
   },
 
   // Get current user profile

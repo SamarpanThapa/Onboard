@@ -1,8 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { body } = require('express-validator');
-const auth = require('../middleware/auth');
-const feedbackController = require('../controllers/feedbackController');
+const { check } = require('express-validator');
+const { 
+  submitFeedback, 
+  getFeedback, 
+  getFeedbackSummary,
+  getUserFeedback,
+  deleteFeedback,
+  submitExitInterview,
+  getExitInterview,
+  sendExitSurvey,
+  getExitSurveyAnalytics
+} = require('../controllers/feedbackController');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
 /**
  * @route POST /api/feedback
@@ -10,20 +20,12 @@ const feedbackController = require('../controllers/feedbackController');
  * @access Private
  */
 router.post('/',
-  auth.authenticateToken,
+  protect,
   [
-    body('rating')
-      .isInt({ min: 1, max: 5 })
-      .withMessage('Rating must be between 1 and 5'),
-    body('comments')
-      .optional()
-      .trim(),
-    body('category')
-      .optional()
-      .isIn(['onboarding', 'offboarding', 'general', 'system', 'resources'])
-      .withMessage('Invalid category')
+    check('rating', 'Rating is required').isNumeric(),
+    check('rating', 'Rating must be between 1 and 5').isInt({ min: 1, max: 5 })
   ],
-  feedbackController.submitFeedback
+  submitFeedback
 );
 
 /**
@@ -32,9 +34,9 @@ router.post('/',
  * @access Private (Admin/HR only)
  */
 router.get('/',
-  auth.authenticateToken,
-  auth.authorizeRoles(['admin', 'hr']),
-  feedbackController.getFeedback
+  protect,
+  authorize('admin', 'hr_admin'),
+  getFeedback
 );
 
 /**
@@ -43,9 +45,9 @@ router.get('/',
  * @access Private (Admin/HR only)
  */
 router.get('/summary',
-  auth.authenticateToken,
-  auth.authorizeRoles(['admin', 'hr']),
-  feedbackController.getFeedbackSummary
+  protect,
+  authorize('admin', 'hr_admin'),
+  getFeedbackSummary
 );
 
 /**
@@ -53,9 +55,9 @@ router.get('/summary',
  * @desc Get feedback submitted by the current user
  * @access Private
  */
-router.get('/me',
-  auth.authenticateToken,
-  feedbackController.getUserFeedback
+router.get('/user',
+  protect,
+  getUserFeedback
 );
 
 /**
@@ -64,9 +66,60 @@ router.get('/me',
  * @access Private (Admin only)
  */
 router.delete('/:id',
-  auth.authenticateToken,
-  auth.authorizeRoles(['admin']),
-  feedbackController.deleteFeedback
+  protect,
+  authorize('admin', 'hr_admin'),
+  deleteFeedback
+);
+
+/**
+ * @route POST /api/feedback/exit-interview
+ * @desc Submit exit interview
+ * @access Private
+ */
+router.post('/exit-interview',
+  protect,
+  [
+    check('overallExperience', 'Overall experience rating is required').isNumeric(),
+    check('overallExperience', 'Rating must be between 1 and 5').isInt({ min: 1, max: 5 }),
+    check('reasonForLeaving', 'Reason for leaving is required').not().isEmpty()
+  ],
+  submitExitInterview
+);
+
+/**
+ * @route GET /api/feedback/exit-interview/:employeeId
+ * @desc Get exit interview for an employee
+ * @access Private/Admin
+ */
+router.get('/exit-interview/:employeeId',
+  protect,
+  authorize('admin', 'hr_admin'),
+  getExitInterview
+);
+
+/**
+ * @route POST /api/feedback/exit-survey
+ * @desc Send exit survey to employee
+ * @access Private/Admin
+ */
+router.post('/exit-survey',
+  protect,
+  authorize('admin', 'hr_admin'),
+  [
+    check('employeeId', 'Employee ID is required').not().isEmpty()
+  ],
+  sendExitSurvey
+);
+
+/**
+ * @route GET /api/feedback/exit-survey/analytics
+ * @desc Get exit survey analytics
+ * @access Private/Admin
+ */
+router.get('/exit-survey/analytics',
+  protect,
+  authorize('admin', 'hr_admin'),
+  getExitSurveyAnalytics
 );
 
 module.exports = router; 

@@ -12,10 +12,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (storedUser) {
         console.log('Using stored user data:', storedUser);
         
-        // Check if we already have a username in localStorage
-        const existingUsername = localStorage.getItem('username');
-        
-        // Determine the best name to use and store it consistently
+        // Get user name from stored user data
         let bestName = '';
         if (storedUser.name && storedUser.name.trim() !== '') {
             bestName = storedUser.name;
@@ -23,13 +20,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             bestName = storedUser.firstName + (storedUser.lastName ? ' ' + storedUser.lastName : '');
         } else if (storedUser.email) {
             bestName = storedUser.email.split('@')[0];
+        } else {
+            bestName = 'User';
         }
         
-        // Only update if we found a better name or don't have one yet
-        if (bestName && (!existingUsername || existingUsername.indexOf('@') !== -1)) {
-            console.log('Updating stored username to:', bestName);
-            localStorage.setItem('username', bestName);
-        }
+        // Always update with the latest user name
+        console.log('Setting username in localStorage:', bestName);
+        localStorage.setItem('username', bestName);
         
         // Display the user info
         displayUserInfo(storedUser);
@@ -41,16 +38,29 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Then attempt to load fresh user data from API
     try {
         const userData = await api.auth.getCurrentUser();
-        if (userData && userData.user) {
-            console.log('Fresh user data loaded:', userData);
-            displayUserInfo(userData.user);
-        } else if (userData) {
-            console.log('User data loaded:', userData);
-            displayUserInfo(userData);
+        if (userData) {
+            const user = userData.user || userData;
+            console.log('Fresh user data loaded:', user);
+            
+            // Update username in localStorage with fresh data
+            let freshName = '';
+            if (user.name && user.name.trim() !== '') {
+                freshName = user.name;
+            } else if (user.firstName && user.firstName.trim() !== '') {
+                freshName = user.firstName + (user.lastName ? ' ' + user.lastName : '');
+            } else if (user.email) {
+                freshName = user.email.split('@')[0];
+            } else {
+                freshName = 'User';
+            }
+            
+            console.log('Updating username with fresh data:', freshName);
+            localStorage.setItem('username', freshName);
+            
+            // Update displays with fresh user data
+            displayUserInfo(user);
+            updateWelcomeBanner();
         }
-        
-        // Update the welcome banner again with any fresh data
-        updateWelcomeBanner();
     } catch (error) {
         console.error('Error loading user data:', error);
         showNotification('Could not refresh user data', 'warning');
@@ -102,10 +112,16 @@ function updateWelcomeBanner() {
     const username = localStorage.getItem('username') || 'User';
     console.log('Updating welcome banner with name:', username);
     
-    // Update the main welcome banner that's visible to the user
-    const welcomeBanner = document.querySelector('.welcome-banner h2, .banner-content h2');
+    // Update welcome message in the main banner
+    const welcomeBanner = document.querySelector('.welcome-banner h2');
     if (welcomeBanner) {
         welcomeBanner.innerHTML = `Welcome ${username} to your dashboard!`;
+    }
+    
+    // Also update the #user-name element which is used in the HTML
+    const userNameElement = document.getElementById('user-name');
+    if (userNameElement) {
+        userNameElement.textContent = username;
     }
 }
 
@@ -340,22 +356,48 @@ function initializeTaskCheckboxes() {
             
             try {
                 if (this.checked) {
+                    // Get user info for the notification
+                    const userInfo = api.auth.getUserData();
+                    const userName = userInfo ? 
+                        (userInfo.firstName && userInfo.lastName ? 
+                            `${userInfo.firstName} ${userInfo.lastName}` : 
+                            (userInfo.name || userInfo.email || localStorage.getItem('username') || 'Employee')) 
+                        : 'Employee';
+                    
                     // Mark task as completed via API
-                    await api.tasks.updateTask(taskId, { status: 'completed' });
+                    await api.tasks.updateTask(taskId, { 
+                        status: 'completed',
+                        completedDate: new Date()
+                    });
                     
                     // Update UI
                     taskContent.style.textDecoration = 'line-through';
                     taskContent.style.opacity = '0.6';
                     
-                    // Send notification to HR that task is completed
-                    await api.notifications.createNotification({
-                        title: 'Task Completed',
-                        message: `Task "${taskTitle}" has been completed.`,
-                        type: 'task',
-                        recipients: ['hr_admin']
-                    });
+                    // Send notification to HR/Admin that task is completed
+                    console.log(`Sending notification: ${userName} completed task "${taskTitle}"`);
                     
-                    // Show notification
+                    try {
+                        await api.notifications.createNotification({
+                            title: 'Task Completed',
+                            message: `${userName} completed the task "${taskTitle}".`,
+                            type: 'task',
+                            recipients: ['admin', 'hr_admin'], // Send to admins and HR
+                            priority: 'medium',
+                            relatedTo: {
+                                model: 'Task',
+                                id: taskId
+                            }
+                        });
+                        console.log('Notification sent successfully');
+                    } catch (notificationError) {
+                        console.warn('Could not send notification to admin/HR:', notificationError);
+                        
+                        // Even if API fails, still show success to user
+                        // We'll handle this case on the backend later
+                    }
+                    
+                    // Show notification to the employee
                     const category = taskItem.dataset.category;
                     let message = 'Task marked as complete!';
                     
@@ -425,8 +467,21 @@ async function loadResources() {
         // Show loading state
         resourcesContainer.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading resources...</div>';
         
-        // Get resources (documents) for the employee
-        const documents = await api.documents.getDocuments({ category: 'employee_resources' });
+        // Get resources (documents) for the employee with category=employee_resources
+        const response = await fetch('/api/documents?category=employee_resources', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch resources: ${response.status} ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        const documents = result.data || [];
         
         if (documents.length === 0) {
             resourcesContainer.innerHTML = '<div class="empty-state"><i class="fas fa-file-alt"></i><p>No resources available yet.</p></div>';
@@ -457,7 +512,7 @@ async function loadResources() {
 function createResourceElement(document) {
     const resourceItem = document.createElement('a');
     resourceItem.className = 'resource-item';
-    resourceItem.href = document.filePath || '#';
+    resourceItem.href = document.file && document.file.filePath ? `/uploads/documents/${document.file.fileName}` : '#';
     resourceItem.dataset.id = document._id;
     resourceItem.dataset.type = document.documentType || 'document';
     
@@ -467,18 +522,37 @@ function createResourceElement(document) {
     if (document.documentType === 'pdf') icon = 'fas fa-file-pdf';
     if (document.documentType === 'presentation') icon = 'fas fa-file-powerpoint';
     if (document.documentType === 'spreadsheet') icon = 'fas fa-file-excel';
+    if (document.documentType === 'image') icon = 'fas fa-file-image';
+    
+    const fileTypeDisplay = getFileTypeDisplay(document.documentType);
     
     resourceItem.innerHTML = `
         <div class="resource-icon">
             <i class="${icon}"></i>
         </div>
-        <div class="resource-details">
+        <div class="resource-content">
             <h4>${document.title}</h4>
-            <p>${document.description || 'No description provided'}</p>
+            <span class="resource-type">${fileTypeDisplay}</span>
         </div>
     `;
     
     return resourceItem;
+}
+
+/**
+ * Get display name for file type
+ */
+function getFileTypeDisplay(documentType) {
+    switch(documentType) {
+        case 'pdf': return 'PDF Document';
+        case 'presentation': return 'Presentation';
+        case 'spreadsheet': return 'Spreadsheet';
+        case 'text': return 'Text Document';
+        case 'image': return 'Image';
+        case 'video': return 'Video';
+        case 'calendar': return 'Calendar File';
+        default: return 'Document';
+    }
 }
 
 /**
@@ -500,8 +574,14 @@ function initializeResourceLinks() {
             if (resourceId) {
                 try {
                     // Create a notes entry for the document about accessing it
-                    api.documents.addNote(resourceId, { text: 'Document accessed by employee' })
-                        .catch(err => console.error('Error logging document access:', err));
+                    fetch(`/api/documents/${resourceId}/notes`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ text: 'Document accessed by employee' })
+                    }).catch(err => console.error('Error logging document access:', err));
                 } catch (error) {
                     console.error('Error tracking resource access:', error);
                 }

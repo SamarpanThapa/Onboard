@@ -169,8 +169,6 @@ DepartmentSchema.pre('findOneAndUpdate', function(next) {
 });
 
 // Create indexes for efficient queries
-DepartmentSchema.index({ name: 1 });
-DepartmentSchema.index({ code: 1 });
 DepartmentSchema.index({ active: 1 });
 DepartmentSchema.index({ parentDepartment: 1 });
 DepartmentSchema.index({ 'head.userId': 1 });

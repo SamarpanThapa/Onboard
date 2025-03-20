@@ -1222,4 +1222,111 @@ exports.requestRevision = asyncHandler(async (req, res) => {
   });
   
   res.status(200).json({ success: true, data: updatedProcess });
-}); 
+});
+
+// @desc    Get a specific onboarding process with all documents and details
+// @route   GET /api/onboarding-processes/:id/details
+// @access  Private (Admin, HR)
+exports.getOnboardingProcessDetails = async (req, res) => {
+  try {
+    const processId = req.params.id;
+    
+    // Find the onboarding process and populate related data
+    const process = await OnboardingProcess.findById(processId)
+      .populate({
+        path: 'employee',
+        select: 'name email position department employmentDetails personalInfo'
+      })
+      .populate({
+        path: 'documents.documentId',
+        select: 'title filename fileType fileSize uploadedAt path'
+      })
+      .populate({
+        path: 'tasks.taskId',
+        select: 'title description category priority'
+      })
+      .populate({
+        path: 'tasks.assignedTo',
+        select: 'name email position'
+      });
+    
+    if (!process) {
+      return res.status(404).json({
+        success: false,
+        message: 'Onboarding process not found'
+      });
+    }
+    
+    // Fetch any user-submitted form data if available
+    const userData = await User.findById(process.employee._id)
+      .select('personalInfo employmentDetails documents customFields formData submittedForms');
+    
+    // Format the response data
+    const formattedProcess = {
+      id: process._id,
+      employee: {
+        id: process.employee._id,
+        name: process.employee.name || 'Employee',
+        email: process.employee.email,
+        position: process.employee.position,
+        department: process.employee.department,
+        // Include form data submitted by the employee
+        personalInfo: userData?.personalInfo || process.employee.personalInfo || {},
+        employmentDetails: userData?.employmentDetails || process.employee.employmentDetails || {}
+      },
+      status: process.status,
+      startDate: process.startDate,
+      progress: process.progress,
+      documents: process.documents.map(doc => ({
+        id: doc._id,
+        documentId: doc.documentId?._id,
+        title: doc.title || doc.documentId?.title || 'Document',
+        status: doc.status,
+        required: doc.required,
+        completedDate: doc.completedDate,
+        fileType: doc.documentId?.fileType || 'unknown',
+        filename: doc.documentId?.filename,
+        fileSize: doc.documentId?.fileSize,
+        uploadedAt: doc.documentId?.uploadedAt,
+        // Add a URL for accessing the document if available
+        url: doc.documentId ? `/api/documents/${doc.documentId._id}/download` : null
+      })),
+      tasks: process.tasks.map(task => ({
+        id: task._id,
+        taskId: task.taskId?._id,
+        title: task.taskId?.title || 'Task',
+        description: task.taskId?.description,
+        category: task.category || task.taskId?.category,
+        status: task.status,
+        dueDate: task.dueDate,
+        completedDate: task.completedDate,
+        assignedTo: task.assignedTo ? {
+          id: task.assignedTo._id,
+          name: task.assignedTo.name,
+          email: task.assignedTo.email,
+          position: task.assignedTo.position
+        } : null
+      })),
+      complianceStatus: process.complianceStatus,
+      complianceChecklist: process.complianceChecklist,
+      keyDates: process.keyDates,
+      // Include any custom form data submitted by the employee
+      formData: userData?.formData || {},
+      submittedForms: userData?.submittedForms || []
+    };
+    
+    console.log('Showing submission modal with data:', JSON.stringify(formattedProcess, null, 2));
+    
+    res.status(200).json({
+      success: true,
+      data: formattedProcess
+    });
+  } catch (error) {
+    console.error('Error fetching onboarding process details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching onboarding details',
+      error: process.env.NODE_ENV === 'production' ? undefined : error.message
+    });
+  }
+}; 
