@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listeners for navigation buttons
     backButton.addEventListener('click', goToPreviousStep);
     nextButton.addEventListener('click', goToNextStep);
-    dashboardButton.addEventListener('click', () => window.location.href = '/admin');
+    dashboardButton.addEventListener('click', () => window.location.href = '/emp_dashboard.html');
 
     // Handle form submission
     form.addEventListener('submit', handleSubmit);
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return isValid;
     }
 
-    function handleSubmit(e) {
+    async function handleSubmit(e) {
         if (e) e.preventDefault();
         
         if (validateCurrentStep()) {
@@ -184,11 +184,10 @@ document.addEventListener('DOMContentLoaded', function() {
             nextButton.disabled = true;
 
             // Gather form data
-            const userData = api.auth.getUserData();
             const offboardingData = {
                 reason: document.getElementById('reason').value,
                 feedback: document.getElementById('feedback').value,
-                lastWorkingDay: document.getElementById('last-day').value,
+                exitDate: document.getElementById('last-day').value,
                 companyAssetsReturned: [
                     {
                         assetName: 'Laptop',
@@ -213,77 +212,77 @@ document.addEventListener('DOMContentLoaded', function() {
                                        document.getElementById('final-confirmation').checked
             };
 
-            // Send offboarding data to the server
-            api.users.updateCurrentUser({
-                offboarding: {
-                    status: 'in_progress',
-                    reason: offboardingData.reason,
-                    exitDate: offboardingData.lastWorkingDay,
-                    companyAssetsReturned: offboardingData.companyAssetsReturned,
-                    accountDeactivated: {
-                        status: false,
-                        requested: offboardingData.accountDeactivation.requested
-                    }
+            try {
+                // Get file data if uploaded
+                const handoverDoc = document.getElementById('handover-doc').files[0];
+                if (handoverDoc) {
+                    // In a real implementation, we'd upload this file to the server
+                    offboardingData.finalDocumentation = {
+                        status: 'in_progress',
+                        documents: [{
+                            title: handoverDoc.name,
+                            status: 'pending',
+                            uploadedDate: new Date()
+                        }]
+                    };
                 }
-            }).then(async () => {
-                // Send notifications to IT and HR
-                
-                // 1. Asset return notification for IT
-                if (offboardingData.companyAssetsReturned.some(asset => asset.returnStatus === 'pending')) {
-                    await api.notifications.createNotification({
-                        title: 'Asset Return Request',
-                        message: `${userData.firstName} ${userData.lastName} has submitted asset returns for processing.`,
-                        type: 'system',
-                        recipients: ['it_admin']
-                    });
-                }
-                
-                // 2. Account deactivation request for IT
-                if (offboardingData.accountDeactivation.requested) {
-                    await api.notifications.createNotification({
-                        title: 'Account Deactivation Request',
-                        message: `${userData.firstName} ${userData.lastName} has requested account deactivation.`,
-                        type: 'system',
-                        recipients: ['it_admin']
-                    });
-                }
-                
-                // 3. Handover document notification for HR
-                await api.notifications.createNotification({
-                    title: 'Offboarding Documents Submitted',
-                    message: `${userData.firstName} ${userData.lastName} has submitted their offboarding documents.`,
-                    type: 'system',
-                    recipients: ['hr_admin']
+
+                // Submit offboarding data to API
+                const response = await fetch('/api/offboarding-processes/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify(offboardingData)
                 });
 
-                // Hide the form and show success message
-                form.querySelector('.form-steps-container').style.display = 'none';
-                form.querySelector('.progress-indicator').style.display = 'none';
-                successMessage.style.display = 'block';
+                const result = await response.json();
 
-                // Reset form state
-                nextButton.classList.remove('loading');
-                nextButton.disabled = false;
-            }).catch(error => {
-                console.error('Error saving offboarding data:', error);
-                alert('There was an error submitting your offboarding request. Please try again.');
+                if (response.ok) {
+                    console.log('Offboarding data submitted successfully:', result);
+                    
+                    // Update user status in local storage
+                    const user = JSON.parse(localStorage.getItem('user')) || {};
+                    user.offboarding = {
+                        status: 'in_progress',
+                        reason: offboardingData.reason,
+                        exitDate: offboardingData.exitDate
+                    };
+                    localStorage.setItem('user', JSON.stringify(user));
+                    
+                    // Show success message
+                    form.style.display = 'none';
+                    successMessage.style.display = 'block';
+                    
+                    // Redirect after a delay
+                    setTimeout(() => {
+                        window.location.href = '/emp_dashboard.html';
+                    }, 3000);
+                } else {
+                    throw new Error(result.message || 'Error submitting offboarding request');
+                }
+            } catch (error) {
+                console.error('Error submitting offboarding request:', error);
                 
-                // Reset button state
+                // Remove loading state
                 nextButton.classList.remove('loading');
                 nextButton.disabled = false;
-            });
+                
+                // Show error message
+                alert(`Failed to submit offboarding request: ${error.message}`);
+            }
         }
     }
 
-    // Add input event listeners for real-time validation
-    const allInputs = form.querySelectorAll('input, select, textarea');
-    allInputs.forEach(input => {
-        input.addEventListener('input', function() {
-            this.classList.remove('error');
-            const errorMessage = this.parentElement.querySelector('.error-message');
-            if (errorMessage) {
-                errorMessage.classList.remove('visible');
+    // Upload handler for file input
+    document.getElementById('handover-doc').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const label = this.nextElementSibling;
+            if (label && label.tagName === 'LABEL') {
+                label.textContent = file.name;
             }
-        });
+        }
     });
 });

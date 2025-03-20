@@ -89,6 +89,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Also set up periodic checking (e.g., every minute)
     setInterval(checkForOnboardingNotifications, 60000);
+
+    // Initialize offboarding functionality
+    initializeOffboarding();
 });
 
 /**
@@ -1822,6 +1825,56 @@ function formatDate(date) {
             hour: 'numeric',
             minute: '2-digit'
         });
+    }
+}
+
+/**
+ * Initialize offboarding functionality
+ */
+async function initializeOffboarding() {
+    console.log('Initializing offboarding section...');
+    
+    // Check if user already has an offboarding process
+    try {
+        const response = await fetch('/api/offboarding-processes/me', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        const startOffboardingBtn = document.querySelector('a[href="offboarding.html"]');
+        
+        if (response.ok) {
+            const process = await response.json();
+            console.log('Existing offboarding process found:', process);
+            
+            // User already has an offboarding process, update the button
+            if (startOffboardingBtn) {
+                startOffboardingBtn.textContent = 'View Offboarding Status';
+                startOffboardingBtn.classList.add('view-status');
+                
+                // Add status indicator next to button
+                const statusIndicator = document.createElement('div');
+                statusIndicator.className = `status-badge ${process.data.status}`;
+                statusIndicator.textContent = process.data.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                startOffboardingBtn.parentNode.insertBefore(statusIndicator, startOffboardingBtn.nextSibling);
+            }
+        } else if (response.status !== 404) {
+            // Some error other than "not found"
+            console.error('Error checking offboarding status:', await response.text());
+        } else {
+            // No offboarding process exists yet - this is normal
+            console.log('No existing offboarding process found.');
+            
+            // Make sure the button says "Start Offboarding"
+            if (startOffboardingBtn) {
+                startOffboardingBtn.textContent = 'Start Offboarding';
+                startOffboardingBtn.classList.remove('view-status');
+            }
+        }
+    } catch (error) {
+        console.error('Error checking offboarding status:', error);
     }
 }
 

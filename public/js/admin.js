@@ -1068,1688 +1068,851 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Initialize onboarding approvals
     initializeOnboardingApprovals();
-});
 
-// Initialize onboarding approvals
-function initializeOnboardingApprovals() {
-    console.log('Initializing onboarding approvals...');
-    
-    // Load onboarding submissions when the page loads
-    loadOnboardingSubmissions();
-    
-    // Add tab click listener to reload data when tab is selected
-    document.querySelectorAll('.tab-btn').forEach(tab => {
-        tab.addEventListener('click', function() {
-            if(this.dataset.tab === 'onboarding-approvals') {
-                loadOnboardingSubmissions();
+    /**
+     * Initialize the offboarding management section
+     */
+    function initializeOffboardingManagement() {
+      console.log('Initializing offboarding management...');
+      
+      // Try to load offboarding processes from API
+      loadOffboardingKanbanBoard();
+      
+      // Add event listener for new offboarding button
+      const newOffboardingBtn = document.querySelector('#offboarding .add-btn');
+      if (newOffboardingBtn) {
+        newOffboardingBtn.addEventListener('click', showNewOffboardingModal);
+      }
+      
+      // Initialize search functionality
+      const searchInput = document.querySelector('#offboarding .action-bar input[type="search"]');
+      if (searchInput) {
+        searchInput.addEventListener('input', function() {
+          const searchTerm = this.value.toLowerCase();
+          const offboardingItems = document.querySelectorAll('#offboarding .kanban-item');
+          
+          offboardingItems.forEach(item => {
+            const employeeName = item.querySelector('h4').textContent.toLowerCase();
+            const position = item.querySelector('p').textContent.toLowerCase();
+            
+            if (employeeName.includes(searchTerm) || position.includes(searchTerm)) {
+              item.style.display = 'block';
+            } else {
+              item.style.display = 'none';
             }
+          });
         });
-    });
-}
-
-// Function to load and display onboarding submissions in the table
-async function loadOnboardingSubmissions() {
-    console.log('Loading onboarding submissions...');
-    
-    // Get the table body
-    const tableBody = document.querySelector('#onboarding-approvals-table tbody');
-    if (!tableBody) {
-        console.error('Onboarding approvals table body not found');
-        return;
+      }
     }
-    
-    try {
-        // Show loading state
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="7" class="text-center">
-                    <div class="loading-spinner"></div>
-                    <p>Loading onboarding submissions...</p>
-                </td>
-            </tr>
-        `;
-        
-        // Fetch onboarding submissions from API
-        const response = await fetch('/api/onboarding-processes/submissions/pending', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+
+    /**
+     * Load offboarding processes for the kanban board
+     */
+    async function loadOffboardingKanbanBoard() {
+      console.log('Loading offboarding kanban board...');
+      
+      // Show loading state
+      const kanbanColumns = document.querySelectorAll('#offboarding .kanban-items');
+      kanbanColumns.forEach(column => {
+        column.innerHTML = '<div class="loading-spinner"></div><p>Loading offboarding processes...</p>';
+      });
+      
+      try {
+        // Fetch offboarding processes from API
+        const response = await fetch('/api/offboarding-processes/kanban/board', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
         });
         
         if (!response.ok) {
-            throw new Error(`Error loading submissions: ${response.statusText}`);
+          throw new Error('Failed to fetch offboarding processes');
         }
         
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to load submissions');
-        }
+        const data = await response.json();
+        console.log('Offboarding processes loaded:', data);
         
-        const submissions = result.data;
+        // Get the column elements
+        const initiatedColumn = document.querySelector('#offboarding .kanban-column:nth-child(1) .kanban-items');
+        const inProgressColumn = document.querySelector('#offboarding .kanban-column:nth-child(2) .kanban-items');
+        const completedColumn = document.querySelector('#offboarding .kanban-column:nth-child(3) .kanban-items');
         
-        // If no submissions, show empty state
-        if (submissions.length === 0) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="text-center">No onboarding submissions pending approval.</td>
-                </tr>
-            `;
-            return;
-        }
+        // Populate the columns with the processes
+        populateOffboardingColumn(initiatedColumn, data.data.initiated);
+        populateOffboardingColumn(inProgressColumn, data.data.in_progress);
+        populateOffboardingColumn(completedColumn, data.data.completed);
         
-        // Clear table body
-        tableBody.innerHTML = '';
+        // Initialize drag and drop
+        initializeOffboardingDragAndDrop();
+      } catch (error) {
+        console.error('Error loading offboarding kanban board:', error);
         
-        // Add each submission to the table
-        submissions.forEach(submission => {
-            const row = createSubmissionRow(submission);
-            tableBody.appendChild(row);
+        // Show error message in columns
+        const kanbanColumns = document.querySelectorAll('#offboarding .kanban-items');
+        kanbanColumns.forEach(column => {
+          column.innerHTML = `<p class="error-message">Error loading offboarding processes: ${error.message}</p>`;
         });
         
-        // Attach event handlers to action buttons
-        attachSubmissionActionHandlers();
-        
-    } catch (error) {
-        console.error('Error in loadOnboardingSubmissions:', error);
-        
-        // Show error state
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="7" class="text-center">
-                    <p class="error-message">Error loading submissions: ${error.message}</p>
-                    <button class="btn-primary retry-btn">Try Again</button>
-                </td>
-            </tr>
-        `;
-        
-        // Add event listener to retry button
-        const retryBtn = tableBody.querySelector('.retry-btn');
-        if (retryBtn) {
-            retryBtn.addEventListener('click', loadOnboardingSubmissions);
-        }
+        // Load sample data as fallback
+        loadSampleOffboardingData();
+      }
     }
-}
 
-// Function to fetch onboarding submissions
-async function fetchOnboardingSubmissions() {
-    try {
-        console.log('Fetching real onboarding submissions from API...');
+    /**
+     * Populate an offboarding kanban column with process items
+     */
+    function populateOffboardingColumn(column, processes) {
+      if (!processes || processes.length === 0) {
+        column.innerHTML = '<p class="empty-message">No processes in this status</p>';
+        return;
+      }
+      
+      processes.forEach(process => {
+        const employee = process.employee || {};
+        const tasks = process.tasks || [];
         
-        // Check if we have submissions in localStorage first
-        let storedSubmissions = [];
-        try {
-            storedSubmissions = JSON.parse(localStorage.getItem('onboardingSubmissions')) || [];
-            if (storedSubmissions.length > 0) {
-                console.log('Using submissions from localStorage:', storedSubmissions);
-                return storedSubmissions;
-            }
-        } catch (error) {
-            console.error('Error parsing stored submissions:', error);
+        // Create kanban item
+        const item = document.createElement('div');
+        item.className = 'kanban-item';
+        item.dataset.id = process._id;
+        
+        // Create employee info
+        const name = document.createElement('h4');
+        name.textContent = employee.name || 'Unknown Employee';
+        
+        const position = document.createElement('p');
+        position.textContent = employee.position || 'Unknown Position';
+        
+        const date = document.createElement('span');
+        date.className = 'date';
+        if (process.status === 'completed') {
+          date.textContent = `Completed: ${formatDate(process.keyDates?.completedDate || new Date())}`;
+        } else {
+          date.textContent = `Last Day: ${formatDate(process.exitDate || new Date())}`;
         }
         
-        // Mock data to return in case the API call fails or no stored data exists
-        const mockData = [
-            {
-                id: "1",
-                name: "Sarah Johnson",
-                email: "sarah.johnson@example.com",
-                department: "Marketing",
-                position: "Content Manager",
-                startDate: "2024-03-15",
-                status: "pending",
-                submissionDate: "2024-03-10",
-                completionPercentage: 100,
-                personalInfo: {
-                    fullName: "Sarah Johnson",
-                    dob: "January 15, 1988",
-                    address: "123 Main Street, Apt 4B, New York, NY 10001",
-                    phone: "(555) 123-4567",
-                    emergencyContact: {
-                        name: "Michael Johnson",
-                        relationship: "Spouse",
-                        phone: "(555) 987-6543"
-                    }
-                },
-                employmentDetails: {
-                    position: "Content Manager",
-                    department: "Marketing",
-                    startDate: "March 15, 2024",
-                    workSchedule: "Mon-Fri, 9am-5pm",
-                    bankDetails: {
-                        bankName: "Chase Bank",
-                        accountNumber: "****5678",
-                        routingNumber: "****9876"
-                    }
-                },
-                documents: [
-                    { name: "ID Proof", type: "pdf" },
-                    { name: "Tax Form", type: "pdf" },
-                    { name: "Work Authorization", type: "image" }
-                ],
-                feedback: null,
-                missingItems: []
-            },
-            {
-                id: "4",
-                name: "John Smith",
-                email: "john.smith@example.com",
-                department: "Engineering",
-                position: "Software Developer",
-                startDate: "Pending",
-                status: "revision_required",
-                submissionDate: "2024-03-17",
-                completionPercentage: 80,
-                personalInfo: {
-                    fullName: "John Smith",
-                    dob: "June 22, 1990",
-                    address: "456 Oak Avenue, Seattle, WA 98101",
-                    phone: "(555) 555-5555",
-                    emergencyContact: {
-                        name: "Emily Smith",
-                        relationship: "Spouse",
-                        phone: "(555) 444-4444"
-                    }
-                },
-                employmentDetails: {
-                    position: "Software Developer",
-                    department: "Engineering",
-                    startDate: "Pending",
-                    workSchedule: "Mon-Fri, 9am-5pm",
-                    bankDetails: {
-                        bankName: "Bank of America",
-                        accountNumber: "****1234",
-                        routingNumber: "****5678"
-                    }
-                },
-                documents: [
-                    { name: "ID Proof", type: "pdf" }
-                ],
-                feedback: "Please provide missing tax documentation and work authorization documents.",
-                missingItems: [
-                    "Tax Form",
-                    "Work Authorization"
-                ]
-            },
-            {
-                id: "5",
-                name: "Alisha Patel",
-                email: "alisha.patel@example.com",
-                department: "Human Resources",
-                position: "HR Specialist",
-                startDate: "2024-04-01",
-                status: "pending",
-                submissionDate: "2024-03-18",
-                completionPercentage: 95,
-                personalInfo: {
-                    fullName: "Alisha Patel",
-                    dob: "April 10, 1992",
-                    address: "222 Maple Drive, Austin, TX 78701",
-                    phone: "(555) 789-0123",
-                    emergencyContact: {
-                        name: "Raj Patel",
-                        relationship: "Brother",
-                        phone: "(555) 321-0987"
-                    }
-                },
-                employmentDetails: {
-                    position: "HR Specialist",
-                    department: "Human Resources",
-                    startDate: "April 1, 2024",
-                    workSchedule: "Mon-Fri, 9am-5pm",
-                    bankDetails: {
-                        bankName: "Wells Fargo",
-                        accountNumber: "****4321",
-                        routingNumber: "****8765"
-                    }
-                },
-                documents: [
-                    { name: "ID Proof", type: "pdf" },
-                    { name: "Tax Form", type: "pdf" },
-                    { name: "Education Certificates", type: "pdf" },
-                    { name: "Reference Letters", type: "pdf" }
-                ],
-                feedback: null,
-                missingItems: []
-            }
-        ];
+        // Create checklist for tasks
+        const checklist = document.createElement('div');
+        checklist.className = 'checklist';
         
-        // Store the mock data in localStorage for future use
-        localStorage.setItem('onboardingSubmissions', JSON.stringify(mockData));
+        // Add first two tasks to the checklist
+        const displayTasks = tasks.slice(0, 2);
+        displayTasks.forEach(task => {
+          const checklistItem = document.createElement('div');
+          checklistItem.className = `checklist-item${task.status === 'completed' ? ' completed' : ''}`;
+          
+          const icon = document.createElement('i');
+          icon.className = task.status === 'completed' ? 'fas fa-check' : 'fas fa-clock';
+          
+          const span = document.createElement('span');
+          span.textContent = task.title;
+          
+          checklistItem.appendChild(icon);
+          checklistItem.appendChild(span);
+          checklist.appendChild(checklistItem);
+        });
         
-        return mockData;
-    } catch (error) {
-        console.error('Error fetching onboarding submissions:', error);
-        throw error;
+        // Show progress bar for completed items
+        if (process.status === 'completed') {
+          const progressBar = document.createElement('div');
+          progressBar.className = 'task-progress';
+          
+          const progressFill = document.createElement('div');
+          progressFill.className = 'progress-bar';
+          progressFill.style.width = '100%';
+          
+          progressBar.appendChild(progressFill);
+          item.appendChild(name);
+          item.appendChild(position);
+          item.appendChild(date);
+          item.appendChild(progressBar);
+        } else {
+          item.appendChild(name);
+          item.appendChild(position);
+          item.appendChild(date);
+          item.appendChild(checklist);
+        }
+        
+        // Add view/edit button
+        const actionButton = document.createElement('button');
+        actionButton.className = 'kanban-item-action';
+        actionButton.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
+        actionButton.addEventListener('click', () => viewOffboardingProcess(process._id));
+        
+        item.appendChild(actionButton);
+        column.appendChild(item);
+      });
     }
-}
 
-// Function to delete employee
-function deleteEmployee(employeeId) {
-    console.log(`Deleting employee with ID: ${employeeId}`);
-    
-    // Show confirmation dialog
-    if (confirm('Are you sure you want to delete this employee? This action cannot be undone.')) {
-        // In a real implementation, we would send delete request to API
-        console.log('Confirmed delete for employee ID:', employeeId);
+    /**
+     * Initialize drag and drop for offboarding kanban board
+     */
+    function initializeOffboardingDragAndDrop() {
+      // Get all kanban columns
+      const columns = document.querySelectorAll('#offboarding .kanban-items');
+      
+      // Initialize Sortable for each column
+      columns.forEach((column, index) => {
+        new Sortable(column, {
+          group: 'offboardingProcesses',
+          animation: 150,
+          ghostClass: 'kanban-item-ghost',
+          chosenClass: 'kanban-item-chosen',
+          dragClass: 'kanban-item-drag',
+          onEnd: function(evt) {
+            const processId = evt.item.dataset.id;
+            const newStatus = getStatusFromColumnIndex(index);
+            
+            // Update status on the server
+            updateOffboardingStatus(processId, newStatus);
+          }
+        });
+      });
+    }
+
+    /**
+     * Get status string from column index
+     */
+    function getStatusFromColumnIndex(index) {
+      switch(index) {
+        case 0: return 'initiated';
+        case 1: return 'in_progress';
+        case 2: return 'completed';
+        default: return 'initiated';
+      }
+    }
+
+    /**
+     * Update offboarding process status
+     */
+    async function updateOffboardingStatus(processId, status) {
+      try {
+        // Show loading notification
+        showNotification('Updating Status', 'Updating offboarding process status...', 'info');
+        
+        // Update via API
+        const response = await fetch(`/api/offboarding-processes/${processId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ status })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to update status');
+        }
+        
+        const data = await response.json();
+        console.log('Status updated successfully:', data);
         
         // Show success notification
-        showNotification('Employee deleted successfully', 'success');
+        showNotification('Status Updated', `Offboarding process status changed to ${status.replace('_', ' ')}`, 'success');
         
-        // Refresh employee list
-        loadEmployeeData();
-    }
-}
-
-// Function to load employee data from API
-async function loadEmployeeData() {
-    console.log('Loading employee data');
-    
-    // Get the employee table body
-    const employeeTableBody = document.querySelector('#employees .data-table tbody');
-    if (!employeeTableBody) {
-        console.error('Employee table body not found');
-        showNotification('Employee table not found in the DOM', 'error');
-        return;
-    }
-    
-    try {
-        // Show loading state
-        employeeTableBody.innerHTML = `
-            <tr>
-                <td colspan="6" class="text-center">
-                    <div class="loading-spinner"></div>
-                    <p>Loading employee data...</p>
-                </td>
-            </tr>
-        `;
-        
-        // In a real implementation, we would fetch from API
-        // For now, we'll use mock data
-        
-        // Simulate API request delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Get mock data
-        const employees = [
-            {
-                id: "1",
-                name: "Sarah Johnson",
-                email: "sarah.johnson@example.com",
-                department: "Marketing",
-                position: "Content Manager",
-                startDate: "2024-03-15",
-                status: "pending"
-            },
-            {
-                id: "2",
-                name: "Michael Chen",
-                email: "michael.chen@example.com",
-                department: "Engineering",
-                position: "Senior Developer",
-                startDate: "2024-03-10",
-                status: "approved"
-            },
-            {
-                id: "3",
-                name: "Emily Brown",
-                email: "emily.brown@example.com",
-                department: "Sales",
-                position: "Account Executive",
-                startDate: "2024-03-01",
-                status: "offboarding"
-            },
-            {
-                id: "4",
-                name: "Alisha Patel",
-                email: "alisha.patel@example.com",
-                department: "Human Resources",
-                position: "HR Specialist",
-                startDate: "2024-03-20",
-                status: "pending"
-            }
-        ];
-        
-        // Clear loading state
-        employeeTableBody.innerHTML = '';
-        
-        // Process and display each employee
-        if (employees && employees.length > 0) {
-            employees.forEach(employee => {
-                try {
-                    const row = createEmployeeRow(employee);
-                    employeeTableBody.appendChild(row);
-                } catch (rowError) {
-                    console.error('Error creating row for employee:', employee, rowError);
-                }
-            });
-            
-            console.log('Successfully loaded employee data');
-            showNotification('Employee data loaded successfully', 'success');
-        } else {
-            employeeTableBody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="text-center">
-                        <p>No employee data found</p>
-                    </td>
-                </tr>
-            `;
-            console.warn('No employee data found');
+        // If the process is completed, we should reload the kanban board after a short delay
+        if (status === 'completed') {
+            setTimeout(() => {
+                loadOffboardingKanbanBoard();
+            }, 2000);
         }
     } catch (error) {
-        console.error('Error loading employee data:', error);
-        employeeTableBody.innerHTML = `
-            <tr>
-                <td colspan="6" class="text-center">
-                    <p class="error-message">Error loading employee data. Please try again.</p>
-                </td>
-            </tr>
-        `;
-        showNotification('Failed to load employee data', 'error');
-    }
-}
-
-// Function to create employee row
-function createEmployeeRow(employee) {
-    const row = document.createElement('tr');
-    
-    // Map onboarding status to display status
-    let statusClass, statusText;
-    switch(employee.status) {
-        case 'approved':
-            statusClass = 'active';
-            statusText = 'Active';
-            break;
-        case 'pending':
-            statusClass = 'onboarding';
-            statusText = 'Onboarding';
-            break;
-        case 'revision_required':
-            statusClass = 'warning';
-            statusText = 'Revision Required';
-            break;
-        case 'offboarding':
-            statusClass = 'offboarding';
-            statusText = 'Offboarding';
-            break;
-        default:
-            statusClass = 'onboarding';
-            statusText = 'Onboarding';
-    }
-    
-    row.innerHTML = `
-        <td>${employee.name}</td>
-        <td>${employee.department || 'Not Specified'}</td>
-        <td>${employee.position || 'Not Specified'}</td>
-        <td>${employee.startDate || 'Pending'}</td>
-        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-        <td>
-            <button class="action-btn view-employee" data-id="${employee.id}"><i class="fas fa-eye"></i></button>
-            <button class="action-btn edit-employee" data-id="${employee.id}"><i class="fas fa-edit"></i></button>
-            <button class="action-btn delete-employee" data-id="${employee.id}"><i class="fas fa-trash"></i></button>
-        </td>
-    `;
-    
-    // Add event listeners to action buttons
-    const viewBtn = row.querySelector('.view-employee');
-    const editBtn = row.querySelector('.edit-employee');
-    const deleteBtn = row.querySelector('.delete-employee');
-    
-    if (viewBtn) {
-        viewBtn.addEventListener('click', function() {
-            viewEmployeeDetails(employee.id);
-        });
-    }
-    
-    if (editBtn) {
-        editBtn.addEventListener('click', function() {
-            editEmployee(employee.id);
-        });
-    }
-    
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', function() {
-            deleteEmployee(employee.id);
-        });
-    }
-    
-    return row;
-}
-
-// Function to view employee details
-function viewEmployeeDetails(employeeId) {
-    console.log(`Viewing employee with ID: ${employeeId}`);
-    showNotification('Employee details view is not fully implemented.', 'info');
-}
-
-// Function to edit employee
-function editEmployee(employeeId) {
-    console.log(`Editing employee with ID: ${employeeId}`);
-    showNotification('Employee editing is not fully implemented.', 'info');
-}
-
-// Function to create a row for an onboarding submission
-function createSubmissionRow(submission) {
-    const row = document.createElement('tr');
-    row.className = 'onboarding-approval-item';
-    
-    // Format the submission date
-    const submissionDate = new Date(submission.submissionDate);
-    const formattedDate = submissionDate.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
-    
-    row.innerHTML = `
-        <td>${submission.name}</td>
-        <td>${submission.position}</td>
-        <td>${submission.department}</td>
-        <td>${formattedDate}</td>
-        <td><span class="status-badge ${getStatusClass(submission.status)}">${getStatusText(submission.status)}</span></td>
-        <td>
-            <div class="progress-container">
-                <div class="progress-bar" style="width: ${submission.completionPercentage}%"></div>
-                <span class="progress-text">${submission.completionPercentage}%</span>
-            </div>
-        </td>
-        <td>
-            <button class="action-btn view-submission" data-id="${submission.id}"><i class="fas fa-eye"></i></button>
-            <button class="action-btn approve-submission" data-id="${submission.id}"><i class="fas fa-check"></i></button>
-            <button class="action-btn request-revision" data-id="${submission.id}"><i class="fas fa-redo"></i></button>
-        </td>
-    `;
-    
-    return row;
-}
-
-// Function to attach event handlers to submission action buttons
-function attachSubmissionActionHandlers() {
-    // View submission buttons
-    document.querySelectorAll('.view-submission').forEach(button => {
-        button.addEventListener('click', function() {
-            const submissionId = this.dataset.id;
-            viewOnboardingSubmission(submissionId);
-        });
-    });
-    
-    // Approve submission buttons
-    document.querySelectorAll('.approve-submission').forEach(button => {
-        button.addEventListener('click', function() {
-            const submissionId = this.dataset.id;
-            approveOnboardingDirectly(submissionId);
-        });
-    });
-    
-    // Request revision buttons
-    document.querySelectorAll('.request-revision').forEach(button => {
-        button.addEventListener('click', function() {
-            const submissionId = this.dataset.id;
-            requestOnboardingRevisionDirectly(submissionId);
-        });
-    });
-}
-
-// View an onboarding submission (show modal with details)
-function viewOnboardingSubmission(submissionId) {
-    console.log('View onboarding action clicked for ID:', submissionId);
-    
-    // Get submissions data
-    let submissions = [];
-    try {
-        submissions = JSON.parse(localStorage.getItem('onboardingSubmissions')) || [];
-    } catch (error) {
-        console.error('Error parsing submissions from localStorage:', error);
-        showNotification('Error loading submission details.', 'error');
-        return;
-    }
-    
-    // Find the submission
-    const submission = submissions.find(s => s.id === submissionId);
-    if (!submission) {
-        showNotification('Submission not found.', 'error');
-        return;
-    }
-    
-    // Show the onboarding approval modal
-    const modal = document.getElementById('onboarding-approval-modal');
-    if (!modal) {
-        showNotification('Onboarding approval modal not found in the DOM.', 'error');
-        return;
-    }
-    
-    // Update modal content with submission data
-    document.getElementById('employee-name').textContent = submission.name;
-    document.getElementById('submission-date').textContent = new Date(submission.submissionDate).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-    });
-    
-    // Update status badge
-    const statusBadge = document.getElementById('submission-status');
-    statusBadge.className = `status-badge ${getStatusClass(submission.status)}`;
-    statusBadge.textContent = getStatusText(submission.status);
-    
-    // Missing items section
-    const missingItemsSection = document.getElementById('missing-items-section');
-    const missingItemsList = document.getElementById('missing-items-list');
-    
-    if (submission.missingItems && submission.missingItems.length > 0) {
-        missingItemsSection.style.display = 'block';
-        missingItemsList.innerHTML = '';
-        submission.missingItems.forEach(item => {
-            const li = document.createElement('li');
-            li.textContent = item;
-            missingItemsList.appendChild(li);
-        });
-    } else {
-        missingItemsSection.style.display = 'none';
-    }
-    
-    // Personal info tab content
-    if (submission.personalInfo) {
-        document.getElementById('info-fullname').textContent = submission.personalInfo.fullName || '-';
-        document.getElementById('info-dob').textContent = submission.personalInfo.dob || '-';
-        document.getElementById('info-address').textContent = submission.personalInfo.address || '-';
-        document.getElementById('info-phone').textContent = submission.personalInfo.phone || '-';
-        document.getElementById('info-email').textContent = submission.email || '-';
+        console.error('Error updating offboarding status:', error);
+        showNotification('Error', `Failed to update status: ${error.message}`, 'error');
         
-        if (submission.personalInfo.emergencyContact) {
-            document.getElementById('info-emergency-name').textContent = submission.personalInfo.emergencyContact.name || '-';
-            document.getElementById('info-emergency-relationship').textContent = submission.personalInfo.emergencyContact.relationship || '-';
-            document.getElementById('info-emergency-phone').textContent = submission.personalInfo.emergencyContact.phone || '-';
-        }
+        // Force reload of the kanban board to reset the UI state
+        loadOffboardingKanbanBoard();
     }
-    
-    // Employment details tab content
-    if (submission.employmentDetails) {
-        document.getElementById('info-position').textContent = submission.employmentDetails.position || '-';
-        document.getElementById('info-department').textContent = submission.employmentDetails.department || '-';
-        document.getElementById('info-start-date').textContent = submission.employmentDetails.startDate || '-';
-        document.getElementById('info-work-schedule').textContent = submission.employmentDetails.workSchedule || '-';
-        
-        if (submission.employmentDetails.bankDetails) {
-            document.getElementById('info-bank-name').textContent = submission.employmentDetails.bankDetails.bankName || '-';
-            document.getElementById('info-account-number').textContent = submission.employmentDetails.bankDetails.accountNumber || '-';
-            document.getElementById('info-routing-number').textContent = submission.employmentDetails.bankDetails.routingNumber || '-';
-        }
-    }
-    
-    // Documents tab content
-    const documentsList = document.getElementById('documents-list');
-    documentsList.innerHTML = '';
-    
-    if (submission.documents && submission.documents.length > 0) {
-        submission.documents.forEach(doc => {
-            const docItem = document.createElement('div');
-            docItem.className = 'document-item';
-            
-            // Set icon based on document type
-            let iconClass = 'fa-file';
-            if (doc.type === 'pdf') {
-                iconClass = 'fa-file-pdf';
-            } else if (doc.type === 'image') {
-                iconClass = 'fa-file-image';
-            }
-            
-            docItem.innerHTML = `
-                <i class="fas ${iconClass}"></i>
-                <div class="document-info">
-                    <h4>${doc.name}</h4>
-                </div>
-                <button class="action-btn view-document" title="View Document"><i class="fas fa-eye"></i></button>
-            `;
-            
-            documentsList.appendChild(docItem);
-        });
-    } else {
-        documentsList.innerHTML = '<p class="no-documents">No documents submitted.</p>';
-    }
-    
-    // Approval tab content
-    // Set up approval and revision request buttons
-    const approveButton = document.getElementById('approve-onboarding-btn');
-    const revisionButton = document.getElementById('request-revisions-btn');
-    const feedbackText = document.getElementById('feedback-text');
-    
-    // Clear feedback text
-    feedbackText.value = '';
-    
-    // Set up button event listeners
-    approveButton.onclick = function() {
-        const feedback = feedbackText.value.trim();
-        
-        // Close the modal
-        modal.style.display = 'none';
-        
-        // Call the approve function
-        approveOnboardingDirectly(submissionId);
-    };
-    
-    revisionButton.onclick = function() {
-        const feedback = feedbackText.value.trim();
-        
-        if (!feedback) {
-            showNotification('Please provide feedback for the employee before requesting revision.', 'error');
-            return;
-        }
-        
-        // Close the modal
-        modal.style.display = 'none';
-        
-        // Process revision with the feedback
-        processRevisionRequest(submissionId, feedback, []);
-    };
-    
-    // Show the first tab by default
-    const tabs = modal.querySelectorAll('.tab-btn');
-    const tabContents = modal.querySelectorAll('.tab-content');
-    
-    tabs.forEach(tab => {
-        tab.classList.remove('active');
-        tab.addEventListener('click', function() {
-            const tabId = this.dataset.tab;
-            
-            // Hide all tab contents
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-            });
-            
-            // Remove active class from all tabs
-            tabs.forEach(t => {
-                t.classList.remove('active');
-            });
-            
-            // Show the selected tab content and mark tab as active
-            document.getElementById(tabId).classList.add('active');
-            this.classList.add('active');
-        });
-    });
-    
-    // Show the first tab by default
-    tabs[0].classList.add('active');
-    tabContents[0].classList.add('active');
-    
-    // Show the modal
-    modal.style.display = 'block';
-    
-    // Handle close button
-    const closeBtn = modal.querySelector('.close-modal');
-    closeBtn.onclick = function() {
-        modal.style.display = 'none';
-    };
-    
-    // Close on click outside
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    };
-}
 
-// Function to directly approve from the table (without opening modal)
-function approveOnboardingDirectly(submissionId) {
-    console.log('Approve onboarding action clicked for ID:', submissionId);
-    
-    // Find the submission in our data
-    let submissions = [];
-    try {
-        submissions = JSON.parse(localStorage.getItem('onboardingSubmissions')) || [];
-    } catch (error) {
-        console.error('Error parsing onboarding submissions from localStorage:', error);
-    }
-    
-    // Find the submission by ID
-    const submissionIndex = submissions.findIndex(s => s.id === submissionId);
-    
-    if (submissionIndex === -1) {
-        showNotification('Submission not found.', 'error');
-        return;
-    }
-    
-    // Update the submission status
-    const submission = submissions[submissionIndex];
-    submission.status = 'approved';
-    submission.approvedDate = new Date().toISOString();
-    submission.feedback = 'Your onboarding submission has been approved. Welcome to the team!';
-    
-    // Save back to localStorage
-    localStorage.setItem('onboardingSubmissions', JSON.stringify(submissions));
-    
-    // Send notification to the employee
-    sendEmployeeNotification(submission.email, {
-        type: 'onboarding_approved',
-        title: 'Onboarding Submission Approved',
-        message: 'Your onboarding submission has been approved. Welcome to the team!',
-        date: new Date().toISOString()
-    });
-    
-    // Update the employee status in the employee list
-    updateEmployeeStatus(submissionId, 'approved');
-    
-    // Show success notification to admin
-    showNotification(`Onboarding approved for ${submission.name}. Employee has been notified.`, 'success');
-    
-    // Refresh the onboarding approvals list
-    loadOnboardingSubmissions();
-}
-
-// Function to directly request revision from the table (without opening modal)
-function requestOnboardingRevisionDirectly(submissionId) {
-    // Show a modal to collect feedback
-    showModal('Request Revision', `
-        <form id="revision-form">
+    /**
+     * Show modal to create a new offboarding process
+     */
+    function showNewOffboardingModal() {
+      // Create modal
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.id = 'new-offboarding-modal';
+      
+      modal.innerHTML = `
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3><i class="fas fa-user-minus"></i> Start New Offboarding</h3>
+            <button class="close-modal">&times;</button>
+          </div>
+          <div class="modal-body">
             <div class="form-group">
-                <label for="revision-feedback">Feedback for Employee</label>
-                <textarea id="revision-feedback" class="form-control" rows="4" 
-                    placeholder="Please provide detailed feedback on what needs to be revised..."></textarea>
+              <label for="offboarding-employee">Employee:</label>
+              <select id="offboarding-employee" required>
+                <option value="">Select an employee</option>
+                <!-- Will be populated from API -->
+              </select>
             </div>
             <div class="form-group">
-                <label>Missing Items</label>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" name="missing-item" value="ID Proof"> ID Proof</label>
-                    <label><input type="checkbox" name="missing-item" value="Tax Form"> Tax Form</label>
-                    <label><input type="checkbox" name="missing-item" value="Bank Details"> Bank Details</label>
-                    <label><input type="checkbox" name="missing-item" value="Emergency Contact"> Emergency Contact</label>
-                </div>
+              <label for="offboarding-reason">Reason:</label>
+              <select id="offboarding-reason" required>
+                <option value="">Select a reason</option>
+                <option value="new-opportunity">New Opportunity</option>
+                <option value="relocation">Relocation</option>
+                <option value="retirement">Retirement</option>
+                <option value="other">Other</option>
+              </select>
             </div>
-            <button type="submit" class="btn warning-btn">Send Revision Request</button>
-        </form>
-    `);
-    
-    // Handle form submission
-    const form = document.getElementById('revision-form');
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Get feedback text
-        const feedback = document.getElementById('revision-feedback').value;
-        if (!feedback || feedback.trim() === '') {
-            showNotification('Please provide feedback for the employee.', 'error');
-            return;
-        }
-        
-        // Get missing items
-        const missingItems = [];
-        document.querySelectorAll('input[name="missing-item"]:checked').forEach(checkbox => {
-            missingItems.push(checkbox.value);
-        });
-        
-        // Process the revision request
-        processRevisionRequest(submissionId, feedback, missingItems);
-        
-        // Close the modal
-        document.querySelector('.modal').classList.remove('visible');
-        setTimeout(() => document.querySelector('.modal').remove(), 300);
-    });
-}
-
-// Process revision request with feedback
-function processRevisionRequest(submissionId, feedback, missingItems) {
-    console.log('Processing revision request:', submissionId, feedback, missingItems);
-    
-    // Find the submission in our data
-    let submissions = [];
-    try {
-        submissions = JSON.parse(localStorage.getItem('onboardingSubmissions')) || [];
-    } catch (error) {
-        console.error('Error parsing onboarding submissions from localStorage:', error);
-    }
-    
-    // Find the submission by ID
-    const submissionIndex = submissions.findIndex(s => s.id === submissionId);
-    
-    if (submissionIndex === -1) {
-        showNotification('Submission not found.', 'error');
-        return;
-    }
-    
-    // Update the submission status
-    const submission = submissions[submissionIndex];
-    submission.status = 'revision_required';
-    submission.requestDate = new Date().toISOString();
-    submission.feedback = feedback;
-    submission.missingItems = missingItems;
-    
-    // Save back to localStorage
-    localStorage.setItem('onboardingSubmissions', JSON.stringify(submissions));
-    
-    // Send notification to the employee
-    sendEmployeeNotification(submission.email, {
-        type: 'onboarding_revision',
-        title: 'Onboarding Revision Requested',
-        message: feedback,
-        missingItems: missingItems,
-        date: new Date().toISOString()
-    });
-    
-    // Update the employee status in the employee list
-    updateEmployeeStatus(submissionId, 'revision_required');
-    
-    // Show success notification to admin
-    showNotification(`Revision requested from ${submission.name}. Employee has been notified.`, 'warning');
-    
-    // Refresh the onboarding approvals list
-    loadOnboardingSubmissions();
-}
-
-// Function to send notification to employee
-function sendEmployeeNotification(email, notification) {
-    console.log('Sending notification to employee:', email, notification);
-    
-    // In a real implementation, this would use an API to send the notification
-    // For now, we'll store it in localStorage as an example
-    
-    let employeeNotifications = {};
-    try {
-        employeeNotifications = JSON.parse(localStorage.getItem('employeeNotifications')) || {};
-    } catch (error) {
-        console.error('Error parsing employee notifications:', error);
-        employeeNotifications = {};
-    }
-    
-    // Create notifications array for this employee if it doesn't exist
-    if (!employeeNotifications[email]) {
-        employeeNotifications[email] = [];
-    }
-    
-    // Add the new notification
-    employeeNotifications[email].unshift(notification);
-    
-    // Save back to localStorage
-    localStorage.setItem('employeeNotifications', JSON.stringify(employeeNotifications));
-}
-
-// Function to update employee status in the employee list
-function updateEmployeeStatus(submissionId, newStatus) {
-    // Get employees from localStorage
-    let employees = [];
-    try {
-        employees = JSON.parse(localStorage.getItem('employees')) || [];
-    } catch (error) {
-        console.error('Error parsing employees:', error);
-    }
-    
-    // Find the submission to get employee details
-    let submissions = [];
-    try {
-        submissions = JSON.parse(localStorage.getItem('onboardingSubmissions')) || [];
-    } catch (error) {
-        console.error('Error parsing submissions:', error);
-    }
-    
-    const submission = submissions.find(s => s.id === submissionId);
-    if (!submission) return;
-    
-    // Find employee by email
-    const employeeIndex = employees.findIndex(e => e.email === submission.email);
-    
-    if (employeeIndex === -1) {
-        console.log('Employee not found in list, may need to add them');
-        return;
-    }
-    
-    // Update employee status
-    employees[employeeIndex].status = newStatus === 'approved' ? 'active' : 'pending';
-    
-    // Save back to localStorage
-    localStorage.setItem('employees', JSON.stringify(employees));
-    
-    // If employee table is visible, refresh it
-    if (document.getElementById('employees').classList.contains('active')) {
-        loadEmployeeData();
-    }
-}
-
-// Helper function to get status class for CSS
-function getStatusClass(status) {
-    switch (status) {
-        case 'approved': return 'active';
-        case 'pending': return 'pending';
-        case 'revision_required': return 'warning';
-        case 'offboarding': return 'offboarding';
-        default: return 'pending';
-    }
-}
-
-// Helper function to get status text
-function getStatusText(status) {
-    switch (status) {
-        case 'approved': return 'Approved';
-        case 'pending': return 'Pending Review';
-        case 'revision_required': return 'Revision Required';
-        case 'offboarding': return 'Offboarding';
-        default: return 'Pending Review';
-    }
-}
-
-// Function to initialize onboarding kanban board
-function initializeOnboardingTracker() {
-    console.log('Initializing onboarding tracker...');
-    
-    // Get the kanban columns
-    const toStartColumn = document.getElementById('toStart');
-    const inProgressColumn = document.getElementById('inProgress');
-    const completedColumn = document.getElementById('completed');
-    
-    if (!toStartColumn || !inProgressColumn || !completedColumn) {
-        console.error('One or more kanban columns not found');
-        return;
-    }
-    
-    // Clear existing items
-    toStartColumn.innerHTML = '';
-    inProgressColumn.innerHTML = '';
-    completedColumn.innerHTML = '';
-    
-    // Load employee data from API
-    loadEmployeesForOnboarding();
-    
-    // Initialize sortable for drag and drop between columns
-    if (typeof Sortable !== 'undefined') {
-        const options = {
-            group: 'onboarding',
-            animation: 150,
-            ghostClass: 'kanban-item-ghost',
-            chosenClass: 'kanban-item-chosen',
-            dragClass: 'kanban-item-drag',
-            onEnd: function(evt) {
-                const item = evt.item;
-                const employeeId = item.dataset.id;
-                const newStatus = evt.to.id;
-                
-                // Update employee status based on new column
-                updateEmployeeOnboardingStatus(employeeId, newStatus);
-            }
-        };
-        
-        // Initialize sortable for each column
-        new Sortable(toStartColumn, options);
-        new Sortable(inProgressColumn, options);
-        new Sortable(completedColumn, options);
-    } else {
-        console.warn('Sortable library not loaded. Drag and drop disabled.');
-    }
-    
-    // Add event listener for "New Onboarding" button
-    const newOnboardingBtn = document.querySelector('#onboarding .add-btn');
-    if (newOnboardingBtn) {
-        newOnboardingBtn.addEventListener('click', function() {
-            showOnboardingModal();
-        });
-    }
-}
-
-// Load employees for onboarding tracker
-async function loadEmployeesForOnboarding() {
-    try {
-        showNotification('Loading onboarding data...', 'info');
-        
-        // Get data from API
-        const response = await fetch('/api/onboarding-processes/kanban/board', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Error loading onboarding data: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to load onboarding data');
-        }
-        
-        const { toStart, inProgress, completed } = result.data;
-        
-        // Add employees to appropriate kanban columns
-        const toStartColumn = document.getElementById('toStart');
-        const inProgressColumn = document.getElementById('inProgress');
-        const completedColumn = document.getElementById('completed');
-        
-        // Populate To Start column
-        toStart.forEach(employee => {
-            const item = createKanbanItem(employee);
-            toStartColumn.appendChild(item);
-        });
-        
-        // Populate In Progress column
-        inProgress.forEach(employee => {
-            const item = createKanbanItem(employee);
-            inProgressColumn.appendChild(item);
-        });
-        
-        // Populate Completed column
-        completed.forEach(employee => {
-            const item = createKanbanItem(employee);
-            completedColumn.appendChild(item);
-        });
-        
-        console.log('Successfully loaded employees for onboarding tracker');
-        
-    } catch (error) {
-        console.error('Error loading employees for onboarding tracker:', error);
-        showNotification('Error loading onboarding tracker. Please refresh the page.', 'error');
-    }
-}
-
-// Create kanban item for an employee
-function createKanbanItem(employee) {
-    const item = document.createElement('div');
-    item.className = 'kanban-item';
-    item.dataset.id = employee.id;
-    
-    // Format start date
-    const startDate = employee.startDate ? new Date(employee.startDate) : null;
-    const formattedDate = startDate ? startDate.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric'
-    }) : 'TBD';
-    
-    // Determine label based on status
-    let dateLabel = 'Start Date:';
-    if (employee.status === 'in_progress' || employee.status === 'onboarding') {
-        dateLabel = 'Started:';
-    } else if (employee.status === 'completed' || employee.status === 'active' || employee.status === 'approved') {
-        dateLabel = 'Completed:';
-    }
-    
-    // Calculate progress percentage
-    let progressWidth = employee.completionPercentage || 0;
-    if (employee.status === 'completed') {
-        progressWidth = 100;
-    }
-    
-    item.innerHTML = `
-        <h4>${employee.name}</h4>
-        <p>${employee.position}</p>
-        <span class="date">${dateLabel} ${formattedDate}</span>
-        <div class="task-progress">
-            <div class="progress-bar" style="width: ${progressWidth}%"></div>
+            <div class="form-group">
+              <label for="offboarding-exit-date">Exit Date:</label>
+              <input type="date" id="offboarding-exit-date" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="create-offboarding-btn" class="btn primary-btn">
+              <i class="fas fa-plus"></i> Create Offboarding Process
+            </button>
+            <button class="btn cancel-btn close-modal">Cancel</button>
+          </div>
         </div>
-    `;
-    
-    // Add click event to view employee details
-    item.addEventListener('click', function(e) {
-        // Only trigger if not dragging
-        if (!item.classList.contains('kanban-item-chosen')) {
-            viewEmployeeDetails(employee.id);
-        }
-    });
-    
-    return item;
-}
+      `;
+      
+      // Add modal to the page
+      document.body.appendChild(modal);
+      
+      // Show modal
+      setTimeout(() => {
+        modal.classList.add('show');
+        
+        // Load active employees
+        loadActiveEmployees();
+        
+        // Add event listeners
+        const closeButtons = modal.querySelectorAll('.close-modal');
+        closeButtons.forEach(button => {
+          button.addEventListener('click', () => {
+            modal.classList.remove('show');
+            setTimeout(() => modal.remove(), 300);
+          });
+        });
+        
+        // Add create button event listener
+        const createButton = modal.querySelector('#create-offboarding-btn');
+        createButton.addEventListener('click', createOffboardingProcess);
+        
+      }, 100);
+    }
 
-// Update employee status when moved between columns
-async function updateEmployeeOnboardingStatus(employeeId, newStatus) {
-    console.log(`Updating employee ${employeeId} status to ${newStatus}`);
-    
-    try {
-        const response = await fetch(`/api/onboarding-processes/${employeeId}/status`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({ status: newStatus })
+    /**
+     * Load active employees for the offboarding dropdown
+     */
+    async function loadActiveEmployees() {
+      try {
+        const response = await fetch('/api/users?isActive=true', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
         });
         
         if (!response.ok) {
-            throw new Error(`Error updating status: ${response.statusText}`);
+          throw new Error('Failed to load employees');
         }
         
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to update employee status');
+        const { data } = await response.json();
+        
+        // Populate dropdown
+        const dropdown = document.getElementById('offboarding-employee');
+        if (dropdown) {
+          data.forEach(employee => {
+            const option = document.createElement('option');
+            option.value = employee._id;
+            option.textContent = `${employee.name} - ${employee.position || employee.department || ''}`;
+            dropdown.appendChild(option);
+          });
         }
         
-        const employee = result.data;
-        
-        // Show notification
-        showNotification(`Updated ${employee.employee ? employee.employee.name : 'employee'}'s onboarding status`, 'success');
-        
-        // Update progress bar in the kanban item
-        const kanbanItem = document.querySelector(`.kanban-item[data-id="${employeeId}"]`);
-        if (kanbanItem) {
-            const progressBar = kanbanItem.querySelector('.progress-bar');
-            if (progressBar) {
-                progressBar.style.width = `${employee.progress.percentComplete}%`;
-            }
-            
-            // Update date label
-            const dateSpan = kanbanItem.querySelector('.date');
-            if (dateSpan) {
-                let dateLabel = 'Start Date:';
-                if (newStatus === 'inProgress' || employee.status === 'in_progress') {
-                    dateLabel = 'Started:';
-                } else if (newStatus === 'completed' || employee.status === 'completed') {
-                    dateLabel = 'Completed:';
-                }
-                
-                const formattedDate = new Date(employee.startDate).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric'
-                });
-                
-                dateSpan.textContent = `${dateLabel} ${formattedDate}`;
-            }
-        }
-        
-        // If there's an onboarding submission for this employee, refresh it
-        if (document.getElementById('onboarding-approvals').classList.contains('active')) {
-            loadOnboardingSubmissions();
-        }
-        
-    } catch (error) {
-        console.error('Error updating employee status:', error);
-        showNotification('Error updating employee status. Please try again.', 'error');
+      } catch (error) {
+        console.error('Error loading employees:', error);
+        showNotification('Error', `Failed to load employees: ${error.message}`, 'error');
+      }
     }
-}
 
-// Show new onboarding modal
-function showOnboardingModal() {
-    showModal('Add New Onboarding', `
-        <form id="new-onboarding-form">
-            <div class="form-group">
-                <label>Employee Name</label>
-                <input type="text" id="new-employee-name" required placeholder="Enter employee name">
-            </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="new-employee-email" required placeholder="Enter email address">
-            </div>
-            <div class="form-group">
-                <label>Department</label>
-                <select id="new-employee-department" required>
-                    <option value="">Select Department</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Sales">Sales</option>
-                    <option value="Product">Product</option>
-                    <option value="Design">Design</option>
-                    <option value="Human Resources">Human Resources</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Position</label>
-                <input type="text" id="new-employee-position" required placeholder="Enter position title">
-            </div>
-            <div class="form-group">
-                <label>Start Date</label>
-                <input type="date" id="new-employee-start-date" required>
-            </div>
-            <button type="submit" class="btn-primary">Create Onboarding</button>
-        </form>
-    `);
-    
-    // Handle form submission
-    const form = document.getElementById('new-onboarding-form');
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
+    /**
+     * Create a new offboarding process
+     */
+    async function createOffboardingProcess() {
+      // Get form values
+      const employeeId = document.getElementById('offboarding-employee').value;
+      const reason = document.getElementById('offboarding-reason').value;
+      const exitDate = document.getElementById('offboarding-exit-date').value;
+      
+      // Validate form
+      if (!employeeId || !reason || !exitDate) {
+        showNotification('Error', 'Please fill in all fields', 'error');
+        return;
+      }
+      
+      try {
+        // Show loading state
+        const button = document.getElementById('create-offboarding-btn');
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
         
-        // Get form values
-        const name = document.getElementById('new-employee-name').value;
-        const email = document.getElementById('new-employee-email').value;
-        const department = document.getElementById('new-employee-department').value;
-        const position = document.getElementById('new-employee-position').value;
-        const startDate = document.getElementById('new-employee-start-date').value;
+        // Create offboarding process
+        const response = await fetch('/api/offboarding-processes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            employeeId,
+            reason,
+            exitDate
+          })
+        });
         
-        // Create new employee
-        createNewOnboarding(name, email, department, position, startDate);
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || 'Failed to create offboarding process');
+        }
+        
+        // Show success notification
+        showNotification('Success', 'Offboarding process created successfully', 'success');
         
         // Close modal
-        const modal = this.closest('.modal');
-        modal.classList.remove('visible');
+        const modal = document.getElementById('new-offboarding-modal');
+        modal.classList.remove('show');
         setTimeout(() => modal.remove(), 300);
-    });
-}
-
-// Create new onboarding
-async function createNewOnboarding(name, email, department, position, startDate) {
-    try {
-        showNotification('Creating new onboarding...', 'info');
         
-        const response = await fetch('/api/onboarding-processes/employee', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({
-                name,
-                email,
-                department,
-                position,
-                startDate
-            })
-        });
+        // Reload kanban board
+        loadOffboardingKanbanBoard();
         
-        if (!response.ok) {
-            throw new Error(`Error creating onboarding: ${response.statusText}`);
-        }
+      } catch (error) {
+        console.error('Error creating offboarding process:', error);
+        showNotification('Error', `Failed to create offboarding process: ${error.message}`, 'error');
         
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to create onboarding');
-        }
-        
-        const newEmployee = result.data;
-        
-        // Create a kanban item for the new employee
-        const kanbanItem = createKanbanItem(newEmployee);
-        
-        // Add to "To Start" column
-        const toStartColumn = document.getElementById('toStart');
-        if (toStartColumn) {
-            toStartColumn.appendChild(kanbanItem);
-        }
-        
-        // Show success notification
-        showNotification(`Added ${name} to onboarding`, 'success');
-        
-        // Refresh employee list if visible
-        if (document.getElementById('employees').classList.contains('active')) {
-            loadEmployeeData();
-        }
-        
-    } catch (error) {
-        console.error('Error creating new onboarding:', error);
-        showNotification('Error creating new onboarding: ' + error.message, 'error');
+        // Reset button
+        const button = document.getElementById('create-offboarding-btn');
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-plus"></i> Create Offboarding Process';
+      }
     }
-}
 
-// View details of an onboarding submission
-async function viewOnboardingSubmission(submissionId) {
-    console.log('Viewing submission details for:', submissionId);
-    
-    try {
+    /**
+     * View offboarding process details
+     */
+    async function viewOffboardingProcess(processId) {
+      try {
         // Show loading notification
-        showNotification('Loading submission details...', 'info');
+        showNotification('Loading', 'Fetching offboarding process details...', 'info');
         
-        // Fetch submission details from API
-        const response = await fetch(`/api/onboarding-processes/${submissionId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+        // Fetch process details
+        const response = await fetch(`/api/offboarding-processes/${processId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
         });
         
         if (!response.ok) {
-            throw new Error(`Error fetching submission details: ${response.statusText}`);
+          throw new Error('Failed to fetch offboarding process details');
         }
         
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to load submission details');
-        }
+        const { data: process } = await response.json();
         
-        const process = result.data;
-        const employee = process.employee;
+        // Create modal with process details
+        createOffboardingDetailsModal(process);
         
-        // Format dates for display
-        const formattedStartDate = new Date(process.startDate).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+      } catch (error) {
+        console.error('Error viewing offboarding process:', error);
+        showNotification('Error', `Failed to load offboarding details: ${error.message}`, 'error');
+      }
+    }
+
+    /**
+     * Create a modal with offboarding process details
+     */
+    function createOffboardingDetailsModal(process) {
+      const employee = process.employee || {};
+      const tasks = process.tasks || [];
+      
+      // Create modal
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.id = 'offboarding-details-modal';
+      
+      // Format dates
+      const exitDate = formatDate(process.exitDate);
+      const createdDate = formatDate(process.keyDates?.created);
+      const completedDate = process.keyDates?.completedDate ? formatDate(process.keyDates.completedDate) : 'Not completed';
+      
+      // Get status badge class
+      const statusClass = getStatusClass(process.status);
+      const statusText = getStatusText(process.status);
+      
+      // Create task list HTML
+      const tasksHtml = tasks.map((task, index) => {
+        const taskStatusClass = task.status === 'completed' ? 'success' : 
+                               task.status === 'in_progress' ? 'warning' : 'danger';
         
-        // Create modal content with tabs for different sections
-        const modalContent = `
-            <div class="submission-detail-container">
-                <div class="employee-info">
-                    <h3>${employee.name}</h3>
-                    <p>${employee.position} - ${employee.department}</p>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <span class="label">Email:</span>
-                            <span class="value">${employee.email}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">Start Date:</span>
-                            <span class="value">${formattedStartDate}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">Status:</span>
-                            <span class="value status-badge ${getStatusClass(process.status)}">${getStatusText(process.status)}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">Progress:</span>
-                            <div class="progress-container">
-                                <div class="progress-bar" style="width: ${process.progress.percentComplete}%"></div>
-                                <span class="progress-text">${process.progress.percentComplete}%</span>
-                            </div>
-                        </div>
-                    </div>
+        return `
+          <div class="task-item">
+            <div class="task-details">
+              <h4>${task.title}</h4>
+              <span class="status-badge ${taskStatusClass}">${task.status.replace('_', ' ')}</span>
+            </div>
+            <div class="task-actions">
+              ${task.status !== 'completed' ? 
+                `<button class="action-btn complete-task-btn" data-task-index="${index}">
+                  <i class="fas fa-check"></i> Mark Complete
+                 </button>` : 
+                `<button class="action-btn reset-task-btn" data-task-index="${index}">
+                  <i class="fas fa-undo"></i> Reset
+                 </button>`
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      // Generate assets list HTML
+      const assetsHtml = (process.companyAssetsReturned || [])
+        .filter(asset => asset.returnStatus !== 'not_applicable')
+        .map(asset => {
+          const statusBadgeClass = 
+            asset.returnStatus === 'returned' ? 'success' : 
+            asset.returnStatus === 'pending' ? 'warning' : 'danger';
+          
+          return `
+            <div class="asset-item">
+              <div class="asset-name">${asset.assetName}</div>
+              <div class="asset-status">
+                <span class="status-badge ${statusBadgeClass}">${asset.returnStatus}</span>
+              </div>
+            </div>
+          `;
+        }).join('') || '<p>No assets to return</p>';
+      
+      // Determine which action buttons to show based on status
+      let actionButtonsHtml = '';
+      if (process.status !== 'completed') {
+        actionButtonsHtml = `
+          <button id="complete-offboarding-btn" class="btn primary-btn" data-id="${process._id}">
+            <i class="fas fa-check-circle"></i> Complete Offboarding
+          </button>
+        `;
+      }
+      
+      modal.innerHTML = `
+        <div class="modal-content wider-modal">
+          <div class="modal-header">
+            <h3><i class="fas fa-user-minus"></i> Offboarding Details</h3>
+            <button class="close-modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="offboarding-details-grid">
+              <div class="details-section">
+                <h4>Employee Information</h4>
+                <div class="details-row">
+                  <strong>Name:</strong> <span>${employee.name || 'Unknown'}</span>
+                </div>
+                <div class="details-row">
+                  <strong>Position:</strong> <span>${employee.position || 'Unknown'}</span>
+                </div>
+                <div class="details-row">
+                  <strong>Department:</strong> <span>${employee.department || 'Unknown'}</span>
+                </div>
+                <div class="details-row">
+                  <strong>Exit Date:</strong> <span>${exitDate}</span>
+                </div>
+                <div class="details-row">
+                  <strong>Status:</strong> <span class="status-badge ${statusClass}">${statusText}</span>
+                </div>
+                <div class="details-row">
+                  <strong>Reason:</strong> <span>${formatReason(process.reason)}</span>
+                </div>
+                <div class="details-row">
+                  <strong>Process Started:</strong> <span>${createdDate}</span>
+                </div>
+                <div class="details-row">
+                  <strong>Process Completed:</strong> <span>${completedDate}</span>
+                </div>
+              </div>
+              
+              <div class="details-section">
+                <h4>Tasks & Progress</h4>
+                <div class="progress-container">
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${process.progress?.percentComplete || 0}%"></div>
+                  </div>
+                  <div class="progress-text">${process.progress?.percentComplete || 0}% Complete</div>
                 </div>
                 
-                <div class="submission-tabs">
-                    <div class="tab-buttons">
-                        <button class="tab-btn active" data-tab="personal-info">Personal Info</button>
-                        <button class="tab-btn" data-tab="employee-details">Employment Details</button>
-                        <button class="tab-btn" data-tab="documents">Documents</button>
-                        <button class="tab-btn" data-tab="approval-actions">Approval Actions</button>
-                    </div>
-                    
-                    <div class="tab-content active" id="personal-info">
-                        <h4>Personal Information</h4>
-                        <div class="detail-grid">
-                            <div class="detail-item">
-                                <span class="label">Full Name:</span>
-                                <span class="value">${employee.personalInfo?.firstName || ''} ${employee.personalInfo?.middleName || ''} ${employee.personalInfo?.lastName || ''}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="label">Phone:</span>
-                                <span class="value">${employee.personalInfo?.phoneNumber || 'Not provided'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="label">Address:</span>
-                                <span class="value">${formatAddress(employee.personalInfo?.address) || 'Not provided'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="label">Emergency Contact:</span>
-                                <span class="value">${formatEmergencyContact(employee.personalInfo?.emergencyContact) || 'Not provided'}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="tab-content" id="employee-details">
-                        <h4>Employment Details</h4>
-                        <div class="detail-grid">
-                            <div class="detail-item">
-                                <span class="label">Position:</span>
-                                <span class="value">${employee.position}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="label">Department:</span>
-                                <span class="value">${employee.department}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="label">Employment Type:</span>
-                                <span class="value">${employee.employmentDetails?.contractType || 'Full-time'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="label">Start Date:</span>
-                                <span class="value">${formattedStartDate}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="tab-content" id="documents">
-                        <h4>Submitted Documents</h4>
-                        ${renderDocuments(process.documents)}
-                    </div>
-                    
-                    <div class="tab-content" id="approval-actions">
-                        <h4>Approval Actions</h4>
-                        <div class="action-buttons">
-                            <button class="btn-success approve-btn" data-id="${submissionId}">
-                                <i class="fas fa-check"></i> Approve Submission
-                            </button>
-                            <button class="btn-warning revision-btn" data-id="${submissionId}">
-                                <i class="fas fa-undo"></i> Request Revision
-                            </button>
-                        </div>
-                        
-                        <div class="revision-form" style="display: none;">
-                            <h4>Request Revisions</h4>
-                            <div class="form-group">
-                                <label>Feedback</label>
-                                <textarea id="revision-feedback" placeholder="Provide detailed feedback for the employee"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Missing Items</label>
-                                <div class="missing-items-list">
-                                    <div class="missing-item">
-                                        <input type="checkbox" id="missing-personal-info" value="Personal Information">
-                                        <label for="missing-personal-info">Personal Information</label>
-                                    </div>
-                                    <div class="missing-item">
-                                        <input type="checkbox" id="missing-documents" value="Required Documents">
-                                        <label for="missing-documents">Required Documents</label>
-                                    </div>
-                                    <div class="missing-item">
-                                        <input type="checkbox" id="missing-signatures" value="Signatures">
-                                        <label for="missing-signatures">Signatures</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <button class="btn-primary send-revision-btn" data-id="${submissionId}">Send Revision Request</button>
-                        </div>
-                    </div>
+                <div class="tasks-container">
+                  ${tasksHtml || '<p>No tasks found</p>'}
                 </div>
+              </div>
+              
+              <div class="details-section">
+                <h4>Asset Return</h4>
+                <div class="assets-container">
+                  ${assetsHtml}
+                </div>
+              </div>
+              
+              ${process.feedback ? `
+                <div class="details-section full-width">
+                  <h4>Exit Feedback</h4>
+                  <div class="feedback-box">
+                    <p>${process.feedback}</p>
+                  </div>
+                </div>
+              ` : ''}
             </div>
-        `;
+          </div>
+          <div class="modal-footer">
+            ${actionButtonsHtml}
+            <button class="btn secondary-btn close-modal">Close</button>
+          </div>
+        </div>
+      `;
+      
+      // Add modal to page
+      document.body.appendChild(modal);
+      
+      // Show modal
+      setTimeout(() => {
+        modal.classList.add('show');
         
-        // Show modal with submission details
-        showModal(`Onboarding Submission - ${employee.name}`, modalContent);
-        
-        // Add tab switching functionality
-        document.querySelectorAll('.submission-tabs .tab-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                // Remove active class from all tabs and content
-                document.querySelectorAll('.submission-tabs .tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.submission-tabs .tab-content').forEach(c => c.classList.remove('active'));
-                
-                // Add active class to clicked tab and corresponding content
-                this.classList.add('active');
-                document.getElementById(this.dataset.tab).classList.add('active');
-            });
+        // Add event listeners
+        const closeButtons = modal.querySelectorAll('.close-modal');
+        closeButtons.forEach(button => {
+          button.addEventListener('click', () => {
+            modal.classList.remove('show');
+            setTimeout(() => modal.remove(), 300);
+          });
         });
         
-        // Add event listener for approve button
-        document.querySelector('.approve-btn').addEventListener('click', function() {
-            approveOnboardingDirectly(this.dataset.id);
+        // Add task action buttons
+        const completeTaskButtons = modal.querySelectorAll('.complete-task-btn');
+        completeTaskButtons.forEach(button => {
+          button.addEventListener('click', () => {
+            const taskIndex = button.dataset.taskIndex;
+            updateOffboardingTaskStatus(process._id, taskIndex, 'completed');
+          });
         });
         
-        // Add event listener for revision button
-        document.querySelector('.revision-btn').addEventListener('click', function() {
-            // Show revision form
-            document.querySelector('.revision-form').style.display = 'block';
-            this.style.display = 'none';
+        const resetTaskButtons = modal.querySelectorAll('.reset-task-btn');
+        resetTaskButtons.forEach(button => {
+          button.addEventListener('click', () => {
+            const taskIndex = button.dataset.taskIndex;
+            updateOffboardingTaskStatus(process._id, taskIndex, 'not_started');
+          });
         });
         
-        // Add event listener for send revision button
-        document.querySelector('.send-revision-btn').addEventListener('click', function() {
-            const feedback = document.getElementById('revision-feedback').value;
-            const missingItems = [];
-            
-            // Get checked missing items
-            document.querySelectorAll('.missing-items-list input:checked').forEach(item => {
-                missingItems.push(item.value);
-            });
-            
-            // Validate feedback
-            if (!feedback) {
-                showNotification('Please provide feedback for the revision request', 'warning');
-                return;
-            }
-            
-            // Send revision request
-            requestOnboardingRevisionDirectly(this.dataset.id, feedback, missingItems);
-        });
+        // Add complete offboarding button
+        const completeOffboardingBtn = modal.querySelector('#complete-offboarding-btn');
+        if (completeOffboardingBtn) {
+          completeOffboardingBtn.addEventListener('click', () => {
+            const processId = completeOffboardingBtn.dataset.id;
+            completeOffboardingProcess(processId);
+          });
+        }
         
-    } catch (error) {
-        console.error('Error viewing onboarding submission:', error);
-        showNotification('Error loading submission details: ' + error.message, 'error');
+      }, 100);
     }
-}
 
-// Helper function to format address
-function formatAddress(address) {
-    if (!address) return null;
-    
-    const parts = [];
-    if (address.street) parts.push(address.street);
-    if (address.city) parts.push(address.city);
-    if (address.state) parts.push(address.state);
-    if (address.zipCode) parts.push(address.zipCode);
-    if (address.country) parts.push(address.country);
-    
-    return parts.join(', ');
-}
-
-// Helper function to format emergency contact
-function formatEmergencyContact(contact) {
-    if (!contact) return null;
-    
-    const parts = [];
-    if (contact.name) parts.push(contact.name);
-    if (contact.relationship) parts.push(`(${contact.relationship})`);
-    if (contact.phoneNumber) parts.push(contact.phoneNumber);
-    
-    return parts.join(' ');
-}
-
-// Helper function to render documents
-function renderDocuments(documents) {
-    if (!documents || documents.length === 0) {
-        return '<p>No documents submitted</p>';
-    }
-    
-    let html = '<div class="documents-list">';
-    
-    documents.forEach(doc => {
-        html += `
-            <div class="document-item">
-                <div class="document-icon">
-                    <i class="fas fa-file-${getDocumentIcon(doc.title)}"></i>
-                </div>
-                <div class="document-info">
-                    <h5>${doc.title}</h5>
-                    <span class="status-badge ${getStatusClass(doc.status)}">${getStatusText(doc.status)}</span>
-                </div>
-                <div class="document-actions">
-                    <button class="action-btn view-document" title="View Document">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-    
-    html += '</div>';
-    return html;
-}
-
-// Helper function to get document icon based on title
-function getDocumentIcon(title) {
-    if (!title) return 'alt';
-    
-    const lowercaseTitle = title.toLowerCase();
-    
-    if (lowercaseTitle.includes('contract')) return 'contract';
-    if (lowercaseTitle.includes('id') || lowercaseTitle.includes('identification')) return 'id-badge';
-    if (lowercaseTitle.includes('tax')) return 'file-invoice-dollar';
-    if (lowercaseTitle.includes('health') || lowercaseTitle.includes('medical')) return 'file-medical';
-    if (lowercaseTitle.includes('agreement')) return 'file-signature';
-    if (lowercaseTitle.includes('pdf')) return 'pdf';
-    if (lowercaseTitle.includes('doc')) return 'word';
-    if (lowercaseTitle.includes('xls')) return 'excel';
-    
-    return 'alt';
-}
-
-// Approve an onboarding submission
-async function approveOnboardingDirectly(submissionId) {
-    console.log('Approving onboarding submission:', submissionId);
-    
-    try {
+    /**
+     * Update task status for an offboarding process
+     */
+    async function updateOffboardingTaskStatus(processId, taskIndex, status) {
+      try {
         // Show loading notification
-        showNotification('Processing approval...', 'info');
+        showNotification('Updating', 'Updating task status...', 'info');
         
-        // Call API to approve submission
-        const response = await fetch(`/api/onboarding-processes/submissions/${submissionId}/approve`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+        // Update task status
+        const response = await fetch(`/api/offboarding-processes/${processId}/tasks/${taskIndex}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ status })
         });
         
         if (!response.ok) {
-            throw new Error(`Error approving submission: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to approve submission');
-        }
-        
-        // Close modal if open
-        const modal = document.querySelector('.modal');
-        if (modal) {
-            modal.classList.remove('visible');
-            setTimeout(() => modal.remove(), 300);
+          throw new Error('Failed to update task status');
         }
         
         // Show success notification
-        showNotification('Onboarding submission approved successfully', 'success');
+        showNotification('Success', 'Task status updated successfully', 'success');
         
-        // Refresh submissions list
-        loadOnboardingSubmissions();
+        // Close and reopen the modal to refresh data
+        const modal = document.getElementById('offboarding-details-modal');
+        modal.classList.remove('show');
+        setTimeout(() => {
+          modal.remove();
+          viewOffboardingProcess(processId);
+        }, 300);
         
-        // Refresh onboarding tracker if it's visible
-        if (document.getElementById('onboarding').classList.contains('active')) {
-            loadEmployeesForOnboarding();
+        // Reload kanban board in the background
+        loadOffboardingKanbanBoard();
+        
+      } catch (error) {
+        console.error('Error updating task status:', error);
+        showNotification('Error', `Failed to update task status: ${error.message}`, 'error');
+      }
+    }
+
+    /**
+     * Complete an offboarding process
+     */
+    async function completeOffboardingProcess(processId) {
+      if (!confirm('Are you sure you want to complete this offboarding process? This will deactivate the employee account.')) {
+        return;
+      }
+      
+      try {
+        // Show loading notification
+        showNotification('Processing', 'Completing offboarding process...', 'info');
+        
+        // Update process status
+        const response = await fetch(`/api/offboarding-processes/${processId}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ status: 'completed' })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to complete offboarding process');
         }
         
-    } catch (error) {
-        console.error('Error approving onboarding submission:', error);
-        showNotification('Error approving submission: ' + error.message, 'error');
-    }
-}
-
-// Request revision for an onboarding submission
-async function requestOnboardingRevisionDirectly(submissionId, feedback, missingItems) {
-    console.log('Requesting revision for onboarding submission:', submissionId);
-    
-    try {
-        // Show loading notification
-        showNotification('Processing revision request...', 'info');
+        // Show success notification
+        showNotification('Success', 'Offboarding process completed successfully', 'success');
         
-        // Call API to request revision
-        const response = await fetch(`/api/onboarding-processes/submissions/${submissionId}/revise`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+        // Close the modal
+        const modal = document.getElementById('offboarding-details-modal');
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 300);
+        
+        // Reload kanban board
+        loadOffboardingKanbanBoard();
+        
+      } catch (error) {
+        console.error('Error completing offboarding process:', error);
+        showNotification('Error', `Failed to complete offboarding process: ${error.message}`, 'error');
+      }
+    }
+
+    /**
+     * Format reason string for display
+     */
+    function formatReason(reason) {
+      if (!reason) return 'Unknown';
+      
+      // Convert from slug to readable format
+      return reason
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+
+    /**
+     * Load sample offboarding data for demonstration
+     */
+    function loadSampleOffboardingData() {
+      console.log('Loading sample offboarding data...');
+      
+      // Sample data structure matching API response format
+      const sampleData = {
+        initiated: [
+          {
+            _id: 'sample-1',
+            employee: {
+              name: 'Emily Brown',
+              position: 'Sales Executive'
             },
-            body: JSON.stringify({
-                feedback,
-                missingItems
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Error requesting revision: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to request revision');
-        }
-        
-        // Close modal if open
-        const modal = document.querySelector('.modal');
-        if (modal) {
-            modal.classList.remove('visible');
-            setTimeout(() => modal.remove(), 300);
-        }
-        
-        // Show success notification
-        showNotification('Revision request sent successfully', 'success');
-        
-        // Refresh submissions list
-        loadOnboardingSubmissions();
-        
-    } catch (error) {
-        console.error('Error requesting revision for submission:', error);
-        showNotification('Error requesting revision: ' + error.message, 'error');
+            exitDate: new Date('2024-04-15'),
+            reason: 'new-opportunity',
+            status: 'initiated',
+            tasks: [
+              { title: 'Exit Interview', status: 'not_started' },
+              { title: 'Asset Return', status: 'not_started' }
+            ]
+          }
+        ],
+        in_progress: [
+          {
+            _id: 'sample-2',
+            employee: {
+              name: 'John Smith',
+              position: 'IT Specialist'
+            },
+            exitDate: new Date('2024-04-01'),
+            reason: 'relocation',
+            status: 'in_progress',
+            tasks: [
+              { title: 'Knowledge Transfer', status: 'completed' },
+              { title: 'System Access Review', status: 'completed' },
+              { title: 'Exit Interview', status: 'not_started' }
+            ]
+          }
+        ],
+        completed: [
+          {
+            _id: 'sample-3',
+            employee: {
+              name: 'Lisa Anderson',
+              position: 'HR Manager'
+            },
+            exitDate: new Date('2024-03-30'),
+            reason: 'retirement',
+            status: 'completed',
+            tasks: [
+              { title: 'Exit Interview', status: 'completed' },
+              { title: 'Asset Return', status: 'completed' },
+              { title: 'Knowledge Transfer', status: 'completed' }
+            ]
+          }
+        ]
+      };
+      
+      // Get the column elements
+      const initiatedColumn = document.querySelector('#offboarding .kanban-column:nth-child(1) .kanban-items');
+      const inProgressColumn = document.querySelector('#offboarding .kanban-column:nth-child(2) .kanban-items');
+      const completedColumn = document.querySelector('#offboarding .kanban-column:nth-child(3) .kanban-items');
+      
+      // Populate the columns with the sample data
+      populateOffboardingColumn(initiatedColumn, sampleData.initiated);
+      populateOffboardingColumn(inProgressColumn, sampleData.in_progress);
+      populateOffboardingColumn(completedColumn, sampleData.completed);
+      
+      // Initialize drag and drop
+      initializeOffboardingDragAndDrop();
     }
-}
+
+    // Initialize admin dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+      checkAuthentication();
+      
+      initializeSidebar();
+      initializeDynamicContent();
+      initializeUserData();
+      initializeMobileMenu();
+      updateDateTime();
+      
+      // Initialize section functionality
+      initializeDashboardCharts();
+      initializeTaskManagement();
+      initializeDocumentManagement();
+      initializeTabNavigation();
+      initializeComplianceVerification();
+      initializeOnboardingApprovals();
+      initializeOnboardingTracker();
+      initializeOffboardingManagement();
+      
+      // Initialize activity feed
+      initializeActivityFeed();
+    });
+});
