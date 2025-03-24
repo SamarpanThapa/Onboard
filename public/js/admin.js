@@ -5241,25 +5241,25 @@ async function handleTaskFormSubmit(e) {
     submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
     
     try {
-        // Map status values to backend expected values
+        // Map status values to backend expected values from Task model
         let mappedStatus = taskStatus;
-        if (taskStatus === 'pending') {
-            mappedStatus = 'not_started'; // Using EmployeeTask schema enum value
+        if (taskStatus === 'pending' || taskStatus === 'not_started') {
+            mappedStatus = 'pending'; // Use valid Task model enum
         } else if (taskStatus === 'in_progress') {
             mappedStatus = 'in_progress';
         }
         
-        // Prepare task data following EmployeeTask schema
+        // Prepare task data following Task model schema
         const taskData = {
             title: taskTitle,
             description: taskDescription,
             priority: taskPriority,
-            category: taskCategory,
+            category: 'other', // Use a valid category from Task model
             dueDate: taskDueDate,
             status: mappedStatus,
-            assignedTo: taskAssignee, // Map to assignedTo field for EmployeeTask
-            taskType: 'regular', // Use valid taskType from EmployeeTask schema
-            assignedBy: localStorage.getItem('userId') || null // Current user is assigning the task
+            assignee: taskAssignee, // Task model uses assignee
+            relatedUser: taskAssignee, // The task is related to the same user it's assigned to
+            taskType: 'other' // Valid taskType in Task model
         };
         
         console.log('Sending task data:', taskData);

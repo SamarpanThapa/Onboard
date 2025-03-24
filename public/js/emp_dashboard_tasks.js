@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadAssignedTasks() {
     try {
         console.log('Loading assigned tasks for employee...');
-        const response = await fetch('/api/tasks?assignedTo=me&status=not_started,in_progress,completed', {
+        const response = await fetch('/api/tasks?assignedTo=me&status=pending,in_progress,completed', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
