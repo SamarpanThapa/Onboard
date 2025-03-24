@@ -107,6 +107,18 @@
                 </div>
 
                 <div class="nav-group">
+                    <h3>Communication</h3>
+                    <a href="#communication">
+                        <i class="fas fa-comments"></i>
+                        Contact Directory
+                    </a>
+                    <a href="#feedback">
+                        <i class="fas fa-comment-dots"></i>
+                        Employee Feedback
+                    </a>
+                </div>
+
+                <div class="nav-group">
                     <h3>Workflow</h3>
                     <a href="#tasks">
                         <i class="fas fa-tasks"></i>
@@ -234,6 +246,48 @@
                                 <p>Exit interview completed for Emily Brown</p>
                                 <span class="activity-time">Yesterday</span>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Feedback Section -->
+            <section id="feedback" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Employee Feedback</h2>
+                    <div class="action-bar">
+                        <input type="search" id="feedback-search" placeholder="Search feedback...">
+                        <select id="feedback-filter" class="filter-dropdown">
+                            <option value="all">All Feedback</option>
+                            <option value="pending">Pending</option>
+                            <option value="reviewed">Reviewed</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                        <select id="feedback-time-filter" class="time-filter">
+                            <option value="all">All Time</option>
+                            <option value="7days">Last 7 Days</option>
+                            <option value="30days">Last 30 Days</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="feedback-container">
+                    <div class="feedback-list-container">
+                        <div class="loading-feedback">
+                            <i class="fas fa-spinner fa-spin"></i> Loading feedback...
+                        </div>
+                        <div class="feedback-list" id="feedback-list">
+                            <!-- Will be populated dynamically with feedback items -->
+                        </div>
+                        <div class="empty-feedback-list" style="display: none;">
+                            <p>No feedback available.</p>
+                        </div>
+                    </div>
+
+                    <div class="feedback-details-container" id="feedback-details-container">
+                        <div class="empty-selection">
+                            <i class="fas fa-comment-dots feedback-icon"></i>
+                            <p>Select a feedback item to view details</p>
                         </div>
                     </div>
                 </div>
@@ -649,8 +703,8 @@
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="task-assignee">Assign To</label>
-                                    <select id="task-assignee" name="assignee">
+                                    <label for="task-assignee">Assign To*</label>
+                                    <select id="task-assignee" name="assignee" required>
                                         <option value="">Unassigned</option>
                                         <!-- Will be populated dynamically -->
                                     </select>
@@ -1036,6 +1090,93 @@
                                     <li>Team notification</li>
                                     <li>Client transition</li>
                                 </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Communication Section -->
+            <section id="communication" class="dashboard-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-comments"></i> Communication</h2>
+                    <div class="header-actions">
+                        <button class="refresh-btn" id="refresh-communication"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+
+                <div class="communication-container">
+                    <div class="communication-list">
+                        <div class="communication-item">
+                            <div class="comm-icon">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div class="comm-content">
+                                <h4>Employees</h4>
+                                <div class="employee-contacts">
+                                    <select id="employee-contact-list" class="contact-select">
+                                        <option value="">Select an employee to view contact info...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <div id="selected-employee-info" class="selected-contact-info">
+                                        <p>Select an employee from the dropdown to view their contact details.</p>
+                                    </div>
+                                </div>
+                                <div class="message-panel" id="employees-message-panel" style="display: none;">
+                                    <select class="employee-select" id="employee-select">
+                                        <option value="">Select an employee...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <textarea class="message-input" id="employee-message" placeholder="Type your message here..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="communication-item">
+                            <div class="comm-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="comm-content">
+                                <h4>HR Department</h4>
+                                <div class="employee-contacts">
+                                    <select id="hr-contact-list" class="contact-select">
+                                        <option value="">Select an HR staff to view contact info...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <div id="selected-hr-info" class="selected-contact-info">
+                                        <p>Select an HR staff member from the dropdown to view their contact details.</p>
+                                    </div>
+                                </div>
+                                <div class="message-panel" id="hr-message-panel" style="display: none;">
+                                    <select class="hr-select" id="hr-select">
+                                        <option value="">Select HR staff...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <textarea class="message-input" id="hr-message" placeholder="Type your message here..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="communication-item">
+                            <div class="comm-icon">
+                                <i class="fas fa-laptop-code"></i>
+                            </div>
+                            <div class="comm-content">
+                                <h4>IT Support</h4>
+                                <div class="employee-contacts">
+                                    <select id="it-contact-list" class="contact-select">
+                                        <option value="">Select an IT staff to view contact info...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <div id="selected-it-info" class="selected-contact-info">
+                                        <p>Select an IT staff member from the dropdown to view their contact details.</p>
+                                    </div>
+                                </div>
+                                <div class="message-panel" id="it-message-panel" style="display: none;">
+                                    <select class="it-select" id="it-select">
+                                        <option value="">Select IT staff...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <textarea class="message-input" id="it-message" placeholder="Type your message here..."></textarea>
+                                </div>
                             </div>
                         </div>
                     </div>

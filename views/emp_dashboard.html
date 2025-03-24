@@ -7,8 +7,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/css/emp_dashboard.css">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/feedback-form.css">
     <script src="/js/api.js" defer></script>
-    <script src="/js/dashboard.js" defer></script>
+    <script src="/js/emp_dashboard_tasks.js" defer></script>
 </head>
 <body>
     <header class="branding">
@@ -61,38 +63,11 @@
                     <div class="section-header">
                         <h3><i class="fas fa-clipboard-list"></i> Assigned Tasks</h3>
                     </div>
-                    <div class="task-list">
-                        <div class="task-item" data-id="task1" data-category="documentation">
-                            <div class="task-checkbox">
-                                <input type="checkbox" id="task1">
-                                <label for="task1"></label>
-                            </div>
-                            <div class="task-content">
-                                <h4>Complete Training Module</h4>
-                                <p>Due: Tomorrow</p>
-                                <span class="task-category documentation">Documentation</span>
-                            </div>
-                        </div>
-                        <div class="task-item" data-id="task2" data-category="compliance">
-                            <div class="task-checkbox">
-                                <input type="checkbox" id="task2">
-                                <label for="task2"></label>
-                            </div>
-                            <div class="task-content">
-                                <h4>Submit ID Proof</h4>
-                                <p>Due: 3 days</p>
-                                <span class="task-category compliance">Compliance</span>
-                            </div>
-                        </div>
-                        <div class="task-item" data-id="task3" data-category="orientation">
-                            <div class="task-checkbox">
-                                <input type="checkbox" id="task3">
-                                <label for="task3"></label>
-                            </div>
-                            <div class="task-content">
-                                <h4>Fill Personal Information Form</h4>
-                                <p>Due: 5 days</p>
-                                <span class="task-category orientation">Orientation</span>
+                    <div class="task-list" id="assigned-tasks">
+                        <!-- Tasks will be loaded dynamically -->
+                        <div class="task-item loading-placeholder">
+                            <div class="loading-indicator">
+                                <i class="fas fa-spinner fa-spin"></i> Loading tasks...
                             </div>
                         </div>
                     </div>
@@ -123,8 +98,23 @@
                                 <i class="fas fa-user-tie"></i>
                             </div>
                             <div class="comm-content">
-                                <h4>Your Manager</h4>
-                                <p>John Smith - <a href="mailto:john.smith@company.com">john.smith@company.com</a></p>
+                                <h4>Employees</h4>
+                                <div class="employee-contacts">
+                                    <select id="employee-contact-list" class="contact-select">
+                                        <option value="">Select an employee to view contact info...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <div id="selected-employee-info" class="selected-contact-info">
+                                        <p>Select an employee from the dropdown to view their contact details.</p>
+                                    </div>
+                                </div>
+                                <div class="message-panel" id="employees-message-panel" style="display: none;">
+                                    <select class="employee-select" id="employee-select">
+                                        <option value="">Select an employee...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <textarea class="message-input" id="employee-message" placeholder="Type your message here..."></textarea>
+                                </div>
                             </div>
                         </div>
                         <div class="communication-item">
@@ -133,7 +123,22 @@
                             </div>
                             <div class="comm-content">
                                 <h4>HR Department</h4>
-                                <p>HR Team - <a href="mailto:hr@company.com">hr@company.com</a></p>
+                                <div class="employee-contacts">
+                                    <select id="hr-contact-list" class="contact-select">
+                                        <option value="">Select an HR staff to view contact info...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <div id="selected-hr-info" class="selected-contact-info">
+                                        <p>Select an HR staff member from the dropdown to view their contact details.</p>
+                                    </div>
+                                </div>
+                                <div class="message-panel" id="hr-message-panel" style="display: none;">
+                                    <select class="hr-select" id="hr-select">
+                                        <option value="">Select HR staff...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <textarea class="message-input" id="hr-message" placeholder="Type your message here..."></textarea>
+                                </div>
                             </div>
                         </div>
                         <div class="communication-item">
@@ -142,28 +147,23 @@
                             </div>
                             <div class="comm-content">
                                 <h4>IT Support</h4>
-                                <p>IT Team - <a href="mailto:it-support@company.com">it-support@company.com</a></p>
+                                <div class="employee-contacts">
+                                    <select id="it-contact-list" class="contact-select">
+                                        <option value="">Select an IT staff to view contact info...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <div id="selected-it-info" class="selected-contact-info">
+                                        <p>Select an IT staff member from the dropdown to view their contact details.</p>
+                                    </div>
+                                </div>
+                                <div class="message-panel" id="it-message-panel" style="display: none;">
+                                    <select class="it-select" id="it-select">
+                                        <option value="">Select IT staff...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <textarea class="message-input" id="it-message" placeholder="Type your message here..."></textarea>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Help Section - Simplified -->
-                <div class="dashboard-section">
-                    <div class="section-header">
-                        <h3><i class="fas fa-life-ring"></i> Need Help?</h3>
-                    </div>
-                    <div class="help-contact">
-                        <p>Have questions or need assistance?</p>
-                        <div class="help-buttons">
-                            <a href="#" class="help-btn" id="contact-hr">
-                                <i class="fas fa-users"></i>
-                                Contact HR
-                            </a>
-                            <a href="#" class="help-btn" id="it-support">
-                                <i class="fas fa-laptop-medical"></i>
-                                IT Support
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -307,12 +307,15 @@
         </div>
     </div>
 
+    <div id="notification-container" class="notification-container"></div>
+
     <footer class="main-footer">
         <div class="footer-content">
             <p>&copy; 2024 OnboardX. All rights reserved.</p>
         </div>
     </footer>
 
-    <script src="/js/dashboard.js"></script>
+    <script src="/js/emp_dashboard.js"></script>
+    <script src="/js/emp_dashboard_tasks.js"></script>
 </body>
 </html>

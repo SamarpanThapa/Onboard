@@ -25,6 +25,15 @@ const FeedbackSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  expiryDate: {
+    type: Date,
+    default: function() {
+      // Set expiry date to 30 days from creation
+      const date = new Date();
+      date.setDate(date.getDate() + 30);
+      return date;
+    }
+  },
   status: {
     type: String,
     enum: ['pending', 'reviewed', 'archived'],
@@ -47,5 +56,6 @@ FeedbackSchema.index({ user: 1 });
 FeedbackSchema.index({ category: 1 });
 FeedbackSchema.index({ date: -1 });
 FeedbackSchema.index({ rating: 1 });
+FeedbackSchema.index({ expiryDate: 1 }); // Add index for expiry date queries
 
 module.exports = mongoose.model('Feedback', FeedbackSchema); 

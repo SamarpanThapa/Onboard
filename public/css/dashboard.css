@@ -1,0 +1,35 @@
+/* Department contacts styles */
+.department-contacts {
+    margin-top: 10px;
+}
+
+.contact-item {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.contact-item:last-child {
+    border-bottom: none;
+}
+
+.contact-name {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 3px;
+}
+
+.contact-role {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.contact-item p {
+    margin-bottom: 8px;
+}
+
+.contact-item .message-btn {
+    padding: 5px 10px;
+    font-size: 12px;
+} 

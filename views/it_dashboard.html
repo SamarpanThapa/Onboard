@@ -68,6 +68,14 @@
                 </div>
 
                 <div class="nav-group">
+                    <h3>Communication</h3>
+                    <a href="#communication">
+                        <i class="fas fa-comments"></i>
+                        Contact Directory
+                    </a>
+                </div>
+
+                <div class="nav-group">
                     <h3>Assets</h3>
                     <a href="#equipment">
                         <i class="fas fa-laptop"></i>
@@ -1235,6 +1243,93 @@
                                 </select>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Communication Section -->
+            <section id="communication" class="dashboard-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-comments"></i> Communication</h2>
+                    <div class="header-actions">
+                        <button class="refresh-btn" id="refresh-communication"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+
+                <div class="communication-container">
+                    <div class="communication-list">
+                        <div class="communication-item">
+                            <div class="comm-icon">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div class="comm-content">
+                                <h4>Employees</h4>
+                                <div class="employee-contacts">
+                                    <select id="employee-contact-list" class="contact-select">
+                                        <option value="">Select an employee to view contact info...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <div id="selected-employee-info" class="selected-contact-info">
+                                        <p>Select an employee from the dropdown to view their contact details.</p>
+                                    </div>
+                                </div>
+                                <div class="message-panel" id="employees-message-panel" style="display: none;">
+                                    <select class="employee-select" id="employee-select">
+                                        <option value="">Select an employee...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <textarea class="message-input" id="employee-message" placeholder="Type your message here..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="communication-item">
+                            <div class="comm-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="comm-content">
+                                <h4>HR Department</h4>
+                                <div class="employee-contacts">
+                                    <select id="hr-contact-list" class="contact-select">
+                                        <option value="">Select an HR staff to view contact info...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <div id="selected-hr-info" class="selected-contact-info">
+                                        <p>Select an HR staff member from the dropdown to view their contact details.</p>
+                                    </div>
+                                </div>
+                                <div class="message-panel" id="hr-message-panel" style="display: none;">
+                                    <select class="hr-select" id="hr-select">
+                                        <option value="">Select HR staff...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <textarea class="message-input" id="hr-message" placeholder="Type your message here..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="communication-item">
+                            <div class="comm-icon">
+                                <i class="fas fa-laptop-code"></i>
+                            </div>
+                            <div class="comm-content">
+                                <h4>IT Support</h4>
+                                <div class="employee-contacts">
+                                    <select id="it-contact-list" class="contact-select">
+                                        <option value="">Select an IT staff to view contact info...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <div id="selected-it-info" class="selected-contact-info">
+                                        <p>Select an IT staff member from the dropdown to view their contact details.</p>
+                                    </div>
+                                </div>
+                                <div class="message-panel" id="it-message-panel" style="display: none;">
+                                    <select class="it-select" id="it-select">
+                                        <option value="">Select IT staff...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <textarea class="message-input" id="it-message" placeholder="Type your message here..."></textarea>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>

@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
     
+    // Load any stored employee contacts
+    loadStoredEmployeeContacts();
+    
     // First, use any data already in localStorage
     const storedUser = api.auth.getUserData();
     if (storedUser) {
@@ -75,6 +78,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     initializeHelpButtons();
     initializeFeedback();
     initializeComplianceTracking();
+    
+    // Set up department contacts updater
+    setupDepartmentContactsUpdater();
+    
+    // Force reload of department contacts after a short delay to ensure DOM is fully ready
+    setTimeout(() => {
+        console.log('Reloading department contacts after DOM is fully ready...');
+        loadDepartmentContacts('hr');
+        loadDepartmentContacts('it');
+    }, 1000);
     
     // Create notification container if it doesn't exist
     if (!document.getElementById('notification-container')) {
@@ -712,293 +725,287 @@ function populateNotificationsDropdown(container, notifications) {
  * Initialize communication features
  */
 function initializeCommunication() {
-    const sendMessageBtn = document.getElementById('send-message-btn');
-    const messageInput = document.getElementById('message-input');
-    const messagesContainer = document.querySelector('.messages-list');
+    console.log('Initializing communication features...');
     
-    if (sendMessageBtn && messageInput) {
-        sendMessageBtn.addEventListener('click', async function() {
-            const message = messageInput.value.trim();
-            if (!message) return;
+    // Load employee contacts for the dropdown
+    loadEmployeeContacts();
+    
+    // Load HR and IT department contacts
+    console.log('Loading HR and IT department contacts...');
+    loadDepartmentContacts('hr');
+    loadDepartmentContacts('it');
+    
+    // Handle employee selection in the contact list
+    const employeeContactList = document.getElementById('employee-contact-list');
+    if (employeeContactList) {
+        employeeContactList.addEventListener('change', function() {
+            displaySelectedEmployeeInfo(this.value);
+        });
+    }
+    
+    // Handle HR selection in the contact list
+    const hrContactList = document.getElementById('hr-contact-list');
+    if (hrContactList) {
+        console.log('Setting up HR contact list handler');
+        // Event listener is set in loadDepartmentContacts
+    }
+    
+    // Handle IT selection in the contact list
+    const itContactList = document.getElementById('it-contact-list');
+    if (itContactList) {
+        console.log('Setting up IT contact list handler');
+        // Event listener is set in loadDepartmentContacts
+    }
+    
+    // Toggle message panels
+    const messageToggleBtns = document.querySelectorAll('.message-toggle-btn');
+    const messagePanels = document.querySelectorAll('.message-panel');
+    
+    // Add event listeners to toggle message panels
+    messageToggleBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const type = this.getAttribute('data-type');
+            const panel = document.getElementById(`${type}-message-panel`);
+            
+            // Toggle panel visibility
+            if (panel.style.display === 'none' || panel.style.display === '') {
+                // Hide all panels first
+                messagePanels.forEach(p => p.style.display = 'none');
+                panel.style.display = 'block';
+                
+                // Load users for the dropdown based on type
+                loadUsersForDropdown(type);
+            } else {
+                panel.style.display = 'none';
+            }
+        });
+    });
+    
+    // Add event listeners to send message buttons
+    const sendMessageBtns = document.querySelectorAll('.send-message-btn');
+    sendMessageBtns.forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const targetType = this.getAttribute('data-target');
+            const selectEl = document.getElementById(`${targetType}-select`);
+            const messageEl = document.getElementById(`${targetType}-message`);
+            
+            // Get selected recipient and message
+            const recipientId = selectEl.value;
+            const messageText = messageEl.value.trim();
+            
+            // Validate inputs
+            if (!recipientId) {
+                showMessageFeedback(targetType, 'Please select a recipient', 'error');
+                return;
+            }
+            
+            if (!messageText) {
+                showMessageFeedback(targetType, 'Please enter a message', 'error');
+                return;
+            }
             
             try {
                 // Send message via API
                 await api.messages.sendMessage({
-                    message: message,
-                    type: 'question',
-                    category: 'onboarding'
+                    recipient: recipientId,
+                    content: messageText,
+                    subject: `Message from ${targetType === 'employee' ? 'colleague' : targetType === 'hr' ? 'HR department' : 'IT support'}`
                 });
                 
-                // Add message to UI
-                addMessageToUI('sent', message);
+                // Show success message
+                showMessageFeedback(targetType, 'Message sent successfully!', 'success');
                 
                 // Clear input
-                messageInput.value = '';
+                messageEl.value = '';
                 
-                // Send notification to HR and IT about the new message
-                await api.notifications.createNotification({
-                    title: 'New Message Received',
-                    message: 'An employee has sent a new message that may require your attention.',
-                    type: 'system',
-                    recipients: ['hr_admin', 'it_admin']
-                });
-                
-                // Show acknowledgment message
+                // Hide panel after 2 seconds
                 setTimeout(() => {
-                    addMessageToUI('received', 'Thank you for your message. An HR or IT team member will respond shortly.', 'System');
-                }, 1000);
+                    document.getElementById(`${targetType}-message-panel`).style.display = 'none';
+                }, 2000);
                 
             } catch (error) {
                 console.error('Error sending message:', error);
-                showNotification('Failed to send message. Please try again.', 'error');
+                showMessageFeedback(targetType, 'Failed to send message. Please try again.', 'error');
             }
         });
-        
-        // Enter key to send message
-        messageInput.addEventListener('keypress', function(e) {
+    });
+    
+    // Send message on Enter key (with Shift+Enter for new line)
+    const messageInputs = document.querySelectorAll('.message-input');
+    messageInputs.forEach(input => {
+        input.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                sendMessageBtn.click();
+                const targetType = this.id.split('-')[0];
+                const sendBtn = document.querySelector(`.send-message-btn[data-target="${targetType}"]`);
+                sendBtn.click();
             }
         });
-    }
+    });
     
     // Load past messages if container exists
+    const messagesContainer = document.querySelector('.messages-list');
     if (messagesContainer) {
         loadPastMessages(messagesContainer);
     }
 }
 
 /**
- * Load past messages from API
+ * Load employee contacts into the dropdown
  */
-async function loadPastMessages(container) {
+async function loadEmployeeContacts() {
+    const contactSelect = document.getElementById('employee-contact-list');
+    if (!contactSelect) return;
+    
     try {
-        // Show loading state
-        container.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading messages...</div>';
+        // Get current user's data to determine their department
+        const userData = JSON.parse(localStorage.getItem('userData')) || {};
+        const userDepartment = userData.department || '';
+        console.log(`Current user's department for employee contacts: ${userDepartment}`);
         
-        // Get messages from API
-        const messages = await api.messages.getMessages();
+        // Fetch all employees first
+        const allEmployees = await fetchUsers();
+        console.log(`Fetched ${allEmployees.length} total employees`);
         
-        if (messages.length === 0) {
-            container.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><p>No messages yet. Start a conversation!</p></div>';
+        // Filter employees - exclude HR department and IT administrators
+        let employees = allEmployees.filter(emp => {
+            const dept = (emp.department || '').toUpperCase();
+            const position = (emp.position || '').toLowerCase();
+            
+            // Exclude HR department
+            if (dept === 'HR') return false;
+            
+            // Exclude IT administrators
+            if (dept === 'IT' && (
+                position.includes('admin') || 
+                position.includes('support') || 
+                position.includes('specialist') || 
+                position.includes('tech') || 
+                position.includes('manager') ||
+                position.includes('helpdesk') ||
+                position.includes('developer')
+            )) return false;
+            
+            return true;
+        });
+        
+        console.log(`Filtered to ${employees.length} regular employees (excluding HR and IT admins)`);
+        
+        // Clear existing options except the first one
+        while (contactSelect.options.length > 1) {
+            contactSelect.remove(1);
+        }
+        
+        // Add options for each employee
+        if (employees.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No employees found';
+            option.disabled = true;
+            contactSelect.appendChild(option);
+        } else {
+            employees.forEach(employee => {
+                const option = document.createElement('option');
+                option.value = employee._id;
+                option.textContent = employee.name; // Use the name field from the database
+                option.setAttribute('data-email', employee.email || '');
+                option.setAttribute('data-position', employee.position || '');
+                option.setAttribute('data-department', employee.department || '');
+                contactSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading employee contacts:', error);
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'Error loading employees';
+        option.disabled = true;
+        contactSelect.appendChild(option);
+    }
+}
+
+/**
+ * Display the selected employee's information
+ * @param {string} employeeId - The ID of the selected employee
+ */
+async function displaySelectedEmployeeInfo(employeeId) {
+    const infoContainer = document.getElementById('selected-employee-info');
+    if (!infoContainer) return;
+    
+    if (!employeeId) {
+        infoContainer.innerHTML = '<p>Select an employee from the dropdown to view their contact details.</p>';
+        return;
+    }
+    
+    // Show loading state
+    infoContainer.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading employee information...</p>';
+    
+    try {
+        // Get the selected option data attributes
+        const selectElement = document.getElementById('employee-contact-list');
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        
+        const name = selectedOption.text;
+        const email = selectedOption.getAttribute('data-email');
+        const position = selectedOption.getAttribute('data-position');
+        const department = selectedOption.getAttribute('data-department');
+        
+        // If we can get the data from the option attributes, use that
+        if (name && email) {
+            infoContainer.innerHTML = `
+                <div class="contact-name">${name}</div>
+                ${position ? `<div class="contact-role">${position}</div>` : ''}
+                ${department ? `<div class="contact-department">${department}</div>` : ''}
+                <p><i class="fas fa-envelope"></i> <a href="mailto:${email}">${email}</a></p>
+            `;
             return;
         }
         
-        // Clear loading indicator
-        container.innerHTML = '';
+        // Fallback to fetching the employee data from the API
+        const response = await fetch(`/api/users/${employeeId}`);
+        if (!response.ok) throw new Error('Failed to fetch employee data');
         
-        // Add messages to UI
-        messages.forEach(msg => {
-            const type = msg.sender._id === JSON.parse(localStorage.getItem('user') || '{}')._id ? 'sent' : 'received';
-            const sender = type === 'received' ? `${msg.sender.firstName} ${msg.sender.lastName}` : null;
-            addMessageToUI(type, msg.message, sender, new Date(msg.createdAt));
-        });
+        const employee = await response.json();
         
-        // Scroll to bottom
-        container.scrollTop = container.scrollHeight;
+        // Create HTML for the employee info
+        infoContainer.innerHTML = `
+            <div class="contact-name">${employee.name || 'Name not available'}</div>
+            ${employee.position ? `<div class="contact-role">${employee.position}</div>` : ''}
+            ${employee.department ? `<div class="contact-department">${employee.department}</div>` : ''}
+            <p><i class="fas fa-envelope"></i> <a href="mailto:${employee.email}">${employee.email || 'Email not available'}</a></p>
+        `;
         
-    } catch (error) {
-        console.error('Error loading messages:', error);
-        container.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-triangle"></i> Failed to load messages. Please refresh the page.</div>';
-    }
-}
-
-/**
- * Add a message to the UI
- */
-function addMessageToUI(type, message, sender = null, timestamp = new Date()) {
-    const container = document.querySelector('.messages-list');
-    if (!container) return;
-    
-    const messageElement = document.createElement('div');
-    messageElement.className = `message message-${type}`;
-    
-    const formattedTime = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    messageElement.innerHTML = `
-        <div class="message-content">
-            ${sender ? `<div class="message-sender">${sender}</div>` : ''}
-            <div class="message-text">${message}</div>
-            <div class="message-time">${formattedTime}</div>
-        </div>
-    `;
-    
-    container.appendChild(messageElement);
-    
-    // Scroll to bottom
-    container.scrollTop = container.scrollHeight;
-}
-
-/**
- * Initialize help buttons
- */
-function initializeHelpButtons() {
-    const helpButtons = document.querySelectorAll('.help-btn, .support-btn');
-    
-    helpButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            openSupportDialog();
-        });
-    });
-}
-
-/**
- * Open support dialog
- */
-function openSupportDialog() {
-    // Create modal if it doesn't exist
-    if (!document.getElementById('support-modal')) {
-        const modal = document.createElement('div');
-        modal.id = 'support-modal';
-        modal.className = 'modal';
-        
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Need Help?</h3>
-                    <button class="modal-close"><i class="fas fa-times"></i></button>
-                </div>
-                <div class="modal-body">
-                    <p>Select a category for your help request:</p>
-                    <div class="help-categories">
-                        <button class="help-category" data-category="it">
-                            <i class="fas fa-laptop"></i>
-                            <span>IT Support</span>
-                        </button>
-                        <button class="help-category" data-category="hr">
-                            <i class="fas fa-users"></i>
-                            <span>HR Questions</span>
-                        </button>
-                        <button class="help-category" data-category="onboarding">
-                            <i class="fas fa-clipboard-list"></i>
-                            <span>Onboarding Process</span>
-                        </button>
-                        <button class="help-category" data-category="other">
-                            <i class="fas fa-question-circle"></i>
-                            <span>Other</span>
-                        </button>
-                    </div>
-                    <div class="help-form" style="display: none;">
-                        <input type="hidden" id="help-category">
-        <div class="form-group">
-                            <label for="help-subject">Subject</label>
-                            <input type="text" id="help-subject" placeholder="Brief description of your issue">
-        </div>
-        <div class="form-group">
-                            <label for="help-description">Description</label>
-                            <textarea id="help-description" placeholder="Please provide details about your issue"></textarea>
-        </div>
-        <div class="form-group">
-                            <label>Priority</label>
-                            <div class="priority-options">
-                                <label class="priority-option">
-                                    <input type="radio" name="priority" value="low" checked>
-                                    <span>Low</span>
-                                </label>
-                                <label class="priority-option">
-                                    <input type="radio" name="priority" value="medium">
-                                    <span>Medium</span>
-                                </label>
-                                <label class="priority-option">
-                                    <input type="radio" name="priority" value="high">
-                                    <span>High</span>
-                                </label>
-                            </div>
-                        </div>
-                        <button id="submit-help-request" class="btn-primary">Submit Request</button>
-                        <button class="btn-secondary back-to-categories">Back to Categories</button>
-                    </div>
-                </div>
-        </div>
-    `;
-    
-        document.body.appendChild(modal);
-        
-        // Close button
-        const closeButton = modal.querySelector('.modal-close');
-        closeButton.addEventListener('click', () => {
-            modal.classList.remove('active');
-        });
-        
-        // Category selection
-        const categories = modal.querySelectorAll('.help-category');
-        const helpForm = modal.querySelector('.help-form');
-        const categoriesContainer = modal.querySelector('.help-categories');
-        const helpCategoryInput = document.getElementById('help-category');
-        
-        categories.forEach(category => {
-            category.addEventListener('click', () => {
-                const categoryType = category.dataset.category;
-                helpCategoryInput.value = categoryType;
-                categoriesContainer.style.display = 'none';
-                helpForm.style.display = 'block';
-            });
-        });
-        
-        // Back button
-        const backButton = modal.querySelector('.back-to-categories');
-        backButton.addEventListener('click', () => {
-            helpForm.style.display = 'none';
-            categoriesContainer.style.display = 'flex';
-        });
-        
-        // Submit help request
-        const submitButton = modal.querySelector('#submit-help-request');
-        submitButton.addEventListener('click', async () => {
-            const category = document.getElementById('help-category').value;
-            const subject = document.getElementById('help-subject').value;
-            const description = document.getElementById('help-description').value;
-            const priority = document.querySelector('input[name="priority"]:checked').value;
-            
-            if (!subject || !description) {
-                showNotification('Please fill in all required fields', 'error');
-                return;
-            }
-        
-            try {
-                // Send support ticket via API
-                await api.supportTickets.createTicket({
-                    category,
-                    title: subject,
-                    description,
-                    priority
-                });
-                
-                // Determine recipient based on category
-                let recipient = 'hr_admin'; // Default
-                
-                if (category === 'it' || category === 'other') {
-                    recipient = 'it_admin';
+        // Add click event to the message button
+        const messageBtn = infoContainer.querySelector('.message-btn');
+        if (messageBtn) {
+            messageBtn.addEventListener('click', function() {
+                // Show the message panel
+                const panel = document.getElementById('employees-message-panel');
+                if (panel) {
+                    document.querySelectorAll('.message-panel').forEach(p => p.style.display = 'none');
+                    panel.style.display = 'block';
+                    
+                    // Set the recipient in the dropdown
+                    const employeeSelect = document.getElementById('employee-select');
+                    if (employeeSelect) {
+                        for (let i = 0; i < employeeSelect.options.length; i++) {
+                            if (employeeSelect.options[i].value === employeeId) {
+                                employeeSelect.selectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Focus on the message input
+                    const messageInput = document.getElementById('employee-message');
+                    if (messageInput) messageInput.focus();
                 }
-                
-                // Send notification to appropriate department
-                await api.notifications.createNotification({
-                    title: 'New Support Ticket',
-                    message: `A new ${priority} priority support ticket has been created: ${subject}`,
-                    type: 'system',
-                    recipients: [recipient]
-                });
-                
-                showNotification('Support request submitted successfully!', 'success');
-                modal.classList.remove('active');
-                
-                // Clear form
-                document.getElementById('help-subject').value = '';
-                document.getElementById('help-description').value = '';
-                document.querySelector('input[name="priority"][value="low"]').checked = true;
-                
+            });
+        }
             } catch (error) {
-                console.error('Error submitting support request:', error);
-                showNotification('Failed to submit support request. Please try again.', 'error');
-            }
-        });
+        console.error('Error displaying employee info:', error);
+        infoContainer.innerHTML = '<p>Error loading employee information. Please try again.</p>';
     }
-    
-    // Show modal
-    const modal = document.getElementById('support-modal');
-    modal.classList.add('active');
 }
 
 /**
@@ -1956,5 +1963,1025 @@ async function initializeOffboarding() {
     } catch (error) {
         console.error('Error checking offboarding status:', error);
     }
+}
+
+/**
+ * Fetch users from the server
+ * @param {Object} filters - Filters to apply to the user list
+ * @returns {Promise<Array>} - A promise that resolves to an array of users
+ */
+async function fetchUsers(filters = {}) {
+    try {
+        // Try to load from the employee directory endpoint first (accessible to all users)
+        try {
+            const response = await fetch('/api/users/directory/employees', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && Array.isArray(data.data)) {
+                    console.log(`Fetched ${data.data.length} employees from directory API`);
+                    
+                    // Apply any filters client-side
+                    return filterEmployees(data.data, filters);
+                }
+            }
+            
+            throw new Error('Employee directory API returned invalid data');
+        } catch (directoryError) {
+            console.warn('Could not fetch from employee directory API:', directoryError);
+            
+            // If user has permission, try the regular users API
+            try {
+                // Build query string from filters
+                const queryParams = new URLSearchParams();
+                
+                if (filters.department) {
+                    queryParams.append('department', filters.department);
+                }
+                
+                if (filters.position) {
+                    queryParams.append('position', filters.position);
+                }
+                
+                if (filters.search) {
+                    queryParams.append('search', filters.search);
+                }
+                
+                // Add pagination if needed
+                queryParams.append('limit', '50'); // Get up to 50 users at once
+                
+                const response = await fetch(`/api/users?${queryParams.toString()}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const responseData = await response.json();
+                    if (responseData.success && Array.isArray(responseData.data)) {
+                        console.log(`Fetched ${responseData.data.length} employees from users API`);
+                        return responseData.data;
+                    }
+                }
+                
+                throw new Error('Users API returned invalid data');
+            } catch (usersError) {
+                console.warn('Could not fetch from users API:', usersError);
+                
+                // Try using stored contacts from localStorage
+                const storedContacts = localStorage.getItem('employeeContacts');
+                if (storedContacts) {
+                    try {
+                        const contacts = JSON.parse(storedContacts);
+                        if (Array.isArray(contacts) && contacts.length > 0) {
+                            console.log(`Using ${contacts.length} stored employee contacts`);
+                            return filterEmployees(contacts, filters);
+                        }
+                    } catch (parseError) {
+                        console.error('Error parsing stored contacts:', parseError);
+                    }
+                }
+                
+                // As a last resort, fall back to mock data
+                const mockEmployees = getMockEmployeeData();
+                console.log('Using mock employee data as fallback');
+                return filterEmployees(mockEmployees, filters);
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching users from database:', error);
+        // Show notification to user
+        showNotification('Failed to load employee data', 'error');
+        return [];
+    }
+}
+
+/**
+ * Filter employees based on provided filters
+ * @param {Array} employees - Array of employee objects
+ * @param {Object} filters - Filters to apply
+ * @returns {Array} - Filtered array of employees
+ */
+function filterEmployees(employees, filters = {}) {
+    console.log(`Filtering ${employees.length} employees with filters:`, filters);
+    
+    if (filters.department) {
+        console.log(`Looking for employees with department matching "${filters.department}" (case-insensitive)`);
+    }
+    
+    const filtered = employees.filter(employee => {
+        // Debug each employee's department
+        const employeeDept = (employee.department || '').toUpperCase();
+        const matchesDepartment = !filters.department || employeeDept === filters.department.toUpperCase();
+        
+        // Department filter - case insensitive comparison
+        if (filters.department && !matchesDepartment) {
+            return false;
+        }
+        
+        // Position/role filter
+        if (filters.position && employee.position !== filters.position) {
+            return false;
+        }
+        
+        // Search filter 
+        if (filters.search) {
+            const searchTerm = filters.search.toLowerCase();
+            const employeeName = employee.name ? employee.name.toLowerCase() : '';
+            const employeeEmail = employee.email ? employee.email.toLowerCase() : '';
+            const employeePosition = employee.position ? employee.position.toLowerCase() : '';
+            const employeeDepartment = employee.department ? employee.department.toLowerCase() : '';
+            
+            if (!employeeName.includes(searchTerm) && 
+                !employeeEmail.includes(searchTerm) && 
+                !employeePosition.includes(searchTerm) && 
+                !employeeDepartment.includes(searchTerm)) {
+                return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    console.log(`Filter result: ${filtered.length} employees match the criteria`);
+    return filtered;
+}
+
+/**
+ * Get mock employee data as a fallback
+ * @returns {Array} - Array of mock employee objects
+ */
+function getMockEmployeeData() {
+    // Check if there are stored employees first
+    const stored = localStorage.getItem('recentEmployees');
+    if (stored) {
+        try {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed;
+            }
+        } catch (e) {}
+    }
+    
+    return [
+        { 
+            _id: 'user1', 
+            name: 'John Doe',
+            email: 'john.doe@company.com',
+            department: 'Engineering', 
+            position: 'Software Engineer'
+        },
+        { 
+            _id: 'user2', 
+            name: 'Jane Smith',
+            email: 'jane.smith@company.com',
+            department: 'HR', 
+            position: 'HR Specialist'
+        },
+        { 
+            _id: 'user3', 
+            name: 'Bob Johnson',
+            email: 'bob.johnson@company.com',
+            department: 'IT', 
+            position: 'IT Support'
+        },
+        { 
+            _id: 'user4', 
+            name: 'Alice Williams',
+            email: 'alice.williams@company.com',
+            department: 'Marketing', 
+            position: 'Marketing Manager'
+        },
+        { 
+            _id: 'user5', 
+            name: 'Charlie Brown',
+            email: 'charlie.brown@company.com',
+            department: 'Sales', 
+            position: 'Sales Representative'
+        }
+    ];
+}
+
+/**
+ * Load users for the dropdown based on type
+ * @param {string} type - The type of users to load ('employees', 'hr', or 'it')
+ */
+async function loadUsersForDropdown(type) {
+    const selectId = type === 'employees' ? 'employee-select' : 
+                     type === 'hr' ? 'hr-select' : 'it-select';
+    const selectEl = document.getElementById(selectId);
+    
+    if (!selectEl) return;
+    
+    // Clear options except the first one
+    while (selectEl.options.length > 1) {
+        selectEl.remove(1);
+    }
+    
+    // Add loading option
+    const loadingOption = document.createElement('option');
+    loadingOption.textContent = 'Loading...';
+    loadingOption.disabled = true;
+    selectEl.appendChild(loadingOption);
+    
+    try {
+        // Fetch users based on type
+        let users = [];
+        const filters = {};
+        
+        if (type === 'hr') {
+            filters.department = 'HR';
+        } else if (type === 'it') {
+            filters.department = 'IT';
+        }
+        
+        // Fetch users from API
+        users = await fetchUsers(filters);
+        
+        // Remove loading option
+        selectEl.remove(selectEl.options.length - 1);
+        
+        // Add options for each user
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user._id;
+            option.textContent = `${user.name} (${user.position || user.department})`;
+            
+            // Store email as data attribute for message functionality
+            option.setAttribute('data-email', user.email);
+            
+            selectEl.appendChild(option);
+        });
+        
+        if (users.length === 0) {
+            const noUsersOption = document.createElement('option');
+            noUsersOption.value = '';
+            noUsersOption.textContent = `No ${type} available`;
+            noUsersOption.disabled = true;
+            selectEl.appendChild(noUsersOption);
+        }
+        
+    } catch (error) {
+        console.error(`Error loading ${type}:`, error);
+        
+        // Remove loading option
+        selectEl.remove(selectEl.options.length - 1);
+        
+        // Add error option
+        const errorOption = document.createElement('option');
+        errorOption.value = '';
+        errorOption.textContent = 'Error loading users';
+        errorOption.disabled = true;
+        selectEl.appendChild(errorOption);
+    }
+}
+
+// Listen for employee creation events via localStorage
+window.addEventListener('storage', function(event) {
+    // Check if the event is for new employee creation
+    if (event.key === 'newEmployeeCreated') {
+        try {
+            // Parse the new employee data
+            const newEmployee = JSON.parse(event.newValue);
+            
+            // If it's a valid employee object, add it to stored employee contacts
+            if (newEmployee && newEmployee._id && newEmployee.name) {
+                updateStoredEmployeeContacts(newEmployee);
+                
+                // Refresh the contacts dropdown
+                loadEmployeeContacts();
+                
+                console.log('Added new employee to contacts:', newEmployee.name);
+            }
+        } catch (error) {
+            console.error('Error processing new employee event:', error);
+        }
+    }
+});
+
+/**
+ * Update stored employee contacts with a new employee
+ * @param {Object} newEmployee - The new employee to add to stored contacts
+ */
+function updateStoredEmployeeContacts(newEmployee) {
+    try {
+        // Get existing stored contacts
+        let storedContacts = [];
+        const stored = localStorage.getItem('employeeContacts');
+        if (stored) {
+            try {
+                storedContacts = JSON.parse(stored);
+                if (!Array.isArray(storedContacts)) {
+                    storedContacts = [];
+                }
+            } catch (e) {
+                storedContacts = [];
+            }
+        }
+        
+        // Check if employee already exists by ID
+        const existingIndex = storedContacts.findIndex(emp => emp._id === newEmployee._id);
+        
+        if (existingIndex >= 0) {
+            // Update existing employee
+            storedContacts[existingIndex] = {...storedContacts[existingIndex], ...newEmployee};
+        } else {
+            // Add new employee
+            storedContacts.push(newEmployee);
+        }
+        
+        // Save back to localStorage
+        localStorage.setItem('employeeContacts', JSON.stringify(storedContacts));
+        
+        // Also update recent employees
+        updateRecentEmployees(newEmployee);
+    } catch (error) {
+        console.error('Error updating stored employee contacts:', error);
+    }
+}
+
+/**
+ * Update recent employees list
+ * @param {Object} employee - The employee to add to recent list
+ */
+function updateRecentEmployees(employee) {
+    try {
+        // Get existing recent employees
+        let recentEmployees = [];
+        const stored = localStorage.getItem('recentEmployees');
+        if (stored) {
+            try {
+                recentEmployees = JSON.parse(stored);
+                if (!Array.isArray(recentEmployees)) {
+                    recentEmployees = [];
+                }
+            } catch (e) {
+                recentEmployees = [];
+            }
+        }
+        
+        // Remove employee if already in list
+        recentEmployees = recentEmployees.filter(emp => emp._id !== employee._id);
+        
+        // Add to beginning of list
+        recentEmployees.unshift(employee);
+        
+        // Limit to 20 recent employees
+        if (recentEmployees.length > 20) {
+            recentEmployees = recentEmployees.slice(0, 20);
+        }
+        
+        // Save back to localStorage
+        localStorage.setItem('recentEmployees', JSON.stringify(recentEmployees));
+    } catch (error) {
+        console.error('Error updating recent employees:', error);
+    }
+}
+
+/**
+ * Load any stored employee contacts from localStorage
+ * This is used to ensure employee contacts are available even when API access is restricted
+ */
+function loadStoredEmployeeContacts() {
+    try {
+        // Try to load from API first using our new endpoint that's accessible to all users
+        fetch('/api/users/directory/employees', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            throw new Error('Failed to load employee directory');
+        })
+        .then(data => {
+            if (data.success && Array.isArray(data.data)) {
+                // Store the employee data in localStorage
+                localStorage.setItem('employeeContacts', JSON.stringify(data.data));
+                console.log(`Loaded ${data.data.length} employees from API`);
+                
+                // Refresh the employee contacts dropdown immediately
+                loadEmployeeContacts();
+            }
+        })
+        .catch(error => {
+            console.warn('Could not load employee directory from API, using stored contacts:', error);
+            
+            // Try using stored contacts if available
+            const storedContacts = localStorage.getItem('employeeContacts');
+            if (storedContacts) {
+                try {
+                    const contacts = JSON.parse(storedContacts);
+                    if (Array.isArray(contacts) && contacts.length > 0) {
+                        console.log(`Using ${contacts.length} stored employee contacts`);
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Error parsing stored contacts:', e);
+                }
+            }
+            
+            // Fall back to mock data if needed
+            const mockEmployees = getMockEmployeeData();
+            if (mockEmployees.length > 0) {
+                localStorage.setItem('employeeContacts', JSON.stringify(mockEmployees));
+                console.log(`Added ${mockEmployees.length} mock employees as fallback`);
+                
+                // Refresh the employee contacts dropdown with mock data
+                loadEmployeeContacts();
+            }
+        });
+    } catch (error) {
+        console.error('Error loading stored employee contacts:', error);
+    }
+}
+
+/**
+ * Add an employee to the recent contacts list
+ * @param {Object} employee - The employee object to add
+ */
+function addRecentEmployee(employee) {
+    if (!employee || !employee.name || !employee.email) {
+        console.warn('Invalid employee data provided to addRecentEmployee');
+        return;
+    }
+    
+    try {
+        // Get existing recent employees
+        let recentEmployees = getRecentEmployees();
+        
+        // Check if this employee is already in the list
+        const existingIndex = recentEmployees.findIndex(e => e.email === employee.email);
+        if (existingIndex !== -1) {
+            // Remove the existing entry so we can move it to the top
+            recentEmployees.splice(existingIndex, 1);
+        }
+        
+        // Make sure we have the essential fields
+        const essentialEmployee = {
+            name: employee.name,
+            email: employee.email,
+            department: employee.department || '',
+            position: employee.position || '',
+            phone: employee.phone || ''
+        };
+        
+        // Add to the beginning of the array
+        recentEmployees.unshift(essentialEmployee);
+        
+        // Keep only the last 10 recent contacts
+        if (recentEmployees.length > 10) {
+            recentEmployees = recentEmployees.slice(0, 10);
+        }
+        
+        // Save back to localStorage
+        localStorage.setItem('recentEmployees', JSON.stringify(recentEmployees));
+        
+        // Update UI if needed
+        updateRecentContactsUI();
+        
+        // Also make sure this employee is in the employeeContacts list
+        let employeeContacts = getStoredEmployeeContacts();
+        if (!employeeContacts.some(e => e.email === employee.email)) {
+            employeeContacts.push(essentialEmployee);
+            localStorage.setItem('employeeContacts', JSON.stringify(employeeContacts));
+        }
+    } catch (error) {
+        console.error('Error adding recent employee:', error);
+    }
+}
+
+/**
+ * Get stored employee contacts from localStorage
+ * @returns {Array} - Array of employee objects
+ */
+function getStoredEmployeeContacts() {
+    try {
+        const storedContacts = localStorage.getItem('employeeContacts');
+        if (storedContacts) {
+            const contacts = JSON.parse(storedContacts);
+            if (Array.isArray(contacts)) {
+                return contacts;
+            }
+        }
+    } catch (error) {
+        console.error('Error retrieving stored employee contacts:', error);
+    }
+    return [];
+}
+
+/**
+ * Get recent employees from localStorage
+ * @returns {Array} - Array of recent employee objects
+ */
+function getRecentEmployees() {
+    try {
+        const recentEmployees = localStorage.getItem('recentEmployees');
+        if (recentEmployees) {
+            const employees = JSON.parse(recentEmployees);
+            if (Array.isArray(employees)) {
+                return employees;
+            }
+        }
+    } catch (error) {
+        console.error('Error retrieving recent employees:', error);
+    }
+    return [];
+}
+
+/**
+ * Update the recent contacts UI in the dashboard
+ */
+function updateRecentContactsUI() {
+    const recentContactsContainer = document.getElementById('recentContactsContainer');
+    if (!recentContactsContainer) return;
+    
+    const recentEmployees = getRecentEmployees();
+    
+    // Clear existing content
+    recentContactsContainer.innerHTML = '';
+    
+    if (recentEmployees.length === 0) {
+        recentContactsContainer.innerHTML = '<p class="text-muted">No recent contacts</p>';
+        return;
+    }
+    
+    // Create a list of recent contacts
+    const list = document.createElement('ul');
+    list.className = 'list-unstyled';
+    
+    recentEmployees.forEach(employee => {
+        const item = document.createElement('li');
+        item.className = 'mb-2';
+        
+        const contactLink = document.createElement('a');
+        contactLink.href = '#';
+        contactLink.className = 'd-flex align-items-center text-decoration-none';
+        contactLink.onclick = (e) => {
+            e.preventDefault();
+            initiateEmployeeContact(employee);
+        };
+        
+        // Create avatar or initials
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar-sm me-2 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center';
+        avatar.style.width = '32px';
+        avatar.style.height = '32px';
+        
+        // Get initials from name
+        const initials = employee.name
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .substring(0, 2)
+            .toUpperCase();
+        
+        avatar.textContent = initials;
+        
+        // Employee info
+        const info = document.createElement('div');
+        info.className = 'flex-grow-1';
+        
+        const name = document.createElement('div');
+        name.className = 'fw-bold';
+        name.textContent = employee.name;
+        
+        const position = document.createElement('div');
+        position.className = 'small text-muted';
+        position.textContent = employee.position || employee.department || '';
+        
+        info.appendChild(name);
+        info.appendChild(position);
+        
+        contactLink.appendChild(avatar);
+        contactLink.appendChild(info);
+        item.appendChild(contactLink);
+        list.appendChild(item);
+    });
+    
+    recentContactsContainer.appendChild(list);
+}
+
+/**
+ * Load stored employee contacts when the dashboard loads
+ * This ensures we have employee data even if API access is restricted
+ */
+async function loadStoredEmployeeContacts() {
+    console.log('Loading stored employee contacts...');
+    
+    try {
+        // Try to fetch from the employee directory API first
+        const response = await fetch('/api/users/directory/employees', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && Array.isArray(data.data)) {
+                console.log(`Loaded ${data.data.length} employee contacts from directory API`);
+                
+                // Store the contacts in localStorage for future use
+                localStorage.setItem('employeeContacts', JSON.stringify(data.data));
+                
+                // If we have any recent employees, make sure they're using the updated data
+                updateRecentEmployeesData(data.data);
+                
+                return data.data;
+            } else {
+                console.warn('Employee directory API returned invalid data format');
+            }
+        } else {
+            console.warn(`Failed to load employee contacts from API: ${response.status} ${response.statusText}`);
+        }
+    } catch (error) {
+        console.warn('Error fetching employee contacts from API:', error);
+    }
+    
+    // If API call failed, check if we have stored contacts
+    const storedContacts = localStorage.getItem('employeeContacts');
+    if (storedContacts) {
+        try {
+            const contacts = JSON.parse(storedContacts);
+            if (Array.isArray(contacts) && contacts.length > 0) {
+                console.log(`Using ${contacts.length} stored employee contacts from localStorage`);
+                return contacts;
+            }
+        } catch (parseError) {
+            console.error('Error parsing stored contacts:', parseError);
+        }
+    }
+    
+    // If no stored contacts or invalid format, add mock employees as fallback
+    console.log('No stored employee contacts found, adding mock data as fallback');
+    const mockEmployees = getMockEmployeeData();
+    localStorage.setItem('employeeContacts', JSON.stringify(mockEmployees));
+    return mockEmployees;
+}
+
+/**
+ * Update recent employees data with fresh information
+ * @param {Array} currentEmployees - Current employee data from API
+ */
+function updateRecentEmployeesData(currentEmployees) {
+    try {
+        const recentEmployees = getRecentEmployees();
+        if (recentEmployees.length === 0) return;
+        
+        let updated = false;
+        
+        // Update recent employees with fresh data
+        for (let i = 0; i < recentEmployees.length; i++) {
+            const recent = recentEmployees[i];
+            const current = currentEmployees.find(e => e.email === recent.email);
+            
+            if (current) {
+                // Update with fresh data
+                recentEmployees[i] = {
+                    ...recentEmployees[i],
+                    name: current.name,
+                    department: current.department || recentEmployees[i].department,
+                    position: current.position || recentEmployees[i].position,
+                    phone: current.phone || recentEmployees[i].phone
+                };
+                updated = true;
+            }
+        }
+        
+        if (updated) {
+            localStorage.setItem('recentEmployees', JSON.stringify(recentEmployees));
+            updateRecentContactsUI();
+        }
+    } catch (error) {
+        console.error('Error updating recent employees data:', error);
+    }
+}
+
+/**
+ * Initiate contact with an employee
+ * @param {Object} employee - The employee to contact
+ */
+function initiateEmployeeContact(employee) {
+    if (!employee || !employee.email) {
+        console.warn('Invalid employee data for contact');
+        return;
+    }
+    
+    // Add to recent contacts
+    addRecentEmployee(employee);
+    
+    // Populate the communication form with employee details
+    const communicationModal = document.getElementById('communicationModal');
+    if (communicationModal) {
+        // Find form elements
+        const recipientInput = communicationModal.querySelector('#communicationRecipient');
+        const recipientNameDisplay = communicationModal.querySelector('#recipientName');
+        const recipientInfoDisplay = communicationModal.querySelector('#recipientInfo');
+        
+        if (recipientInput) {
+            recipientInput.value = employee.email;
+        }
+        
+        if (recipientNameDisplay) {
+            recipientNameDisplay.textContent = employee.name;
+        }
+        
+        if (recipientInfoDisplay) {
+            const info = [];
+            if (employee.position) info.push(employee.position);
+            if (employee.department) info.push(employee.department);
+            recipientInfoDisplay.textContent = info.join(' • ');
+        }
+        
+        // Show the modal
+        const bsModal = new bootstrap.Modal(communicationModal);
+        bsModal.show();
+    } else {
+        console.warn('Communication modal not found in the DOM');
+        
+        // As a fallback, open mailto link
+        window.location.href = `mailto:${employee.email}?subject=Message from Dashboard`;
+    }
+}
+
+/**
+ * Load department contacts (HR or IT)
+ * @param {string} department - The department to load ('hr' or 'it')
+ */
+async function loadDepartmentContacts(department) {
+    const departmentId = department.toLowerCase();
+    const dropdownId = `${departmentId}-contact-list`;
+    const infoContainerId = `selected-${departmentId}-info`;
+    
+    console.log(`Attempting to load ${departmentId.toUpperCase()} department contacts...`);
+    
+    const dropdown = document.getElementById(dropdownId);
+    const infoContainer = document.getElementById(infoContainerId);
+    
+    if (!dropdown || !infoContainer) {
+        console.warn(`Dropdown ${dropdownId} or info container ${infoContainerId} not found for ${departmentId.toUpperCase()} department`);
+        return;
+    }
+    
+    try {
+        // Get current user's data to determine their department
+        const userData = JSON.parse(localStorage.getItem('userData')) || {};
+        const userDepartment = userData.department || '';
+        console.log(`Current user's department: ${userDepartment}`);
+        
+        // Fetch all users first
+        console.log(`Fetching ${departmentId.toUpperCase()} users from directory API...`);
+        const allUsers = await fetchUsers();
+        
+        // Debug: Print all user departments to console
+        console.log('All users and their departments:');
+        allUsers.forEach(user => {
+            console.log(`${user.name}: ${user.department || 'No department'} (${user.email})`);
+        });
+        
+        // Explicitly filter for the specific department - use strict comparison
+        let users = [];
+        if (departmentId === 'hr') {
+            // Filter for HR staff only
+            users = allUsers.filter(user => 
+                (user.department || '').toUpperCase() === 'HR'
+            );
+            console.log(`Filtered ${allUsers.length} users to ${users.length} HR staff members`);
+        } else if (departmentId === 'it') {
+            // Filter for IT staff only - much stricter filtering
+            users = allUsers.filter(user => {
+                // Check department is IT
+                const isITDept = (user.department || '').toUpperCase() === 'IT';
+                
+                // Check position indicates an IT admin role (not just a regular employee)
+                const pos = (user.position || '').toLowerCase();
+                const isAdmin = pos.includes('admin') || 
+                               pos.includes('support') || 
+                               pos.includes('specialist') || 
+                               pos.includes('tech') || 
+                               pos.includes('manager') ||
+                               pos.includes('helpdesk') ||
+                               pos.includes('developer');
+                
+                // For debugging - add more details about the filtering
+                console.log(`IT check: ${user.name} - Dept:${isITDept}, Admin:${isAdmin}, Position:"${pos}"`);
+                
+                // Only include if both conditions are met
+                return isITDept && isAdmin;
+            });
+            console.log(`Filtered ${allUsers.length} users to ${users.length} IT administrators`);
+        } else {
+            users = [];
+        }
+        
+        if (!users || users.length === 0) {
+            console.log(`No ${departmentId.toUpperCase()} staff found, showing default message`);
+            
+            // For IT section, if no IT admins found, add a default IT admin
+            if (departmentId === 'it') {
+                console.log("Adding default IT administrator contact");
+                
+                // Clear dropdown options
+                while (dropdown.options.length > 0) {
+                    dropdown.remove(0);
+                }
+                
+                // Add default IT admin option
+                const option = document.createElement('option');
+                option.value = "it-admin";
+                option.text = "IT Administrator";
+                option.setAttribute('data-email', 'it-support@company.com');
+                option.setAttribute('data-position', 'IT Support Specialist');
+                dropdown.appendChild(option);
+                
+                // Select this option by default
+                dropdown.selectedIndex = 0;
+                
+                // Update info container with default IT admin details
+                infoContainer.innerHTML = `
+                    <div class="contact-name">IT Administrator</div>
+                    <div class="contact-role">IT Support Specialist</div>
+                    <div class="contact-department">IT Department</div>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:it-support@company.com">it-support@company.com</a></p>
+                `;
+                
+                // Add click event to message button
+                const messageBtn = infoContainer.querySelector('.message-btn');
+                if (messageBtn) {
+                    messageBtn.addEventListener('click', function() {
+                        // Open email
+                        window.location.href = 'mailto:it-support@company.com?subject=IT Support Request';
+                    });
+                }
+                
+                return;
+            }
+            
+            // If no users found, show a message
+            infoContainer.innerHTML = `<p>No ${departmentId.toUpperCase()} staff contacts available.</p>`;
+            return;
+        }
+        
+        console.log(`Found ${users.length} ${departmentId.toUpperCase()} staff members`);
+        
+        // For IT section, ensure there's at least one IT admin contact
+        if (departmentId === 'it' && users.length === 0) {
+            // Add a default IT administrator contact
+            users = [{
+                _id: 'it-admin',
+                name: 'IT Administrator',
+                email: 'it-support@company.com',
+                position: 'IT Support Specialist',
+                department: 'IT'
+            }];
+            console.log('Added default IT administrator contact');
+        }
+        
+        // Clear existing dropdown options (except the first one)
+        while (dropdown.options.length > 1) {
+            dropdown.remove(1);
+        }
+        
+        // Add each department contact to dropdown
+        users.forEach(user => {
+            console.log(`Adding ${departmentId.toUpperCase()} contact to dropdown: ${user.name}`);
+            
+            // Get user details
+            const name = user.name || '';
+            const position = user.position || '';
+            const email = user.email || '';
+            const userId = user._id || '';
+            
+            const option = document.createElement('option');
+            option.value = userId;
+            option.text = name;
+            option.setAttribute('data-email', email);
+            option.setAttribute('data-position', position);
+            dropdown.appendChild(option);
+        });
+        
+        // Add change event listener to the dropdown
+        dropdown.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const userId = this.value;
+            
+            if (!userId) {
+                // No user selected, show default message
+                infoContainer.innerHTML = `<p>Select an ${departmentId.toUpperCase()} staff member from the dropdown to view their contact details.</p>`;
+                return;
+            }
+            
+            const name = selectedOption.text;
+            const email = selectedOption.getAttribute('data-email');
+            const position = selectedOption.getAttribute('data-position');
+            
+            // Update info container with user details
+            infoContainer.innerHTML = `
+                <div class="contact-name">${name}</div>
+                ${position ? `<div class="contact-role">${position}</div>` : ''}
+                <div class="contact-department">${departmentId.toUpperCase()} Department</div>
+                <p><i class="fas fa-envelope"></i> <a href="mailto:${email}">${email}</a></p>
+            `;
+            
+            // Add click event to message button
+            const messageBtn = infoContainer.querySelector('.message-btn');
+            if (messageBtn) {
+                messageBtn.addEventListener('click', function() {
+                    const email = this.getAttribute('data-email');
+                    const name = this.getAttribute('data-name');
+                    
+                    // Open communication modal or directly open message panel
+                    const messagePanel = document.getElementById(`${departmentId}-message-panel`);
+                    if (messagePanel) {
+                        // Show message panel
+                        document.querySelectorAll('.message-panel').forEach(p => p.style.display = 'none');
+                        messagePanel.style.display = 'block';
+                        
+                        // If there's a dropdown for selecting the recipient, select this user
+                        const selectEl = document.getElementById(`${departmentId}-select`);
+                        if (selectEl) {
+                            // Find option with matching email
+                            for (let i = 0; i < selectEl.options.length; i++) {
+                                const option = selectEl.options[i];
+                                if (option.getAttribute('data-email') === email) {
+                                    selectEl.selectedIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Set focus to message textarea
+                        const messageInput = document.getElementById(`${departmentId}-message`);
+                        if (messageInput) {
+                            messageInput.focus();
+                        }
+                    } else {
+                        // Fallback to mailto
+                        window.location.href = `mailto:${email}?subject=Message for ${departmentId.toUpperCase()} Department`;
+                    }
+                });
+            }
+        });
+        
+        // Also populate the message dropdown
+        const messageSelect = document.getElementById(`${departmentId}-select`);
+        if (messageSelect) {
+            // Clear existing options (except the first one)
+            while (messageSelect.options.length > 1) {
+                messageSelect.remove(1);
+            }
+            
+            // Add users to the message dropdown
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user._id || '';
+                option.text = user.name || '';
+                option.setAttribute('data-email', user.email || '');
+                messageSelect.appendChild(option);
+            });
+        }
+        
+    } catch (error) {
+        console.error(`Error loading ${departmentId.toUpperCase()} department contacts:`, error);
+    }
+}
+
+/**
+ * Listen for changes in employee data and update department contacts if needed
+ */
+function setupDepartmentContactsUpdater() {
+    // Listen for storage events for new employee creation
+    window.addEventListener('storage', function(event) {
+        if (event.key === 'newEmployeeCreated') {
+            try {
+                const newEmployee = JSON.parse(event.newValue);
+                if (newEmployee && newEmployee.department) {
+                    // If it's an HR or IT staff member, update the relevant department contacts
+                    const dept = newEmployee.department.toUpperCase();
+                    if (dept === 'HR') {
+                        loadDepartmentContacts('hr');
+                    } else if (dept === 'IT') {
+                        loadDepartmentContacts('it');
+                    }
+                }
+            } catch (error) {
+                console.error('Error processing new employee event for departments:', error);
+            }
+        }
+    });
 }
 

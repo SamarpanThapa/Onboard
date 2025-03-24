@@ -239,4 +239,242 @@
 .btn-secondary:hover {
     background-color: #5a6268;
     border-color: #545b62;
+}
+
+/* Communication section */
+.communication-section {
+    background-color: #fff;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.communication-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f0f0f0;
+    background-color: #f8f9fa;
+}
+
+.communication-header h5 {
+    margin: 0;
+    font-weight: 600;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.communication-refresh-btn {
+    background: transparent;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.communication-refresh-btn:hover {
+    color: #007bff;
+    transform: rotate(15deg);
+}
+
+.communication-content {
+    padding: 1rem;
+}
+
+.communication-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.communication-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+}
+
+.communication-item:hover {
+    background-color: #e9ecef;
+}
+
+.communication-item.active {
+    background-color: #e7f1ff;
+    border-left: 3px solid #007bff;
+}
+
+.comm-item-icon {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.comm-item-icon i {
+    font-size: 1rem;
+    color: #6c757d;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e9ecef;
+    border-radius: 50%;
+}
+
+.employees-icon i {
+    color: #28a745;
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.hr-icon i {
+    color: #fd7e14;
+    background-color: rgba(253, 126, 20, 0.1);
+}
+
+.it-icon i {
+    color: #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.comm-item-text {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+.message-btn {
+    border: none;
+    background-color: transparent;
+    color: #6c757d;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+}
+
+.message-btn:hover {
+    background-color: #e9ecef;
+    color: #007bff;
+}
+
+.message-panel {
+    display: none;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.message-input {
+    margin-top: 0.75rem;
+}
+
+.message-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.75rem;
+}
+
+.send-message-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.send-message-btn:hover {
+    background-color: #0069d9;
+}
+
+/* Contact info styles */
+.contact-info {
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.contact-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #212529;
+    margin-bottom: 0.25rem;
+}
+
+.contact-role {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.contact-department {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+    font-style: italic;
+}
+
+/* Toast notifications */
+.toast-container {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 9999;
+}
+
+.toast {
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.25rem;
+    color: white;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    transform: translateY(50px);
+    animation: toast-in 0.3s ease-out forwards;
+}
+
+.toast.success {
+    background-color: #28a745;
+}
+
+.toast.error {
+    background-color: #dc3545;
+}
+
+.toast.info {
+    background-color: #17a2b8;
+}
+
+@keyframes toast-in {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.toast.toast-out {
+    animation: toast-out 0.3s ease-in forwards;
+}
+
+@keyframes toast-out {
+    to {
+        opacity: 0;
+        transform: translateY(50px);
+    }
 } 

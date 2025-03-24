@@ -2,8 +2,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('IT Dashboard loaded');
 
     // Check if user is authenticated
-    if (!api.auth.isAuthenticated()) {
-        window.location.href = '/login.html';
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = '/index.html';
         return;
     }
     
@@ -62,6 +63,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     setTimeout(() => {
         showNotification('Welcome to your IT Dashboard!', 'success');
     }, 1000);
+
+    // Initialize Communication Directory
+    initializeCommunication();
 });
 
 /**
@@ -2041,4 +2045,557 @@ function showDefaultCodeHistoryDirect(role) {
     // Add the items to the history list
     historyList.appendChild(currentHistoryItem);
     historyList.appendChild(previousHistoryItem);
+}
+
+/**
+ * Initialize the communication section
+ */
+function initializeCommunication() {
+    console.log('Initializing communication features...');
+  
+    // Load contacts for all sections
+    loadEmployeeContacts();
+    console.log('Loading HR and IT department contacts...');
+    loadDepartmentContacts('hr');
+    loadDepartmentContacts('it');
+    
+    // Setup employee contact dropdown change event
+    const employeeDropdown = document.getElementById('employee-contact-list');
+    if (employeeDropdown) {
+        employeeDropdown.addEventListener('change', function() {
+            const employeeId = this.value;
+            displaySelectedEmployeeInfo(employeeId);
+        });
+    }
+    
+    // Toggle message panels for each contact type
+    setupMessagePanelToggles();
+    
+    // Setup refresh button for contacts
+    const refreshButton = document.querySelector('.communication-refresh-btn');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', function() {
+            refreshContacts();
+        });
+    }
+    
+    // Load users for message dropdowns
+    loadUsersForDropdown('employees');
+    loadUsersForDropdown('hr');
+    loadUsersForDropdown('it');
+    
+    // Setup send message buttons
+    setupSendMessageButtons();
+}
+
+/**
+ * Setup the toggle functionality for message panels
+ */
+function setupMessagePanelToggles() {
+    // Get all communication items
+    const commItems = document.querySelectorAll('.communication-item');
+    
+    commItems.forEach(item => {
+        // Get the message button for this item
+        const messageBtn = item.querySelector('.message-btn');
+        if (!messageBtn) return;
+        
+        // Get the item type from the data attribute
+        const itemType = messageBtn.getAttribute('data-type');
+        if (!itemType) return;
+        
+        // Get the corresponding message panel
+        const messagePanel = document.getElementById(`${itemType}-message-panel`);
+        if (!messagePanel) return;
+        
+        // Add click event listener to toggle the message panel
+        messageBtn.addEventListener('click', function() {
+            // Hide all message panels first
+            document.querySelectorAll('.message-panel').forEach(panel => {
+                panel.style.display = 'none';
+            });
+            
+            // Show this message panel
+            messagePanel.style.display = 'block';
+            
+            // Highlight the active communication item
+            commItems.forEach(ci => ci.classList.remove('active'));
+            item.classList.add('active');
+        });
+    });
+}
+
+/**
+ * Load users for the message dropdown based on type
+ * @param {string} type - Type of users to load (employees, hr, it)
+ */
+async function loadUsersForDropdown(type) {
+    const dropdownId = `${type}-select`;
+    const dropdown = document.getElementById(dropdownId);
+    if (!dropdown) return;
+    
+    try {
+        // Clear existing options
+        dropdown.innerHTML = '';
+        
+        // Add default option
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = `Select ${type === 'employees' ? 'an employee' : `a ${type.toUpperCase()} staff member`}`;
+        defaultOption.selected = true;
+        defaultOption.disabled = true;
+        dropdown.appendChild(defaultOption);
+        
+        // Fetch all users
+        const allUsers = await fetchUsers();
+        let filteredUsers = [];
+        
+        // Filter users based on type
+        if (type === 'employees') {
+            // Show all employees except HR and IT
+            filteredUsers = allUsers.filter(user => 
+                (user.department || '').toUpperCase() !== 'HR' && 
+                (user.department || '').toUpperCase() !== 'IT'
+            );
+        } else if (type === 'hr') {
+            // Show only HR staff
+            filteredUsers = allUsers.filter(user => 
+                (user.department || '').toUpperCase() === 'HR'
+            );
+        } else if (type === 'it') {
+            // Show only IT staff
+            filteredUsers = allUsers.filter(user => 
+                (user.department || '').toUpperCase() === 'IT'
+            );
+        }
+        
+        // Add users to dropdown
+        if (filteredUsers.length === 0) {
+            // If no users found, add a message
+            const noUsersOption = document.createElement('option');
+            noUsersOption.value = '';
+            noUsersOption.textContent = `No ${type} found`;
+            noUsersOption.disabled = true;
+            dropdown.appendChild(noUsersOption);
+            
+            // For HR and IT, add default contacts if none found
+            if (type === 'hr') {
+                const defaultHrOption = document.createElement('option');
+                defaultHrOption.value = 'hr@company.com';
+                defaultHrOption.textContent = 'HR Department';
+                dropdown.appendChild(defaultHrOption);
+            } else if (type === 'it') {
+                const defaultItOption = document.createElement('option');
+                defaultItOption.value = 'it-support@company.com';
+                defaultItOption.textContent = 'IT Support';
+                dropdown.appendChild(defaultItOption);
+            }
+        } else {
+            // Add each filtered user to the dropdown
+            filteredUsers.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.email || '';
+                option.textContent = user.name || '';
+                dropdown.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error(`Error loading users for ${type} dropdown:`, error);
+        // Add a fallback option
+        const errorOption = document.createElement('option');
+        errorOption.value = '';
+        errorOption.textContent = 'Error loading contacts';
+        errorOption.disabled = true;
+        dropdown.appendChild(errorOption);
+    }
+}
+
+/**
+ * Setup the send message buttons for each contact type
+ */
+function setupSendMessageButtons() {
+    // Get all send message buttons
+    const sendButtons = document.querySelectorAll('.send-message-btn');
+    
+    sendButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Get the type from the button's data attribute
+            const type = this.getAttribute('data-type');
+            if (!type) return;
+            
+            // Get the corresponding select and textarea
+            const select = document.getElementById(`${type}-select`);
+            const textarea = document.getElementById(`${type}-message`);
+            
+            if (!select || !textarea) return;
+            
+            // Get the selected contact email and message text
+            const contactEmail = select.value;
+            const messageText = textarea.value.trim();
+            
+            // Validate inputs
+            if (!contactEmail) {
+                showToast('Please select a contact to message', 'error');
+                return;
+            }
+            
+            if (!messageText) {
+                showToast('Please enter a message', 'error');
+                return;
+            }
+            
+            // Send the message (in a real app, this would use an API)
+            sendMessageToContact(contactEmail, messageText, type);
+            
+            // Clear the message textarea
+            textarea.value = '';
+        });
+    });
+}
+
+/**
+ * Send a message to a contact (this is a mock function)
+ * @param {string} email - Contact email address
+ * @param {string} message - Message text
+ * @param {string} type - Type of contact (employees, hr, it)
+ */
+function sendMessageToContact(email, message, type) {
+    // In a real app, this would call an API to send the message
+    console.log(`Sending message to ${type} contact:`, email, message);
+    
+    try {
+        // For now, we'll open a mailto link
+        const subject = `Message from IT Dashboard`;
+        const body = message;
+        
+        // Create and open the mailto link
+        const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.open(mailtoLink);
+        
+        // Show success message
+        showToast(`Message to ${type === 'employees' ? 'employee' : `${type.toUpperCase()} staff`} prepared for sending`, 'success');
+    } catch (error) {
+        console.error('Error sending message:', error);
+        showToast('Error sending message. Please try again.', 'error');
+    }
+}
+
+/**
+ * Refresh all contacts
+ */
+function refreshContacts() {
+    showToast('Refreshing contacts...', 'info');
+    
+    // Reload all contacts
+    loadEmployeeContacts();
+    loadDepartmentContacts('hr');
+    loadDepartmentContacts('it');
+    
+    // Reload users for message dropdowns
+    loadUsersForDropdown('employees');
+    loadUsersForDropdown('hr');
+    loadUsersForDropdown('it');
+    
+    showToast('Contacts refreshed', 'success');
+}
+
+/**
+ * Load employee contacts into the dropdown
+ */
+async function loadEmployeeContacts() {
+    const contactSelect = document.getElementById('employee-contact-list');
+    if (!contactSelect) return;
+    
+    try {
+        // Fetch all employees
+        const response = await fetch('/api/users/directory/employees', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch employees');
+        }
+        
+        const result = await response.json();
+        const employees = result.data || [];
+        
+        // Filter out IT department staff (already visible in IT section)
+        const filteredEmployees = employees.filter(emp => 
+            (emp.department || '').toUpperCase() !== 'IT'
+        );
+        
+        // Clear existing options except the first one
+        while (contactSelect.options.length > 1) {
+            contactSelect.remove(1);
+        }
+        
+        // Add options for each employee
+        if (filteredEmployees.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No employees found';
+            option.disabled = true;
+            contactSelect.appendChild(option);
+        } else {
+            filteredEmployees.forEach(employee => {
+                const option = document.createElement('option');
+                option.value = employee._id;
+                option.textContent = employee.name;
+                option.setAttribute('data-email', employee.email || '');
+                option.setAttribute('data-position', employee.position || '');
+                option.setAttribute('data-department', employee.department || '');
+                contactSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading employee contacts:', error);
+        contactSelect.innerHTML = '<option value="">Error loading employees</option>';
+    }
+}
+
+/**
+ * Display the selected employee's information
+ */
+async function displaySelectedEmployeeInfo(employeeId) {
+    const infoContainer = document.getElementById('selected-employee-info');
+    if (!infoContainer) return;
+    
+    if (!employeeId) {
+        infoContainer.innerHTML = '<p>Select an employee from the dropdown to view their contact details.</p>';
+        return;
+    }
+    
+    // Show loading state
+    infoContainer.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading employee information...</p>';
+    
+    try {
+        // Get the selected option data attributes
+        const selectElement = document.getElementById('employee-contact-list');
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        
+        const name = selectedOption.text;
+        const email = selectedOption.getAttribute('data-email');
+        const position = selectedOption.getAttribute('data-position');
+        const department = selectedOption.getAttribute('data-department');
+        
+        // Update info container with user details
+        infoContainer.innerHTML = `
+            <div class="contact-name">${name}</div>
+            ${position ? `<div class="contact-role">${position}</div>` : ''}
+            ${department ? `<div class="contact-department">${department}</div>` : ''}
+            <p><i class="fas fa-envelope"></i> <a href="mailto:${email}">${email}</a></p>
+        `;
+    } catch (error) {
+        console.error('Error displaying employee info:', error);
+        infoContainer.innerHTML = '<p>Error loading employee information. Please try again.</p>';
+    }
+}
+
+/**
+ * Load department contacts (HR or IT)
+ */
+async function loadDepartmentContacts(department) {
+    const departmentId = department.toLowerCase();
+    const dropdownId = `${departmentId}-contact-list`;
+    const infoContainerId = `selected-${departmentId}-info`;
+    
+    console.log(`Attempting to load ${departmentId.toUpperCase()} department contacts...`);
+    
+    const dropdown = document.getElementById(dropdownId);
+    const infoContainer = document.getElementById(infoContainerId);
+    
+    if (!dropdown || !infoContainer) {
+        console.warn(`Dropdown ${dropdownId} or info container ${infoContainerId} not found for ${departmentId.toUpperCase()} department`);
+        return;
+    }
+    
+    try {
+        // Fetch all users
+        const response = await fetch('/api/users/directory/employees', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch employees');
+        }
+        
+        const result = await response.json();
+        const allUsers = result.data || [];
+        
+        // Filter users based on department
+        let users = [];
+        
+        if (departmentId === 'hr') {
+            // Filter for HR staff only
+            users = allUsers.filter(user => 
+                (user.department || '').toUpperCase() === 'HR'
+            );
+            console.log(`Filtered ${allUsers.length} users to ${users.length} HR staff members`);
+        } else if (departmentId === 'it') {
+            // Filter for IT administrators specifically
+            users = allUsers.filter(user => {
+                // Get department
+                const dept = (user.department || '').toUpperCase();
+                
+                // Check position for IT admin role
+                const pos = (user.position || '').toLowerCase();
+                const isAdmin = pos.includes('admin') || 
+                               pos.includes('support') || 
+                               pos.includes('specialist') || 
+                               pos.includes('tech') || 
+                               pos.includes('manager') ||
+                               pos.includes('helpdesk') ||
+                               pos.includes('developer');
+                           
+                // Only include IT administrators           
+                return dept === 'IT' && isAdmin;
+            });
+            console.log(`Filtered ${allUsers.length} users to ${users.length} IT administrators`);
+        }
+        
+        if (!users || users.length === 0) {
+            console.log(`No ${departmentId.toUpperCase()} staff found, showing default message`);
+            
+            // For IT section, if no IT admins found, add a default IT admin
+            if (departmentId === 'it') {
+                // Add a default IT admin
+                const option = document.createElement('option');
+                option.value = "it-admin";
+                option.text = "IT Administrator";
+                option.setAttribute('data-email', 'it-support@company.com');
+                option.setAttribute('data-position', 'IT Support Specialist');
+                dropdown.appendChild(option);
+                
+                // Select this option by default
+                dropdown.selectedIndex = 0;
+                
+                // Update info container with default IT admin details
+                infoContainer.innerHTML = `
+                    <div class="contact-name">IT Administrator</div>
+                    <div class="contact-role">IT Support Specialist</div>
+                    <div class="contact-department">IT Department</div>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:it-support@company.com">it-support@company.com</a></p>
+                `;
+                
+                return;
+            }
+            
+            // For HR section, add a default HR contact if none found
+            if (departmentId === 'hr') {
+                // Add a default HR admin
+                const option = document.createElement('option');
+                option.value = "hr-admin";
+                option.text = "HR Administrator";
+                option.setAttribute('data-email', 'hr@company.com');
+                option.setAttribute('data-position', 'HR Manager');
+                dropdown.appendChild(option);
+                
+                // Select this option by default
+                dropdown.selectedIndex = 0;
+                
+                // Update info container with default HR admin details
+                infoContainer.innerHTML = `
+                    <div class="contact-name">HR Administrator</div>
+                    <div class="contact-role">HR Manager</div>
+                    <div class="contact-department">HR Department</div>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:hr@company.com">hr@company.com</a></p>
+                `;
+                
+                return;
+            }
+            
+            // If no default added, show a message
+            infoContainer.innerHTML = `<p>No ${departmentId.toUpperCase()} staff contacts available.</p>`;
+            return;
+        }
+        
+        console.log(`Found ${users.length} ${departmentId.toUpperCase()} staff members`);
+        
+        // Clear existing dropdown options (except the first one)
+        while (dropdown.options.length > 1) {
+            dropdown.remove(1);
+        }
+        
+        // Add each department contact to dropdown
+        users.forEach(user => {
+            console.log(`Adding ${departmentId.toUpperCase()} contact to dropdown: ${user.name}`);
+            
+            // Get user details
+            const name = user.name || '';
+            const position = user.position || '';
+            const email = user.email || '';
+            const userId = user._id || '';
+            
+            const option = document.createElement('option');
+            option.value = userId;
+            option.text = name;
+            option.setAttribute('data-email', email);
+            option.setAttribute('data-position', position);
+            dropdown.appendChild(option);
+        });
+        
+        // Add change event listener to the dropdown
+        dropdown.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const userId = this.value;
+            
+            if (!userId) {
+                // No user selected, show default message
+                infoContainer.innerHTML = `<p>Select an ${departmentId.toUpperCase()} staff member from the dropdown to view their contact details.</p>`;
+                return;
+            }
+            
+            const name = selectedOption.text;
+            const email = selectedOption.getAttribute('data-email');
+            const position = selectedOption.getAttribute('data-position');
+            
+            // Update info container with user details
+            infoContainer.innerHTML = `
+                <div class="contact-name">${name}</div>
+                ${position ? `<div class="contact-role">${position}</div>` : ''}
+                <div class="contact-department">${departmentId.toUpperCase()} Department</div>
+                <p><i class="fas fa-envelope"></i> <a href="mailto:${email}">${email}</a></p>
+            `;
+        });
+        
+    } catch (error) {
+        console.error(`Error loading ${departmentId.toUpperCase()} department contacts:`, error);
+        infoContainer.innerHTML = `<p>Error loading ${departmentId.toUpperCase()} department contacts. Please try again.</p>`;
+    }
+}
+
+/**
+ * Fetch users from the API
+ * @param {string} type - Optional type of users to fetch
+ * @returns {Promise<Array>} Array of user objects
+ */
+async function fetchUsers(type) {
+    try {
+        const endpoint = type === 'employees' ? '/api/users/directory/employees' : '/api/users/directory/employees';
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch users: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        return result.data || [];
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        return [];
+    }
 }

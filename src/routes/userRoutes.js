@@ -96,4 +96,41 @@ router.put(
 // @access  Private (User themselves or Admin/HR)
 router.get('/:id/dashboard', protect, getUserDashboard);
 
+// @route   GET /api/users/directory/employees
+// @desc    Get basic employee contact information for all employees
+// @access  Private (All authenticated users)
+router.get('/directory/employees', protect, async (req, res) => {
+  console.log('🔍 Employee Directory API called by:', req.user.email, '(', req.user.role, ')');
+  try {
+    // Find all active users with select fields
+    const User = require('../models/User'); // Import User model
+    const employees = await User.find({ isActive: true })
+      .select('name email department position personalInfo.phoneNumber')
+      .sort({ name: 1 });
+    
+    console.log(`📊 Found ${employees.length} employees in directory`);
+    
+    // Format the response
+    const formattedEmployees = employees.map(user => ({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      department: user.department,
+      position: user.position,
+      phone: user.personalInfo?.phoneNumber
+    }));
+    
+    res.status(200).json({
+      success: true,
+      data: formattedEmployees
+    });
+  } catch (error) {
+    console.error('Error getting employee directory:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
+});
+
 module.exports = router; 

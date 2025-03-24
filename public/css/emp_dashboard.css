@@ -1088,3 +1088,224 @@ button {
 .primary-button:hover {
     background-color: #19a349;
 }
+
+/* Message Toggle Button */
+.message-toggle-btn {
+    display: inline-block;
+    background-color: var(--secondary-color);
+    color: var(--text-primary);
+    border: none;
+    border-radius: 20px;
+    padding: 5px 10px;
+    margin-top: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color var(--transition-speed);
+}
+
+.message-toggle-btn:hover {
+    background-color: var(--secondary-hover);
+}
+
+.message-toggle-btn i {
+    margin-right: 5px;
+}
+
+/* Message Panel */
+.message-panel {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: var(--card-bg-hover);
+    border: 1px solid var(--border-color);
+}
+
+/* Employee Select Dropdown */
+.employee-select,
+.hr-select,
+.it-select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+/* Message Input */
+.message-input {
+    width: 100%;
+    min-height: 80px;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    resize: vertical;
+}
+
+/* Send Message Button */
+.send-message-btn {
+    background-color: var(--primary-color);
+    color: var(--text-primary);
+    border: none;
+    border-radius: 6px;
+    padding: 8px 15px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color var(--transition-speed);
+}
+
+.send-message-btn:hover {
+    background-color: var(--primary-hover);
+}
+
+.send-message-btn i {
+    margin-right: 5px;
+}
+
+/* Message success/error feedback */
+.message-feedback {
+    padding: 5px 10px;
+    margin-top: 5px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.message-feedback.success {
+    background-color: rgba(29, 185, 84, 0.2);
+    color: var(--success-color);
+}
+
+.message-feedback.error {
+    background-color: rgba(255, 68, 68, 0.2);
+    color: var(--error-color);
+}
+
+/* Employee Contacts */
+.employee-contacts {
+    margin: 10px 0;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 10px;
+}
+
+.contact-select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.selected-contact-info {
+    padding: 10px;
+    border-radius: 6px;
+    background-color: var(--card-bg);
+    margin-top: 5px;
+    font-size: 0.9rem;
+}
+
+.selected-contact-info p {
+    margin: 5px 0;
+}
+
+.selected-contact-info a {
+    color: var(--primary-color);
+}
+
+.selected-contact-info a:hover {
+    text-decoration: underline;
+}
+
+.selected-contact-info .contact-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 5px;
+}
+
+.selected-contact-info .contact-role {
+    color: var(--primary-color);
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+}
+
+/* Department contacts styles */
+.department-contacts {
+    margin-top: 10px;
+    margin-bottom: 15px;
+}
+
+.contact-item {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.contact-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.contact-name {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 3px;
+    color: var(--text-primary);
+}
+
+.contact-role {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.contact-item p {
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+}
+
+.contact-item .message-btn {
+    padding: 5px 10px;
+    font-size: 12px;
+    background-color: var(--secondary-color);
+    color: var(--text-primary);
+    border: none;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    transition: background-color var(--transition-speed) ease;
+}
+
+.contact-item .message-btn:hover {
+    background-color: var(--secondary-hover);
+}
+
+.contact-item .message-btn i {
+    margin-right: 5px;
+}
+
+/* End of department contacts styles */
+
+/* Department Contact Styles */
+.contact-department {
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+    margin-bottom: 5px;
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: rgba(80, 80, 80, 0.2);
+    border-radius: 4px;
+}
+
+/* Contact Role */
+.contact-role {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 8px;
+}

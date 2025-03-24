@@ -1161,6 +1161,47 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function initializeTaskManagement() {
         const taskLists = document.querySelectorAll('.task-list');
+        const addTaskBtn = document.getElementById('add-task-btn');
+        const taskForm = document.getElementById('task-form');
+        const taskModal = document.getElementById('task-modal');
+        
+        // Add event listener for the Add Task button
+        if (addTaskBtn) {
+            addTaskBtn.addEventListener('click', function() {
+                // Reset form fields
+                if (taskForm) {
+                    taskForm.reset();
+                    document.getElementById('task-id').value = '';
+                    document.getElementById('task-modal-title').textContent = 'Add New Task';
+                }
+                
+                // Show the task modal
+                if (taskModal) {
+                    taskModal.style.display = 'block';
+                }
+                
+                // Load employees for the assignee dropdown
+                loadEmployeesForTaskAssignment();
+            });
+        }
+        
+        // Add event listener for the task form submission
+        if (taskForm) {
+            taskForm.addEventListener('submit', handleTaskFormSubmit);
+        }
+        
+        // Add event listeners for modal close buttons
+        const closeButtons = document.querySelectorAll('.close-modal');
+        closeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                if (taskModal) {
+                    taskModal.style.display = 'none';
+                }
+            });
+        });
+        
+        // Load tasks
+        loadTasks();
         
         // Check if Sortable is defined
         if (typeof Sortable === 'undefined') {
@@ -2932,6 +2973,576 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Initialize activity feed
         initializeActivityFeed();
     });
+
+    // Initialize system after DOM loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if user is authenticated
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/index.html';
+            return;
+        }
+
+        // Your existing code...
+        
+        // Initialize Communication Directory
+        initializeCommunication();
+        
+        // Your existing code...
+    });
+
+    /**
+     * Initialize the communication section
+     */
+    async function initializeCommunication() {
+        console.log('Initializing communication features...');
+        
+        // Load contacts for all sections
+        loadEmployeeContacts();
+        console.log('Loading HR and IT department contacts...');
+        loadDepartmentContacts('hr');
+        loadDepartmentContacts('it');
+        
+        // Setup employee contact dropdown change event
+        const employeeDropdown = document.getElementById('employee-contact-list');
+        if (employeeDropdown) {
+            employeeDropdown.addEventListener('change', function() {
+                const employeeId = this.value;
+                displaySelectedEmployeeInfo(employeeId);
+            });
+        }
+        
+        // Toggle message panels for each contact type
+        setupMessagePanelToggles();
+        
+        // Setup refresh button for contacts
+        const refreshButton = document.querySelector('.communication-refresh-btn');
+        if (refreshButton) {
+            refreshButton.addEventListener('click', function() {
+                refreshContacts();
+            });
+        }
+        
+        // Load users for message dropdowns
+        loadUsersForDropdown('employees');
+        loadUsersForDropdown('hr');
+        loadUsersForDropdown('it');
+        
+        // Setup send message buttons
+        setupSendMessageButtons();
+    }
+
+    /**
+     * Setup the toggle functionality for message panels
+     */
+    function setupMessagePanelToggles() {
+        // Get all communication items
+        const commItems = document.querySelectorAll('.communication-item');
+        
+        commItems.forEach(item => {
+            // Get the message button for this item
+            const messageBtn = item.querySelector('.message-btn');
+            if (!messageBtn) return;
+            
+            // Get the item type from the data attribute
+            const itemType = messageBtn.getAttribute('data-type');
+            if (!itemType) return;
+            
+            // Get the corresponding message panel
+            const messagePanel = document.getElementById(`${itemType}-message-panel`);
+            if (!messagePanel) return;
+            
+            // Add click event listener to toggle the message panel
+            messageBtn.addEventListener('click', function() {
+                // Hide all message panels first
+                document.querySelectorAll('.message-panel').forEach(panel => {
+                    panel.style.display = 'none';
+                });
+                
+                // Show this message panel
+                messagePanel.style.display = 'block';
+                
+                // Highlight the active communication item
+                commItems.forEach(ci => ci.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+    }
+
+    /**
+     * Load employee contacts into the dropdown
+     */
+    async function loadEmployeeContacts() {
+        const contactSelect = document.getElementById('employee-contact-list');
+        if (!contactSelect) return;
+        
+        try {
+            // Fetch all employees
+            const response = await fetch('/api/users/directory/employees', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch employees');
+            }
+            
+            const result = await response.json();
+            const employees = result.data || [];
+            
+            // Filter out HR department staff (already visible in HR section)
+            const filteredEmployees = employees.filter(emp => 
+                (emp.department || '').toUpperCase() !== 'HR'
+            );
+            
+            // Clear existing options except the first one
+            while (contactSelect.options.length > 1) {
+                contactSelect.remove(1);
+            }
+            
+            // Add options for each employee
+            if (filteredEmployees.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No employees found';
+                option.disabled = true;
+                contactSelect.appendChild(option);
+            } else {
+                filteredEmployees.forEach(employee => {
+                    const option = document.createElement('option');
+                    option.value = employee._id;
+                    option.textContent = employee.name;
+                    option.setAttribute('data-email', employee.email || '');
+                    option.setAttribute('data-position', employee.position || '');
+                    option.setAttribute('data-department', employee.department || '');
+                    contactSelect.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading employee contacts:', error);
+            contactSelect.innerHTML = '<option value="">Error loading employees</option>';
+        }
+    }
+
+    /**
+     * Display the selected employee's information
+     */
+    async function displaySelectedEmployeeInfo(employeeId) {
+        const infoContainer = document.getElementById('selected-employee-info');
+        if (!infoContainer) return;
+        
+        if (!employeeId) {
+            infoContainer.innerHTML = '<p>Select an employee from the dropdown to view their contact details.</p>';
+            return;
+        }
+        
+        // Show loading state
+        infoContainer.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading employee information...</p>';
+        
+        try {
+            // Get the selected option data attributes
+            const selectElement = document.getElementById('employee-contact-list');
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+            
+            const name = selectedOption.text;
+            const email = selectedOption.getAttribute('data-email');
+            const position = selectedOption.getAttribute('data-position');
+            const department = selectedOption.getAttribute('data-department');
+            
+            // Update info container with user details
+            infoContainer.innerHTML = `
+                <div class="contact-name">${name}</div>
+                ${position ? `<div class="contact-role">${position}</div>` : ''}
+                ${department ? `<div class="contact-department">${department}</div>` : ''}
+                <p><i class="fas fa-envelope"></i> <a href="mailto:${email}">${email}</a></p>
+            `;
+        } catch (error) {
+            console.error('Error displaying employee info:', error);
+            infoContainer.innerHTML = '<p>Error loading employee information. Please try again.</p>';
+        }
+    }
+
+    /**
+     * Load department contacts (HR or IT)
+     */
+    async function loadDepartmentContacts(department) {
+        const departmentId = department.toLowerCase();
+        const dropdownId = `${departmentId}-contact-list`;
+        const infoContainerId = `selected-${departmentId}-info`;
+        
+        console.log(`Attempting to load ${departmentId.toUpperCase()} department contacts...`);
+        
+        const dropdown = document.getElementById(dropdownId);
+        const infoContainer = document.getElementById(infoContainerId);
+        
+        if (!dropdown || !infoContainer) {
+            console.warn(`Dropdown ${dropdownId} or info container ${infoContainerId} not found for ${departmentId.toUpperCase()} department`);
+            return;
+        }
+        
+        try {
+            // Fetch all users
+            const response = await fetch('/api/users/directory/employees', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch employees');
+            }
+            
+            const result = await response.json();
+            const allUsers = result.data || [];
+            
+            // Filter users based on department
+            let users = [];
+            
+            if (departmentId === 'hr') {
+                // Filter for HR staff only
+                users = allUsers.filter(user => 
+                    (user.department || '').toUpperCase() === 'HR'
+                );
+                console.log(`Filtered ${allUsers.length} users to ${users.length} HR staff members`);
+            } else if (departmentId === 'it') {
+                // Filter for IT administrators specifically
+                users = allUsers.filter(user => {
+                    // Get department
+                    const dept = (user.department || '').toUpperCase();
+                    
+                    // Check position for IT admin role
+                    const pos = (user.position || '').toLowerCase();
+                    const isAdmin = pos.includes('admin') || 
+                                   pos.includes('support') || 
+                                   pos.includes('specialist') || 
+                                   pos.includes('tech') || 
+                                   pos.includes('manager') ||
+                                   pos.includes('helpdesk') ||
+                                   pos.includes('developer');
+                               
+                    // Only include IT administrators           
+                    return dept === 'IT' && isAdmin;
+                });
+                console.log(`Filtered ${allUsers.length} users to ${users.length} IT administrators`);
+            }
+            
+            if (!users || users.length === 0) {
+                console.log(`No ${departmentId.toUpperCase()} staff found, showing default message`);
+                
+                // For IT section, if no IT admins found, add a default IT admin
+                if (departmentId === 'it') {
+                    // Add a default IT admin
+                    const option = document.createElement('option');
+                    option.value = "it-admin";
+                    option.text = "IT Administrator";
+                    option.setAttribute('data-email', 'it-support@company.com');
+                    option.setAttribute('data-position', 'IT Support Specialist');
+                    dropdown.appendChild(option);
+                    
+                    // Select this option by default
+                    dropdown.selectedIndex = 0;
+                    
+                    // Update info container with default IT admin details
+                    infoContainer.innerHTML = `
+                        <div class="contact-name">IT Administrator</div>
+                        <div class="contact-role">IT Support Specialist</div>
+                        <div class="contact-department">IT Department</div>
+                        <p><i class="fas fa-envelope"></i> <a href="mailto:it-support@company.com">it-support@company.com</a></p>
+                    `;
+                    
+                    return;
+                }
+                
+                // For HR section, add a default HR contact if none found
+                if (departmentId === 'hr') {
+                    // Add a default HR admin
+                    const option = document.createElement('option');
+                    option.value = "hr-admin";
+                    option.text = "HR Administrator";
+                    option.setAttribute('data-email', 'hr@company.com');
+                    option.setAttribute('data-position', 'HR Manager');
+                    dropdown.appendChild(option);
+                    
+                    // Select this option by default
+                    dropdown.selectedIndex = 0;
+                    
+                    // Update info container with default HR admin details
+                    infoContainer.innerHTML = `
+                        <div class="contact-name">HR Administrator</div>
+                        <div class="contact-role">HR Manager</div>
+                        <div class="contact-department">HR Department</div>
+                        <p><i class="fas fa-envelope"></i> <a href="mailto:hr@company.com">hr@company.com</a></p>
+                    `;
+                    
+                    return;
+                }
+                
+                // If no default added, show a message
+                infoContainer.innerHTML = `<p>No ${departmentId.toUpperCase()} staff contacts available.</p>`;
+                return;
+            }
+            
+            console.log(`Found ${users.length} ${departmentId.toUpperCase()} staff members`);
+            
+            // Clear existing dropdown options (except the first one)
+            while (dropdown.options.length > 1) {
+                dropdown.remove(1);
+            }
+            
+            // Add each department contact to dropdown
+            users.forEach(user => {
+                console.log(`Adding ${departmentId.toUpperCase()} contact to dropdown: ${user.name}`);
+                
+                // Get user details
+                const name = user.name || '';
+                const position = user.position || '';
+                const email = user.email || '';
+                const userId = user._id || '';
+                
+                const option = document.createElement('option');
+                option.value = userId;
+                option.text = name;
+                option.setAttribute('data-email', email);
+                option.setAttribute('data-position', position);
+                dropdown.appendChild(option);
+            });
+            
+            // Add change event listener to the dropdown
+            dropdown.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const userId = this.value;
+                
+                if (!userId) {
+                    // No user selected, show default message
+                    infoContainer.innerHTML = `<p>Select an ${departmentId.toUpperCase()} staff member from the dropdown to view their contact details.</p>`;
+                    return;
+                }
+                
+                const name = selectedOption.text;
+                const email = selectedOption.getAttribute('data-email');
+                const position = selectedOption.getAttribute('data-position');
+                
+                // Update info container with user details
+                infoContainer.innerHTML = `
+                    <div class="contact-name">${name}</div>
+                    ${position ? `<div class="contact-role">${position}</div>` : ''}
+                    <div class="contact-department">${departmentId.toUpperCase()} Department</div>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:${email}">${email}</a></p>
+                `;
+            });
+            
+        } catch (error) {
+            console.error(`Error loading ${departmentId.toUpperCase()} department contacts:`, error);
+            infoContainer.innerHTML = `<p>Error loading ${departmentId.toUpperCase()} department contacts. Please try again.</p>`;
+        }
+    }
+
+    /**
+     * Load users for the message dropdown based on type
+     * @param {string} type - Type of users to load (employees, hr, it)
+     */
+    async function loadUsersForDropdown(type) {
+        const dropdownId = `${type}-select`;
+        const dropdown = document.getElementById(dropdownId);
+        if (!dropdown) return;
+        
+        try {
+            // Clear existing options
+            dropdown.innerHTML = '';
+            
+            // Add default option
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = `Select ${type === 'employees' ? 'an employee' : `a ${type.toUpperCase()} staff member`}`;
+            defaultOption.selected = true;
+            defaultOption.disabled = true;
+            dropdown.appendChild(defaultOption);
+            
+            // Fetch all users
+            const allUsers = await fetchUsers();
+            let filteredUsers = [];
+            
+            // Filter users based on type
+            if (type === 'employees') {
+                // Show all employees except HR and IT
+                filteredUsers = allUsers.filter(user => 
+                    (user.department || '').toUpperCase() !== 'HR' && 
+                    (user.department || '').toUpperCase() !== 'IT'
+                );
+            } else if (type === 'hr') {
+                // Show only HR staff
+                filteredUsers = allUsers.filter(user => 
+                    (user.department || '').toUpperCase() === 'HR'
+                );
+            } else if (type === 'it') {
+                // Show only IT staff
+                filteredUsers = allUsers.filter(user => 
+                    (user.department || '').toUpperCase() === 'IT'
+                );
+            }
+            
+            // Add users to dropdown
+            if (filteredUsers.length === 0) {
+                // If no users found, add a message
+                const noUsersOption = document.createElement('option');
+                noUsersOption.value = '';
+                noUsersOption.textContent = `No ${type} found`;
+                noUsersOption.disabled = true;
+                dropdown.appendChild(noUsersOption);
+                
+                // For HR and IT, add default contacts if none found
+                if (type === 'hr') {
+                    const defaultHrOption = document.createElement('option');
+                    defaultHrOption.value = 'hr@company.com';
+                    defaultHrOption.textContent = 'HR Department';
+                    dropdown.appendChild(defaultHrOption);
+                } else if (type === 'it') {
+                    const defaultItOption = document.createElement('option');
+                    defaultItOption.value = 'it-support@company.com';
+                    defaultItOption.textContent = 'IT Support';
+                    dropdown.appendChild(defaultItOption);
+                }
+            } else {
+                // Add each filtered user to the dropdown
+                filteredUsers.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.email || '';
+                    option.textContent = user.name || '';
+                    dropdown.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error(`Error loading users for ${type} dropdown:`, error);
+            // Add a fallback option
+            const errorOption = document.createElement('option');
+            errorOption.value = '';
+            errorOption.textContent = 'Error loading contacts';
+            errorOption.disabled = true;
+            dropdown.appendChild(errorOption);
+        }
+    }
+
+    /**
+     * Setup the send message buttons for each contact type
+     */
+    function setupSendMessageButtons() {
+        // Get all send message buttons
+        const sendButtons = document.querySelectorAll('.send-message-btn');
+        
+        sendButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Get the type from the button's data attribute
+                const type = this.getAttribute('data-type');
+                if (!type) return;
+                
+                // Get the corresponding select and textarea
+                const select = document.getElementById(`${type}-select`);
+                const textarea = document.getElementById(`${type}-message`);
+                
+                if (!select || !textarea) return;
+                
+                // Get the selected contact email and message text
+                const contactEmail = select.value;
+                const messageText = textarea.value.trim();
+                
+                // Validate inputs
+                if (!contactEmail) {
+                    showToast('Please select a contact to message', 'error');
+                    return;
+                }
+                
+                if (!messageText) {
+                    showToast('Please enter a message', 'error');
+                    return;
+                }
+                
+                // Send the message (in a real app, this would use an API)
+                sendMessageToContact(contactEmail, messageText, type);
+                
+                // Clear the message textarea
+                textarea.value = '';
+            });
+        });
+    }
+
+    /**
+     * Send a message to a contact (this is a mock function)
+     * @param {string} email - Contact email address
+     * @param {string} message - Message text
+     * @param {string} type - Type of contact (employees, hr, it)
+     */
+    function sendMessageToContact(email, message, type) {
+        // In a real app, this would call an API to send the message
+        console.log(`Sending message to ${type} contact:`, email, message);
+        
+        try {
+            // For now, we'll open a mailto link
+            const subject = `Message from HR Dashboard`;
+            const body = message;
+            
+            // Create and open the mailto link
+            const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.open(mailtoLink);
+            
+            // Show success message
+            showToast(`Message to ${type === 'employees' ? 'employee' : `${type.toUpperCase()} staff`} prepared for sending`, 'success');
+        } catch (error) {
+            console.error('Error sending message:', error);
+            showToast('Error sending message. Please try again.', 'error');
+        }
+    }
+
+    /**
+     * Refresh all contacts
+     */
+    function refreshContacts() {
+        showToast('Refreshing contacts...', 'info');
+        
+        // Reload all contacts
+        loadEmployeeContacts();
+        loadDepartmentContacts('hr');
+        loadDepartmentContacts('it');
+        
+        // Reload users for message dropdowns
+        loadUsersForDropdown('employees');
+        loadUsersForDropdown('hr');
+        loadUsersForDropdown('it');
+        
+        showToast('Contacts refreshed', 'success');
+    }
+
+    /**
+     * Fetch users from the API
+     * @param {string} type - Optional type of users to fetch
+     * @returns {Promise<Array>} Array of user objects
+     */
+    async function fetchUsers(type) {
+        try {
+            const endpoint = type === 'employees' ? '/api/users/directory/employees' : '/api/users/directory/employees';
+            const response = await fetch(endpoint, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch users: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            return result.data || [];
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            return [];
+        }
+    }
 });
 
 // Add CSS for timeline styling
@@ -3605,35 +4216,74 @@ function showFeedbackResponseModal(feedback) {
   // Create modal element
   const modal = document.createElement('div');
   modal.className = 'modal';
+  
+  // Create star rating HTML
+  const rating = parseInt(feedback.rating);
+  let starsHtml = '';
+  for (let i = 1; i <= 5; i++) {
+      if (i <= rating) {
+          starsHtml += '<i class="fas fa-star"></i>';
+      } else {
+          starsHtml += '<i class="far fa-star"></i>';
+      }
+  }
+  
   modal.innerHTML = `
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Respond to Feedback</h2>
+        <h2><i class="fas fa-reply"></i> Respond to Feedback</h2>
         <span class="close">&times;</span>
       </div>
       <div class="modal-body">
         <div class="feedback-details">
-          <p><strong>From:</strong> ${feedback.user.name} (${feedback.user.email})</p>
-          <p><strong>Department:</strong> ${feedback.user.department || 'Not specified'}</p>
-          <p><strong>Date:</strong> ${new Date(feedback.date).toLocaleString()}</p>
-          <p><strong>Category:</strong> ${feedback.category}</p>
-          <p><strong>Rating:</strong> ${feedback.rating}/5</p>
-          <p><strong>Feedback:</strong> ${feedback.comments}</p>
+          <div class="detail-row">
+            <span class="detail-label"><i class="fas fa-user"></i> From:</span>
+            <span class="detail-value">${feedback.user.name} (${feedback.user.email})</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label"><i class="fas fa-building"></i> Department:</span>
+            <span class="detail-value">${feedback.user.department || 'Not specified'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label"><i class="fas fa-calendar-check"></i> Date:</span>
+            <span class="detail-value">${new Date(feedback.date).toLocaleString()}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label"><i class="fas fa-tag"></i> Category:</span>
+            <span class="detail-value">${feedback.category}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label"><i class="fas fa-star"></i> Rating:</span>
+            <span class="detail-value feedback-stars">${starsHtml}</span>
+          </div>
         </div>
+        
+        <div class="details-section">
+          <h4><i class="fas fa-quote-left"></i> Feedback Message</h4>
+          <div class="feedback-message">
+            <p>${feedback.comments}</p>
+          </div>
+        </div>
+        
         <div class="response-form">
-          <label for="feedback-response">Your Response:</label>
-          <textarea id="feedback-response" rows="4" placeholder="Enter your response to this feedback..."></textarea>
+          <h4><i class="fas fa-paper-plane"></i> Your Response</h4>
+          <div class="form-group">
+            <label for="feedback-response">Message:</label>
+            <textarea id="feedback-response" rows="4" placeholder="Enter your response to this feedback..."></textarea>
+          </div>
           
-          <label for="feedback-status">Set Status:</label>
-          <select id="feedback-status">
-            <option value="reviewed">Reviewed</option>
-            <option value="archived">Archive</option>
-          </select>
+          <div class="form-group">
+            <label for="feedback-status"><i class="fas fa-tag"></i> Set Status:</label>
+            <select id="feedback-status">
+              <option value="reviewed">Reviewed</option>
+              <option value="archived">Archive</option>
+            </select>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button id="cancel-response" class="btn-secondary">Cancel</button>
-        <button id="submit-response" class="btn-primary">Submit Response</button>
+        <button class="btn-secondary cancel-response">Cancel</button>
+        <button class="btn-primary send-response"><i class="fas fa-paper-plane"></i> Send Response</button>
       </div>
     </div>
   `;
@@ -3641,64 +4291,76 @@ function showFeedbackResponseModal(feedback) {
   // Add modal to body
   document.body.appendChild(modal);
   
-  // Show modal
-  modal.style.display = 'block';
+  // Show modal with animation
+  setTimeout(() => {
+    modal.classList.add('visible');
+  }, 10);
   
-  // Close button functionality
-  const closeBtn = modal.querySelector('.close');
-  const cancelBtn = modal.querySelector('#cancel-response');
-  const submitBtn = modal.querySelector('#submit-response');
+  // Add event listener to close button
+  const closeButton = modal.querySelector('.close');
+  const cancelButton = modal.querySelector('.cancel-response');
   
-  closeBtn.addEventListener('click', () => {
-    modal.style.display = 'none';
-    modal.remove();
-  });
+  closeButton.addEventListener('click', closeModal);
+  cancelButton.addEventListener('click', closeModal);
   
-  cancelBtn.addEventListener('click', () => {
-    modal.style.display = 'none';
-    modal.remove();
-  });
+  function closeModal() {
+    modal.classList.remove('visible');
+    setTimeout(() => {
+      modal.remove();
+    }, 300);
+  }
   
-  submitBtn.addEventListener('click', async () => {
-    const response = document.getElementById('feedback-response').value;
-    const status = document.getElementById('feedback-status').value;
+  // Add event listener to send button
+  const sendButton = modal.querySelector('.send-response');
+  
+  sendButton.addEventListener('click', async () => {
+    const responseText = modal.querySelector('#feedback-response').value.trim();
+    const status = modal.querySelector('#feedback-status').value;
     
-    if (!response) {
-      alert('Please enter a response message');
+    if (!responseText) {
+      showNotification('Please enter a response message', 'error');
       return;
     }
     
+    // Show loading state
+    sendButton.disabled = true;
+    sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    
     try {
-      // Update feedback status and add response
-      const result = await fetch(`/api/feedback/${feedback._id}`, {
-        method: 'PUT',
+      // Send response to API
+      const response = await fetch(`/api/feedback/${feedback._id}/respond`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          status,
-          responseMessage: response
+          responseMessage: responseText,
+          status: status
         })
       });
       
-      if (!result.ok) {
-        throw new Error('Failed to submit response');
+      if (!response.ok) {
+        throw new Error('Failed to send response');
       }
       
+      // Show success notification
+      showNotification('Response sent successfully', 'success');
+      
       // Close modal
-      modal.style.display = 'none';
-      modal.remove();
+      closeModal();
       
-      // Show success message
-      showAlert('success', 'Response sent successfully');
-      
-      // Reload notifications to update list
-      loadNotifications();
+      // Reload feedback list
+      loadFeedback(document.getElementById('feedback-filter').value, 
+                   document.getElementById('feedback-time-filter').value);
       
     } catch (error) {
-      console.error('Error submitting feedback response:', error);
-      alert('Failed to submit response. Please try again.');
+      console.error('Error sending response:', error);
+      showNotification(`Error: ${error.message}`, 'error');
+      
+      // Reset button state
+      sendButton.disabled = false;
+      sendButton.innerHTML = '<i class="fas fa-paper-plane"></i> Send Response';
     }
   });
 }
@@ -3707,4 +4369,1202 @@ function showFeedbackResponseModal(feedback) {
 function getUserRole() {
   const userData = JSON.parse(localStorage.getItem('user') || '{}');
   return userData.role || '';
+}
+
+/**
+ * Show a toast notification message
+ * @param {string} message - The message to display
+ * @param {string} type - The type of toast (success, error, info)
+ */
+function showToast(message, type = 'info') {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    
+    // Add toast to container
+    toastContainer.appendChild(toast);
+    
+    // Remove toast after a delay
+    setTimeout(() => {
+        toast.classList.add('toast-out');
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 3000);
+}
+
+// Function to load and display feedback
+async function loadFeedback(filter = 'all', timeFilter = 'all') {
+    const feedbackList = document.getElementById('feedback-list');
+    const loadingElement = document.querySelector('.loading-feedback');
+    const emptyElement = document.querySelector('.empty-feedback-list');
+    
+    if (!feedbackList) return;
+    
+    // Show loading, hide empty state
+    loadingElement.style.display = 'flex';
+    emptyElement.style.display = 'none';
+    feedbackList.innerHTML = '';
+    
+    try {
+        // Build query parameters
+        let queryParams = '';
+        
+        if (filter !== 'all') {
+            queryParams += `status=${filter}&`;
+        }
+        
+        // Add time filter
+        if (timeFilter !== 'all') {
+            const now = new Date();
+            let startDate = new Date();
+            
+            if (timeFilter === '7days') {
+                startDate.setDate(now.getDate() - 7);
+            } else if (timeFilter === '30days') {
+                startDate.setDate(now.getDate() - 30);
+            }
+            
+            queryParams += `startDate=${startDate.toISOString()}&`;
+        }
+        
+        // Fetch feedback from API
+        const response = await fetch(`/api/feedback?${queryParams}`, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load feedback');
+        }
+        
+        const data = await response.json();
+        const feedbackItems = data.data || [];
+        
+        // Hide loading
+        loadingElement.style.display = 'none';
+        
+        // Check if there are any feedback items
+        if (feedbackItems.length === 0) {
+            emptyElement.style.display = 'block';
+            // Clear details panel when no items
+            const detailsContainer = document.getElementById('feedback-details-container');
+            if (detailsContainer) {
+                detailsContainer.innerHTML = `
+                    <div class="empty-selection">
+                        <i class="fas fa-comment-dots feedback-icon"></i>
+                        <p>No feedback items available</p>
+                    </div>
+                `;
+            }
+            return;
+        }
+        
+        // Display feedback items
+        feedbackItems.forEach((feedback, index) => {
+            const feedbackItem = createFeedbackItem(feedback);
+            feedbackList.appendChild(feedbackItem);
+            
+            // Auto-select the first item if none is selected
+            if (index === 0) {
+                setTimeout(() => {
+                    // Dispatch a click event on the first item to show its details
+                    feedbackItem.click();
+                }, 100);
+            }
+        });
+    } catch (error) {
+        console.error('Error loading feedback:', error);
+        loadingElement.style.display = 'none';
+        emptyElement.style.display = 'block';
+        emptyElement.innerHTML = `<p>Error loading feedback: ${error.message}</p>`;
+    }
+}
+
+// Create a feedback item element
+function createFeedbackItem(feedback) {
+    const item = document.createElement('div');
+    item.className = 'feedback-item';
+    item.dataset.id = feedback._id;
+    
+    // Format date
+    const feedbackDate = new Date(feedback.date);
+    const formattedDate = feedbackDate.toLocaleDateString();
+    
+    // Get employee name
+    const employeeName = feedback.user ? feedback.user.name : 'Unknown Employee';
+    
+    // Create star rating HTML
+    const rating = parseInt(feedback.rating);
+    let starsHtml = '';
+    for (let i = 1; i <= 5; i++) {
+        if (i <= rating) {
+            starsHtml += '<i class="fas fa-star"></i>';
+        } else {
+            starsHtml += '<i class="far fa-star"></i>';
+        }
+    }
+    
+    // Set status class and appropriate icon
+    const statusClass = `status-${feedback.status || 'pending'}`;
+    const statusIcon = feedback.status === 'reviewed' ? 'check-circle' : 
+                      (feedback.status === 'archived' ? 'archive' : 'clock');
+    
+    item.innerHTML = `
+        <div class="feedback-header">
+            <div class="feedback-rating">${starsHtml}</div>
+            <div class="feedback-date"><i class="far fa-calendar-alt"></i> ${formattedDate}</div>
+        </div>
+        <div class="feedback-body">
+            <p class="feedback-employee"><i class="fas fa-user"></i> ${employeeName}</p>
+            <p class="feedback-preview">${feedback.comments.substring(0, 60)}${feedback.comments.length > 60 ? '...' : ''}</p>
+        </div>
+        <div class="feedback-footer">
+            <span class="feedback-category">${feedback.category}</span>
+            <span class="feedback-status ${statusClass}">
+                <i class="fas fa-${statusIcon}"></i> ${feedback.status || 'pending'}
+            </span>
+        </div>
+    `;
+    
+    // Add click event to show feedback details - using onclick to ensure it's not overridden
+    item.onclick = function(e) {
+        e.preventDefault(); // Prevent any default action
+        e.stopPropagation(); // Stop event from bubbling up
+        
+        console.log('Feedback item clicked, ID:', feedback._id);
+        
+        // Show visual feedback that item was clicked
+        document.querySelectorAll('.feedback-item').forEach(el => {
+            el.classList.remove('selected');
+        });
+        item.classList.add('selected');
+        
+        // Display the feedback details
+        showFeedbackDetails(feedback);
+        
+        return false; // Prevent default behavior
+    };
+    
+    return item;
+}
+
+// Show feedback details
+function showFeedbackDetails(feedback) {
+    console.log('Showing feedback details for ID:', feedback._id);
+    
+    const detailsContainer = document.getElementById('feedback-details-container');
+    if (!detailsContainer) {
+        console.error('Details container not found!');
+        return;
+    }
+    
+    try {
+        // Format dates
+        const submittedDate = new Date(feedback.date).toLocaleString();
+        const expiryDate = new Date(feedback.expiryDate).toLocaleDateString();
+        const reviewedDate = feedback.reviewedAt ? new Date(feedback.reviewedAt).toLocaleString() : 'N/A';
+        
+        // Get employee and reviewer names
+        const employeeName = feedback.user ? feedback.user.name : 'Unknown Employee';
+        const employeeDepartment = feedback.user ? feedback.user.department : 'Unknown';
+        const reviewerName = feedback.reviewedBy ? feedback.reviewedBy.name : 'N/A';
+        
+        // Create star rating HTML
+        const rating = parseInt(feedback.rating);
+        let starsHtml = '';
+        for (let i = 1; i <= 5; i++) {
+            if (i <= rating) {
+                starsHtml += '<i class="fas fa-star"></i>';
+            } else {
+                starsHtml += '<i class="far fa-star"></i>';
+            }
+        }
+        
+        // Status with appropriate styling
+        const statusClass = feedback.status || 'pending';
+        const statusIcon = statusClass === 'reviewed' ? 'check-circle' : 
+                          (statusClass === 'archived' ? 'archive' : 'clock');
+        
+        detailsContainer.innerHTML = `
+            <div class="feedback-details">
+                <h3><i class="fas fa-comment-dots"></i> Feedback Details</h3>
+                
+                <div class="details-section">
+                    <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
+                    <div class="detail-row">
+                        <span class="detail-label"><i class="fas fa-user"></i> From:</span>
+                        <span class="detail-value">${employeeName}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label"><i class="fas fa-building"></i> Department:</span>
+                        <span class="detail-value">${employeeDepartment}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label"><i class="fas fa-calendar-check"></i> Submitted:</span>
+                        <span class="detail-value">${submittedDate}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label"><i class="fas fa-calendar-times"></i> Expires:</span>
+                        <span class="detail-value">${expiryDate}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label"><i class="fas fa-tag"></i> Category:</span>
+                        <span class="detail-value">${feedback.category}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label"><i class="fas fa-star"></i> Rating:</span>
+                        <span class="detail-value feedback-stars">${starsHtml}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label"><i class="fas fa-${statusIcon}"></i> Status:</span>
+                        <span class="detail-value"><span class="status-badge ${statusClass}">${feedback.status}</span></span>
+                    </div>
+                </div>
+                
+                <div class="details-section">
+                    <h4><i class="fas fa-quote-left"></i> Feedback Message</h4>
+                    <div class="feedback-message">
+                        <p>${feedback.comments}</p>
+                    </div>
+                </div>
+                
+                <div class="details-section">
+                    <h4><i class="fas fa-clipboard-check"></i> Review Information</h4>
+                    <div class="detail-row">
+                        <span class="detail-label"><i class="fas fa-user-check"></i> Reviewed By:</span>
+                        <span class="detail-value">${reviewerName}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label"><i class="fas fa-clock"></i> Reviewed Date:</span>
+                        <span class="detail-value">${reviewedDate}</span>
+                    </div>
+                    ${feedback.responseMessage ? `
+                    <div class="detail-row">
+                        <span class="detail-label"><i class="fas fa-reply"></i> Response:</span>
+                        <span class="detail-value">${feedback.responseMessage}</span>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <div class="details-section">
+                    <h4><i class="fas fa-tasks"></i> Actions</h4>
+                    <div class="feedback-actions">
+                        <button class="btn-primary" id="btn-respond-feedback">
+                            <i class="fas fa-reply"></i> Respond
+                        </button>
+                        <button class="btn-outline" id="btn-acknowledge-feedback">
+                            <i class="fas fa-check"></i> Acknowledge
+                        </button>
+                        <button class="btn-danger" id="btn-delete-feedback">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        console.log('Details HTML added to container');
+        
+        // Add event listeners for the action buttons
+        const respondBtn = document.getElementById('btn-respond-feedback');
+        const acknowledgeBtn = document.getElementById('btn-acknowledge-feedback');
+        const deleteBtn = document.getElementById('btn-delete-feedback');
+        
+        if (respondBtn) {
+            respondBtn.addEventListener('click', () => {
+                showFeedbackResponseModal(feedback);
+            });
+        }
+        
+        if (acknowledgeBtn) {
+            acknowledgeBtn.addEventListener('click', async () => {
+                try {
+                    // Update feedback status to reviewed/acknowledged
+                    const response = await fetch(`/api/feedback/${feedback._id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify({
+                            status: 'reviewed'
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to acknowledge feedback');
+                    }
+                    
+                    // Show success notification
+                    showNotification('Feedback acknowledged successfully', 'success');
+                    
+                    // Reload feedback to update the list
+                    loadFeedback(document.getElementById('feedback-filter').value, 
+                                document.getElementById('feedback-time-filter').value);
+                                
+                } catch (error) {
+                    console.error('Error acknowledging feedback:', error);
+                    showNotification(`Error: ${error.message}`, 'error');
+                }
+            });
+        }
+        
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', async () => {
+                // Show confirmation dialog
+                if (!confirm('Are you sure you want to delete this feedback? This action cannot be undone.')) {
+                    return;
+                }
+                
+                try {
+                    // Delete feedback
+                    const response = await fetch(`/api/feedback/${feedback._id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to delete feedback');
+                    }
+                    
+                    // Show success notification
+                    showNotification('Feedback deleted successfully', 'success');
+                    
+                    // Clear the details panel
+                    detailsContainer.innerHTML = `
+                        <div class="empty-selection">
+                            <i class="fas fa-comment-dots feedback-icon"></i>
+                            <p>Select a feedback item to view details</p>
+                        </div>
+                    `;
+                    
+                    // Reload feedback to update the list
+                    loadFeedback(document.getElementById('feedback-filter').value, 
+                                document.getElementById('feedback-time-filter').value);
+                                
+                } catch (error) {
+                    console.error('Error deleting feedback:', error);
+                    showNotification(`Error: ${error.message}`, 'error');
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error showing feedback details:', error);
+        detailsContainer.innerHTML = `
+            <div class="error-display">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Error displaying feedback details.</p>
+                <small>${error.message}</small>
+            </div>
+        `;
+    }
+}
+
+// Initialize feedback section
+function initFeedbackSection() {
+    const feedbackFilter = document.getElementById('feedback-filter');
+    const feedbackTimeFilter = document.getElementById('feedback-time-filter');
+    const feedbackSearch = document.getElementById('feedback-search');
+    
+    if (feedbackFilter) {
+        feedbackFilter.addEventListener('change', () => {
+            loadFeedback(feedbackFilter.value, feedbackTimeFilter.value);
+        });
+    }
+    
+    if (feedbackTimeFilter) {
+        feedbackTimeFilter.addEventListener('change', () => {
+            loadFeedback(feedbackFilter.value, feedbackTimeFilter.value);
+        });
+    }
+    
+    if (feedbackSearch) {
+        feedbackSearch.addEventListener('input', debounce(() => {
+            searchFeedback(feedbackSearch.value);
+        }, 300));
+    }
+    
+    // Initial load of feedback
+    loadFeedback();
+}
+
+// Function to search feedback
+function searchFeedback(query) {
+    const feedbackItems = document.querySelectorAll('.feedback-item');
+    
+    if (!query.trim()) {
+        // If query is empty, show all items
+        feedbackItems.forEach(item => {
+            item.style.display = 'block';
+        });
+        return;
+    }
+    
+    // Convert query to lowercase for case-insensitive search
+    const lowercaseQuery = query.toLowerCase();
+    
+    feedbackItems.forEach(item => {
+        const content = item.textContent.toLowerCase();
+        
+        if (content.includes(lowercaseQuery)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Helper function to debounce search input
+function debounce(func, delay) {
+    let timeout;
+    return function() {
+        const context = this;
+        const args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+}
+
+// Add this to the initialization code
+document.addEventListener('DOMContentLoaded', function() {
+    // ... existing initialization code ...
+    
+    initFeedbackSection();
+    
+    // ... rest of initialization code ...
+});
+
+// Add a confirmation modal to the document
+function addConfirmationModal() {
+    const modalHTML = `
+        <div id="confirm-modal" class="confirm-modal">
+            <div class="confirm-modal-content">
+                <div class="confirm-modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> Confirm Delete
+                </div>
+                <div class="confirm-modal-message">
+                    Are you sure you want to delete this feedback? This action cannot be undone.
+                </div>
+                <div class="confirm-modal-actions">
+                    <button class="cancel" id="confirm-cancel">Cancel</button>
+                    <button class="confirm" id="confirm-delete">Delete</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add to document if it doesn't exist
+    if (!document.getElementById('confirm-modal')) {
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Add event handlers for cancel button
+        document.getElementById('confirm-cancel').addEventListener('click', () => {
+            hideConfirmModal();
+        });
+        
+        // Click outside to cancel
+        document.getElementById('confirm-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'confirm-modal') {
+                hideConfirmModal();
+            }
+        });
+        
+        // Escape key to cancel
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.getElementById('confirm-modal').classList.contains('show')) {
+                hideConfirmModal();
+            }
+        });
+    }
+}
+
+// Show confirmation modal and return a promise
+function showConfirmModal(callback) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirm-modal');
+        if (!modal) {
+            addConfirmationModal();
+        }
+        
+        // Show the modal
+        document.getElementById('confirm-modal').classList.add('show');
+        
+        // Set up confirm button
+        const confirmBtn = document.getElementById('confirm-delete');
+        
+        // Remove any existing listeners
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        
+        // Add new listener
+        newConfirmBtn.addEventListener('click', () => {
+            hideConfirmModal();
+            resolve(true);
+        });
+    });
+}
+
+// Hide confirmation modal
+function hideConfirmModal() {
+    const modal = document.getElementById('confirm-modal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
+// Set loading state for a button
+function setButtonLoading(button, isLoading) {
+    if (!button) return;
+    
+    if (isLoading) {
+        const originalText = button.innerHTML;
+        button.dataset.originalText = originalText;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+        button.disabled = true;
+        button.classList.add('loading');
+    } else {
+        if (button.dataset.originalText) {
+            button.innerHTML = button.dataset.originalText;
+            delete button.dataset.originalText;
+        }
+        button.disabled = false;
+        button.classList.remove('loading');
+    }
+}
+
+// Add tooltips to action buttons
+function addTooltipsToButtons() {
+    const buttons = document.querySelectorAll('.feedback-actions button');
+    
+    buttons.forEach(button => {
+        const text = button.textContent.trim();
+        if (text.includes('Respond')) {
+            button.setAttribute('data-tooltip', 'Send a response to this feedback');
+        } else if (text.includes('Acknowledge')) {
+            button.setAttribute('data-tooltip', 'Mark as reviewed');
+        } else if (text.includes('Delete')) {
+            button.setAttribute('data-tooltip', 'Permanently delete feedback');
+        }
+    });
+}
+
+// Show feedback details with improved UX
+function showFeedbackDetails(feedback) {
+    console.log('Showing feedback details for ID:', feedback._id);
+    
+    const detailsContainer = document.getElementById('feedback-details-container');
+    if (!detailsContainer) {
+        console.error('Details container not found!');
+        return;
+    }
+    
+    try {
+        // Show loading state
+        detailsContainer.innerHTML = `
+            <div class="loading-feedback">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading feedback details...</p>
+            </div>
+        `;
+        
+        // Format dates
+        const submittedDate = new Date(feedback.date).toLocaleString();
+        const expiryDate = new Date(feedback.expiryDate).toLocaleDateString();
+        const reviewedDate = feedback.reviewedAt ? new Date(feedback.reviewedAt).toLocaleString() : 'N/A';
+        
+        // Get employee and reviewer names
+        const employeeName = feedback.user ? feedback.user.name : 'Unknown Employee';
+        const employeeDepartment = feedback.user ? feedback.user.department : 'Unknown';
+        const reviewerName = feedback.reviewedBy ? feedback.reviewedBy.name : 'N/A';
+        
+        // Create star rating HTML
+        const rating = parseInt(feedback.rating);
+        let starsHtml = '';
+        for (let i = 1; i <= 5; i++) {
+            if (i <= rating) {
+                starsHtml += '<i class="fas fa-star"></i>';
+            } else {
+                starsHtml += '<i class="far fa-star"></i>';
+            }
+        }
+        
+        // Status with appropriate styling
+        const statusClass = feedback.status || 'pending';
+        const statusIcon = statusClass === 'reviewed' ? 'check-circle' : 
+                          (statusClass === 'archived' ? 'archive' : 'clock');
+        
+        // Simulate loading delay for better UX
+        setTimeout(() => {
+            detailsContainer.innerHTML = `
+                <div class="feedback-details">
+                    <h3><i class="fas fa-comment-dots"></i> Feedback Details</h3>
+                    
+                    <div class="details-section">
+                        <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
+                        <div class="detail-row">
+                            <span class="detail-label"><i class="fas fa-user"></i> From:</span>
+                            <span class="detail-value">${employeeName}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label"><i class="fas fa-building"></i> Department:</span>
+                            <span class="detail-value">${employeeDepartment}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label"><i class="fas fa-calendar-check"></i> Submitted:</span>
+                            <span class="detail-value">${submittedDate}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label"><i class="fas fa-calendar-times"></i> Expires:</span>
+                            <span class="detail-value">${expiryDate}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label"><i class="fas fa-tag"></i> Category:</span>
+                            <span class="detail-value">${feedback.category}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label"><i class="fas fa-star"></i> Rating:</span>
+                            <span class="detail-value feedback-stars">${starsHtml}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label"><i class="fas fa-${statusIcon}"></i> Status:</span>
+                            <span class="detail-value"><span class="status-badge ${statusClass}">${feedback.status}</span></span>
+                        </div>
+                    </div>
+                    
+                    <div class="details-section">
+                        <h4><i class="fas fa-quote-left"></i> Feedback Message</h4>
+                        <div class="feedback-message">
+                            <p>${feedback.comments}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="details-section">
+                        <h4><i class="fas fa-clipboard-check"></i> Review Information</h4>
+                        <div class="detail-row">
+                            <span class="detail-label"><i class="fas fa-user-check"></i> Reviewed By:</span>
+                            <span class="detail-value">${reviewerName}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label"><i class="fas fa-clock"></i> Reviewed Date:</span>
+                            <span class="detail-value">${reviewedDate}</span>
+                        </div>
+                        ${feedback.responseMessage ? `
+                        <div class="detail-row">
+                            <span class="detail-label"><i class="fas fa-reply"></i> Response:</span>
+                            <span class="detail-value">${feedback.responseMessage}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="details-section">
+                        <h4><i class="fas fa-tasks"></i> Actions</h4>
+                        <div class="feedback-actions">
+                            <button class="btn-primary" id="btn-respond-feedback">
+                                <i class="fas fa-reply"></i> Respond
+                            </button>
+                            <button class="btn-outline" id="btn-acknowledge-feedback">
+                                <i class="fas fa-check"></i> Acknowledge
+                            </button>
+                            <button class="btn-danger" id="btn-delete-feedback">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            console.log('Details HTML added to container');
+            
+            // Add tooltips to action buttons
+            addTooltipsToButtons();
+            
+            // Add event listeners for the action buttons
+            const respondBtn = document.getElementById('btn-respond-feedback');
+            const acknowledgeBtn = document.getElementById('btn-acknowledge-feedback');
+            const deleteBtn = document.getElementById('btn-delete-feedback');
+            
+            if (respondBtn) {
+                respondBtn.addEventListener('click', () => {
+                    showFeedbackResponseModal(feedback);
+                });
+            }
+            
+            if (acknowledgeBtn) {
+                acknowledgeBtn.addEventListener('click', async () => {
+                    try {
+                        // Set loading state
+                        setButtonLoading(acknowledgeBtn, true);
+                        
+                        // Update feedback status to reviewed/acknowledged
+                        const response = await fetch(`/api/feedback/${feedback._id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            },
+                            body: JSON.stringify({
+                                status: 'reviewed'
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Failed to acknowledge feedback');
+                        }
+                        
+                        // Clear loading state
+                        setButtonLoading(acknowledgeBtn, false);
+                        
+                        // Show success notification
+                        showNotification('Feedback acknowledged successfully', 'success');
+                        
+                        // Reload feedback to update the list
+                        loadFeedback(document.getElementById('feedback-filter').value, 
+                                     document.getElementById('feedback-time-filter').value);
+                                    
+                    } catch (error) {
+                        // Clear loading state
+                        setButtonLoading(acknowledgeBtn, false);
+                        
+                        console.error('Error acknowledging feedback:', error);
+                        showNotification(`Error: ${error.message}`, 'error');
+                    }
+                });
+            }
+            
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', async () => {
+                    // Add confirmation modal if not exists
+                    addConfirmationModal();
+                    
+                    // Show confirmation modal
+                    const confirmed = await showConfirmModal();
+                    
+                    if (!confirmed) {
+                        return;
+                    }
+                    
+                    try {
+                        // Set loading state
+                        setButtonLoading(deleteBtn, true);
+                        
+                        // Delete feedback
+                        const response = await fetch(`/api/feedback/${feedback._id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Failed to delete feedback');
+                        }
+                        
+                        // Clear loading state
+                        setButtonLoading(deleteBtn, false);
+                        
+                        // Show success notification
+                        showNotification('Feedback deleted successfully', 'success');
+                        
+                        // Clear the details panel with animation
+                        detailsContainer.innerHTML = `
+                            <div class="empty-selection">
+                                <i class="fas fa-check-circle feedback-icon"></i>
+                                <p>Feedback has been deleted successfully</p>
+                                <small>Select another feedback item to view details</small>
+                            </div>
+                        `;
+                        
+                        // Reload feedback to update the list
+                        loadFeedback(document.getElementById('feedback-filter').value, 
+                                     document.getElementById('feedback-time-filter').value);
+                                    
+                    } catch (error) {
+                        // Clear loading state
+                        setButtonLoading(deleteBtn, false);
+                        
+                        console.error('Error deleting feedback:', error);
+                        showNotification(`Error: ${error.message}`, 'error');
+                    }
+                });
+            }
+        }, 300); // Small delay for loading animation
+        
+    } catch (error) {
+        console.error('Error showing feedback details:', error);
+        detailsContainer.innerHTML = `
+            <div class="error-display">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Error displaying feedback details.</p>
+                <small>${error.message}</small>
+            </div>
+        `;
+    }
+}
+
+// Handle task form submission
+async function handleTaskFormSubmit(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const taskTitle = document.getElementById('task-title').value;
+    const taskDescription = document.getElementById('task-description').value;
+    const taskPriority = document.getElementById('task-priority').value;
+    const taskCategory = document.getElementById('task-category').value;
+    const taskDueDate = document.getElementById('task-due-date').value;
+    const taskStatus = document.getElementById('task-status').value;
+    const taskAssignee = document.getElementById('task-assignee').value;
+    const taskId = document.getElementById('task-id').value;
+    
+    // Validate required fields
+    if (!taskTitle || !taskDueDate || !taskAssignee) {
+        showAlert('error', 'Please fill all required fields. Task must be assigned to an employee.', 'task-error-alert');
+        return;
+    }
+    
+    // Show loading
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    
+    try {
+        // Map status values to backend expected values
+        let mappedStatus = taskStatus;
+        if (taskStatus === 'pending') {
+            mappedStatus = 'not_started'; // Using EmployeeTask schema enum value
+        } else if (taskStatus === 'in_progress') {
+            mappedStatus = 'in_progress';
+        }
+        
+        // Prepare task data following EmployeeTask schema
+        const taskData = {
+            title: taskTitle,
+            description: taskDescription,
+            priority: taskPriority,
+            category: taskCategory,
+            dueDate: taskDueDate,
+            status: mappedStatus,
+            assignedTo: taskAssignee, // Map to assignedTo field for EmployeeTask
+            taskType: 'regular', // Use valid taskType from EmployeeTask schema
+            assignedBy: localStorage.getItem('userId') || null // Current user is assigning the task
+        };
+        
+        console.log('Sending task data:', taskData);
+        
+        let response;
+        
+        // Update existing task or create new one
+        if (taskId) {
+            response = await fetch(`/api/tasks/${taskId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(taskData)
+            });
+        } else {
+            response = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(taskData)
+            });
+            
+            // Create a notification for the assignee
+            try {
+                const notificationResponse = await fetch('/api/notifications', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        title: 'New Task Assigned',
+                        message: `You have been assigned a new task: ${taskTitle}`,
+                        type: 'task',
+                        recipient: taskAssignee,
+                        isRead: false
+                    })
+                });
+                
+                if (!notificationResponse.ok) {
+                    console.warn('Failed to create notification for task assignment');
+                }
+            } catch (notifError) {
+                console.error('Error creating notification:', notifError);
+            }
+        }
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Failed to save task: ${errorData.message || response.statusText}`);
+        }
+        
+        // Close modal
+        document.getElementById('task-modal').style.display = 'none';
+        
+        // Show success notification
+        showAlert('success', taskId ? 'Task updated successfully' : 'Task created successfully', 'task-alert');
+        
+        // Reload tasks
+        loadTasks();
+        
+    } catch (error) {
+        console.error('Error saving task:', error);
+        showAlert('error', `Error: ${error.message}`, 'task-error-alert');
+    } finally {
+        // Reset button
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+    }
+}
+
+// Load employees for task assignment dropdown
+function loadEmployeesForTaskAssignment() {
+    const assigneeDropdown = document.getElementById('task-assignee');
+    if (!assigneeDropdown) return;
+    
+    // Clear existing options except the first one
+    while (assigneeDropdown.options.length > 1) {
+        assigneeDropdown.remove(1);
+    }
+    
+    // Show loading option
+    const loadingOption = document.createElement('option');
+    loadingOption.textContent = 'Loading employees...';
+    loadingOption.disabled = true;
+    assigneeDropdown.appendChild(loadingOption);
+    
+    // Fetch employees from API
+    fetch('/api/users?role=employee', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to load employees');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Remove loading option
+        assigneeDropdown.remove(assigneeDropdown.options.length - 1);
+        
+        // Add employee options
+        if (data && data.data && Array.isArray(data.data)) {
+            data.data.forEach(employee => {
+                const option = document.createElement('option');
+                option.value = employee._id;
+                option.textContent = employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`;
+                assigneeDropdown.appendChild(option);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error loading employees:', error);
+        // Remove loading option
+        assigneeDropdown.remove(assigneeDropdown.options.length - 1);
+        
+        // Add error option
+        const errorOption = document.createElement('option');
+        errorOption.textContent = 'Error loading employees';
+        errorOption.disabled = true;
+        assigneeDropdown.appendChild(errorOption);
+    });
+}
+
+// Load tasks from API
+function loadTasks() {
+    const todoList = document.getElementById('todo-tasks');
+    const inProgressList = document.getElementById('in-progress-tasks');
+    const completedList = document.getElementById('completed-tasks');
+    
+    if (!todoList || !inProgressList || !completedList) return;
+    
+    // Show loading spinners
+    todoList.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
+    inProgressList.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
+    completedList.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
+    
+    // Fetch tasks from API
+    fetch('/api/tasks', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to load tasks');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Clear lists
+        todoList.innerHTML = '';
+        inProgressList.innerHTML = '';
+        completedList.innerHTML = '';
+        
+        console.log('Task data received:', data);
+        
+        // Process tasks
+        const tasks = data.tasks || [];
+        
+        if (tasks.length === 0) {
+            console.log('No tasks found');
+        }
+        
+        // Filter tasks by status according to Task model schema
+        const todoTasks = tasks.filter(task => task.status === 'pending');
+        const inProgressTasks = tasks.filter(task => task.status === 'in_progress');
+        const completedTasks = tasks.filter(task => task.status === 'completed');
+        
+        console.log(`Found tasks: Todo=${todoTasks.length}, InProgress=${inProgressTasks.length}, Completed=${completedTasks.length}`);
+        
+        // Update task counts
+        document.querySelectorAll('.task-count')[0].textContent = todoTasks.length;
+        document.querySelectorAll('.task-count')[1].textContent = inProgressTasks.length;
+        document.querySelectorAll('.task-count')[2].textContent = completedTasks.length;
+        
+        // Render tasks
+        todoTasks.forEach(task => {
+            todoList.appendChild(createTaskItem(task));
+        });
+        
+        inProgressTasks.forEach(task => {
+            inProgressList.appendChild(createTaskItem(task));
+        });
+        
+        completedTasks.forEach(task => {
+            completedList.appendChild(createTaskItem(task));
+        });
+        
+        // Show empty state if needed
+        if (todoTasks.length === 0) {
+            todoList.innerHTML = '<div class="empty-list">No tasks</div>';
+        }
+        
+        if (inProgressTasks.length === 0) {
+            inProgressList.innerHTML = '<div class="empty-list">No tasks</div>';
+        }
+        
+        if (completedTasks.length === 0) {
+            completedList.innerHTML = '<div class="empty-list">No tasks</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading tasks:', error);
+        
+        // Show error message
+        todoList.innerHTML = '<div class="error-message">Failed to load tasks</div>';
+        inProgressList.innerHTML = '<div class="error-message">Failed to load tasks</div>';
+        completedList.innerHTML = '<div class="error-message">Failed to load tasks</div>';
+    });
+}
+
+// Create task item element
+function createTaskItem(task) {
+    const item = document.createElement('div');
+    item.className = 'task-item';
+    item.dataset.id = task._id;
+    
+    // Format due date
+    let dueDateText = 'No due date';
+    if (task.dueDate) {
+        const dueDate = new Date(task.dueDate);
+        dueDateText = dueDate.toLocaleDateString();
+    }
+    
+    // Get assignee name
+    const assigneeName = task.assignee ? 
+        (task.assignee.firstName && task.assignee.lastName ? 
+            `${task.assignee.firstName} ${task.assignee.lastName}` : 
+            task.assignee.email || 'Unassigned') : 
+        'Unassigned';
+    
+    // Get priority class
+    const priorityClass = `priority-${task.priority || 'medium'}`;
+    
+    // Create HTML
+    item.innerHTML = `
+        <div class="task-header">
+            <h4 class="task-title">${task.title}</h4>
+            <span class="task-priority ${priorityClass}">${task.priority || 'medium'}</span>
+        </div>
+        <div class="task-details">
+            <p class="task-assignee"><i class="fas fa-user"></i> ${assigneeName}</p>
+            <p class="task-due-date"><i class="fas fa-calendar"></i> ${dueDateText}</p>
+        </div>
+        <div class="task-footer">
+            <span class="task-category">${task.category || 'Other'}</span>
+            <span class="task-status">${task.status || 'pending'}</span>
+        </div>
+    `;
+    
+    // Add click event to edit task
+    item.addEventListener('click', function() {
+        openEditTaskModal(task);
+    });
+    
+    return item;
+}
+
+// Open edit task modal
+function openEditTaskModal(task) {
+    // Populate form fields
+    document.getElementById('task-id').value = task._id;
+    document.getElementById('task-title').value = task.title;
+    document.getElementById('task-description').value = task.description || '';
+    document.getElementById('task-priority').value = task.priority || 'medium';
+    document.getElementById('task-category').value = task.category || 'other';
+    document.getElementById('task-status').value = task.status || 'pending';
+    
+    // Format due date for input field (YYYY-MM-DD)
+    if (task.dueDate) {
+        const dueDate = new Date(task.dueDate);
+        const formattedDate = dueDate.toISOString().split('T')[0];
+        document.getElementById('task-due-date').value = formattedDate;
+    } else {
+        document.getElementById('task-due-date').value = '';
+    }
+    
+    // Set assignee if available
+    if (task.assignee && task.assignee._id) {
+        const assigneeDropdown = document.getElementById('task-assignee');
+        
+        // Load employees first
+        loadEmployeesForTaskAssignment().then(() => {
+            // Find and select the option
+            for (let i = 0; i < assigneeDropdown.options.length; i++) {
+                if (assigneeDropdown.options[i].value === task.assignee._id) {
+                    assigneeDropdown.selectedIndex = i;
+                    break;
+                }
+            }
+        });
+    }
+    
+    // Update modal title
+    document.getElementById('task-modal-title').textContent = 'Edit Task';
+    
+    // Show modal
+    document.getElementById('task-modal').style.display = 'block';
 }

@@ -1,19 +1,21 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Protect routes
+/**
+ * Protect routes - verify token and authenticate user
+ */
 exports.protect = async (req, res, next) => {
   try {
     let token;
 
-    // Check if token exists in headers
+    // Check for token in Authorization header
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      // Get token from header
       token = req.headers.authorization.split(' ')[1];
     }
 
-    // Check if token exists
+    // Make sure token exists
     if (!token) {
+      console.log('No token provided');
       return res.status(401).json({
         success: false,
         message: 'Not authorized to access this route'
@@ -23,36 +25,50 @@ exports.protect = async (req, res, next) => {
     try {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('Token decoded:', decoded);
 
-      // Get user from the token
-      req.user = await User.findById(decoded.id).select('-password');
+      // Get user from token
+      const user = await User.findById(decoded.id).select('-password');
 
-      if (!req.user) {
-        return res.status(401).json({
+      if (!user) {
+        console.log('User not found with ID:', decoded.id);
+        return res.status(404).json({
           success: false,
           message: 'User not found'
         });
       }
 
+      // Add user to request object
+      req.user = user;
       next();
     } catch (error) {
+      console.log('Token verification error:', error.message);
       return res.status(401).json({
         success: false,
-        message: 'Not authorized to access this route'
+        message: 'Token invalid or expired'
       });
     }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
+    console.log('Auth middleware error:', error);
+    return res.status(500).json({
       success: false,
-      message: 'Server Error'
+      message: 'Server error in authentication'
     });
   }
 };
 
-// Authorize by role
+/**
+ * Authorize specific roles
+ */
 exports.authorize = (...roles) => {
   return (req, res, next) => {
+    if (!req.user || !req.user.role) {
+      return res.status(403).json({
+        success: false,
+        message: 'User role not found'
+      });
+    }
+
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,

@@ -25,7 +25,52 @@ const auth = {
       },
       body: JSON.stringify(userData),
     });
-    return handleResponse(response);
+    const data = await handleResponse(response);
+
+    // Broadcast new employee data for other tabs/pages to sync
+    try {
+      if (data.user || data._id) {
+        // Create or update employee contact entry for communication
+        const employeeData = {
+          _id: data.user?._id || data._id,
+          name: data.user?.name || userData.name,
+          email: data.user?.email || userData.email,
+          department: data.user?.department || userData.department,
+          position: data.user?.position || userData.position
+        };
+        
+        // Save employee data to localStorage - first remove to ensure event fires
+        localStorage.removeItem('newEmployeeCreated');
+        localStorage.setItem('newEmployeeCreated', JSON.stringify(employeeData));
+        
+        console.log('Broadcasting newly registered employee:', employeeData.name);
+        
+        // Add to stored contacts directly as well
+        let contacts = [];
+        try {
+          const storedContacts = localStorage.getItem('employeeContacts');
+          if (storedContacts) {
+            contacts = JSON.parse(storedContacts);
+          }
+        } catch (e) {}
+        
+        if (!Array.isArray(contacts)) contacts = [];
+        
+        // Check if employee already exists
+        const existingIdx = contacts.findIndex(c => c._id === employeeData._id);
+        if (existingIdx >= 0) {
+          contacts[existingIdx] = employeeData;
+        } else {
+          contacts.push(employeeData);
+        }
+        
+        localStorage.setItem('employeeContacts', JSON.stringify(contacts));
+      }
+    } catch (error) {
+      console.error('Error broadcasting newly registered employee:', error);
+    }
+    
+    return data;
   },
 
   // Login a user
@@ -1580,7 +1625,55 @@ const users = {
       headers,
       body,
     });
-    return handleResponse(response);
+    const data = await handleResponse(response);
+    
+    // Broadcast new employee data for other tabs/pages to sync
+    try {
+      // Store the new employee data temporarily
+      const tempValue = localStorage.getItem('newEmployeeCreated');
+      
+      // Create or update employee contact entry for communication
+      const employeeData = {
+        _id: data.user._id || data._id,
+        name: data.user.name || data.name,
+        email: data.user.email || data.email,
+        department: data.user.department || data.department,
+        position: data.user.position || data.position
+      };
+      
+      // Save employee data to localStorage
+      // First remove it to ensure event fires even if same employee
+      localStorage.removeItem('newEmployeeCreated');
+      // Then set it to trigger the storage event
+      localStorage.setItem('newEmployeeCreated', JSON.stringify(employeeData));
+      
+      console.log('Broadcasting new employee:', employeeData.name);
+      
+      // Add to stored contacts directly as well
+      let contacts = [];
+      try {
+        const storedContacts = localStorage.getItem('employeeContacts');
+        if (storedContacts) {
+          contacts = JSON.parse(storedContacts);
+        }
+      } catch (e) {}
+      
+      if (!Array.isArray(contacts)) contacts = [];
+      
+      // Check if employee already exists
+      const existingIdx = contacts.findIndex(c => c._id === employeeData._id);
+      if (existingIdx >= 0) {
+        contacts[existingIdx] = employeeData;
+      } else {
+        contacts.push(employeeData);
+      }
+      
+      localStorage.setItem('employeeContacts', JSON.stringify(contacts));
+    } catch (error) {
+      console.error('Error broadcasting new employee:', error);
+    }
+    
+    return data;
   },
 
   // Update a user
@@ -1710,6 +1803,84 @@ const user = {
   },
 };
 
+// Messages API
+const messages = {
+  // Get messages for the current user
+  getMessages: async (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    
+    // Add filters to query params
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) queryParams.append(key, value);
+    });
+    
+    const response = await fetch(`${API_URL}/messages?${queryParams.toString()}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    return handleResponse(response);
+  },
+
+  // Get a single message
+  getMessage: async (id) => {
+    const response = await fetch(`${API_URL}/messages/${id}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    return handleResponse(response);
+  },
+
+  // Send a new message
+  sendMessage: async (messageData) => {
+    const response = await fetch(`${API_URL}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: JSON.stringify(messageData),
+    });
+    return handleResponse(response);
+  },
+
+  // Mark a message as read
+  markAsRead: async (id) => {
+    const response = await fetch(`${API_URL}/messages/${id}/read`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    return handleResponse(response);
+  },
+
+  // Delete a message
+  deleteMessage: async (id) => {
+    const response = await fetch(`${API_URL}/messages/${id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    return handleResponse(response);
+  },
+
+  // Get conversations
+  getConversations: async () => {
+    const response = await fetch(`${API_URL}/messages/conversations`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    return handleResponse(response);
+  },
+};
+
 // Export the API client
 const api = {
   auth,
@@ -1727,6 +1898,7 @@ const api = {
   users,
   employees,
   user,
+  messages,
 };
 
 // Make API available globally

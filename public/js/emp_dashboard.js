@@ -625,7 +625,7 @@ async function getCurrentUser() {
         }
         
         // Otherwise, fetch from API
-        const response = await fetch('/api/users/current', {
+        const response = await fetch('/api/users/me', {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
@@ -636,6 +636,10 @@ async function getCurrentUser() {
         }
         
         const data = await response.json();
+        
+        // Store in localStorage for future use
+        localStorage.setItem('user', JSON.stringify(data.data));
+        
         return data.data;
     } catch (error) {
         console.error('Error getting user data:', error);
@@ -661,6 +665,7 @@ function initializeFeedback() {
 function showFeedbackForm() {
     const modal = document.createElement('div');
     modal.className = 'modal';
+    modal.setAttribute('id', 'feedback-modal');
     modal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
@@ -675,17 +680,18 @@ function showFeedbackForm() {
                         <div class="rating-container">
                             <div class="rating">
                                 <input type="radio" id="star5" name="rating" value="5" />
-                                <label for="star5">5</label>
+                                <label for="star5" title="5 - Excellent">😍</label>
                                 <input type="radio" id="star4" name="rating" value="4" />
-                                <label for="star4">4</label>
+                                <label for="star4" title="4 - Very Good">😊</label>
                                 <input type="radio" id="star3" name="rating" value="3" />
-                                <label for="star3">3</label>
+                                <label for="star3" title="3 - Good">🙂</label>
                                 <input type="radio" id="star2" name="rating" value="2" />
-                                <label for="star2">2</label>
+                                <label for="star2" title="2 - Fair">😐</label>
                                 <input type="radio" id="star1" name="rating" value="1" />
-                                <label for="star1">1</label>
+                                <label for="star1" title="1 - Poor">😞</label>
                             </div>
                         </div>
+                        <div class="rating-hint">Select your rating</div>
                     </div>
                     <div class="form-group">
                         <label for="feedback-category">Feedback category:</label>
@@ -700,33 +706,45 @@ function showFeedbackForm() {
                     <div class="form-group">
                         <label for="feedback-comments">Your feedback:</label>
                         <textarea id="feedback-comments" name="comments" rows="5" placeholder="Please share your experience, suggestions, or concerns..." required></textarea>
+                        <span class="chars-counter"><span id="chars-used">0</span> characters used</span>
+                    </div>
+                    <div class="form-group">
+                        <div class="disclaimer">Your feedback will be saved with your name and current date for at least 30 days.</div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="secondary-button" id="cancel-feedback">Cancel</button>
-                <button class="primary-button" id="submit-feedback">Submit Feedback</button>
+                <button id="cancel-feedback">Cancel</button>
+                <button id="submit-feedback">Submit Feedback</button>
             </div>
         </div>
     `;
     
     document.body.appendChild(modal);
-    modal.style.display = 'block';
+    
+    // Apply immediately
+    modal.style.display = 'flex';
+    
+    // Character counter
+    const feedbackComments = document.getElementById('feedback-comments');
+    const charsUsed = document.getElementById('chars-used');
+    
+    feedbackComments.addEventListener('input', () => {
+        const length = feedbackComments.value.length;
+        charsUsed.textContent = length;
+    });
     
     // Handle modal close
     const closeBtn = modal.querySelector('.close');
     const cancelBtn = modal.querySelector('#cancel-feedback');
     const submitBtn = modal.querySelector('#submit-feedback');
     
-    closeBtn.addEventListener('click', () => {
-        modal.style.display = 'none';
+    const closeModal = () => {
         modal.remove();
-    });
+    };
     
-    cancelBtn.addEventListener('click', () => {
-        modal.style.display = 'none';
-        modal.remove();
-    });
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
     
     submitBtn.addEventListener('click', async () => {
         const form = document.getElementById('feedback-form');
@@ -735,24 +753,45 @@ function showFeedbackForm() {
         const comments = document.getElementById('feedback-comments').value;
         
         if (!rating || !comments) {
-            alert('Please provide a rating and your feedback');
+            const missingFields = [];
+            if (!rating) missingFields.push('rating');
+            if (!comments) missingFields.push('feedback comments');
+            
+            showNotification(`Please provide ${missingFields.join(' and ')}.`, 'warning');
+            
+            // Highlight missing fields
+            if (!rating) {
+                document.querySelector('.rating-hint').classList.add('error');
+                setTimeout(() => document.querySelector('.rating-hint').classList.remove('error'), 3000);
+            }
+            
+            if (!comments) {
+                feedbackComments.classList.add('error-border');
+                setTimeout(() => feedbackComments.classList.remove('error-border'), 3000);
+            }
+            
             return;
         }
         
         try {
             // Show loading state
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
             submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            submitBtn.classList.add('loading');
             
-            // Get user data for the notification
-            const userData = await getCurrentUser();
+            // Get token from localStorage
+            const token = localStorage.getItem('token');
             
-            // Submit feedback
+            if (!token) {
+                throw new Error('You must be logged in to submit feedback');
+            }
+            
+            // Submit directly to database via API
             const response = await fetch('/api/feedback', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     rating: parseInt(rating),
@@ -762,27 +801,65 @@ function showFeedbackForm() {
             });
             
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to submit feedback');
+                let errorMessage = `Server error (${response.status})`;
+                try {
+                    const errorData = await response.json();
+                    if (errorData.message || errorData.error) {
+                        errorMessage = errorData.message || errorData.error;
+                    }
+                } catch (e) {
+                    console.error('Error parsing error response:', e);
+                }
+                
+                throw new Error(errorMessage);
             }
             
-            console.log('Feedback submitted successfully');
+            // Show success state
+            submitBtn.textContent = 'Submitted!';
+            submitBtn.classList.remove('loading');
+            submitBtn.classList.add('success');
             
-            // Close modal and show success message
-            modal.style.display = 'none';
-            modal.remove();
-            
-            // Show success message
-            showNotification('Thank you for your feedback! Your input helps us improve.', 'success');
+            // Close after success
+            setTimeout(() => {
+                closeModal();
+                showNotification('Thank you for your feedback! Your input has been saved.', 'success');
+            }, 1000);
             
         } catch (error) {
             console.error('Error submitting feedback:', error);
             showNotification('Error submitting feedback: ' + error.message, 'error');
-        } finally {
-            // Reset button state
-            submitBtn.innerHTML = 'Submit Feedback';
-            submitBtn.disabled = false;
+            
+            // Show error state
+            submitBtn.textContent = 'Failed';
+            submitBtn.classList.remove('loading');
+            submitBtn.classList.add('error');
+            
+            // Reset button after delay
+            setTimeout(() => {
+                submitBtn.textContent = 'Submit Feedback';
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('error');
+            }, 2000);
         }
+    });
+    
+    // Enhance rating experience
+    const ratingLabels = document.querySelectorAll('.rating label');
+    const emojiDescriptions = {
+        'star5': 'Excellent 😍',
+        'star4': 'Very Good 😊',
+        'star3': 'Good 🙂',
+        'star2': 'Fair 😐',
+        'star1': 'Poor 😞'
+    };
+    
+    ratingLabels.forEach(label => {
+        label.addEventListener('click', function() {
+            const id = this.getAttribute('for');
+            const hint = document.querySelector('.rating-hint');
+            hint.textContent = `Selected: ${emojiDescriptions[id]}`;
+            hint.classList.add('selected');
+        });
     });
 }
 
@@ -835,9 +912,34 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-// Initialize offboarding when document is ready
+// Initialize when document is ready
 document.addEventListener('DOMContentLoaded', function() {
-    // ... existing code ...
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = '/index.html';
+        return;
+    }
+    
+    // Set up logout functionality
+    const logoutLink = document.getElementById('logout-link');
+    if (logoutLink) {
+        logoutLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Clear authentication data
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            
+            // Show notification
+            showNotification('You have been successfully logged out', 'success');
+            
+            // Redirect to login page after a short delay
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 1000);
+        });
+    }
     
     // Initialize feedback functionality
     initializeFeedback();

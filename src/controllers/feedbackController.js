@@ -32,26 +32,38 @@ exports.submitFeedback = async (req, res) => {
     // Get user details for the notification
     const user = await User.findById(req.user.id).select('name email department');
 
-    // Create notification for HR admins
-    const notification = new Notification({
-      title: 'New Feedback Submitted',
-      message: `${user.name} has submitted feedback about the ${category} process.`,
-      type: 'feedback',
-      priority: 'medium',
-      sender: req.user.id,
-      recipients: [], // Will be populated with HR admin IDs
-      relatedTo: {
-        model: 'Feedback',
-        id: newFeedback._id
-      }
-    });
-
     // Find HR admin users to send notifications to
     const hrAdmins = await User.find({ role: 'hr_admin' }).select('_id');
-    notification.recipients = hrAdmins.map(admin => admin._id);
-
-    // Save notification
-    await notification.save();
+    
+    // If no HR admins exist, find any admin users
+    let recipients = hrAdmins.map(admin => admin._id);
+    if (recipients.length === 0) {
+      const admins = await User.find({ role: 'admin' }).select('_id');
+      recipients = admins.map(admin => admin._id);
+    }
+    
+    // Only create notifications if we have recipients
+    if (recipients.length > 0) {
+      // Create individual notifications for each recipient
+      const notificationPromises = recipients.map(recipientId => {
+        const notification = new Notification({
+          title: 'New Feedback Submitted',
+          message: `${user.name} has submitted feedback about the ${category} process.`,
+          type: 'feedback',
+          priority: 'medium',
+          sender: req.user.id,
+          recipient: recipientId, // Individual recipient ID
+          relatedTo: {
+            model: 'Feedback',
+            id: newFeedback._id
+          }
+        });
+        return notification.save();
+      });
+      
+      // Save all notifications
+      await Promise.all(notificationPromises);
+    }
 
     return res.status(201).json({
       success: true,
@@ -75,6 +87,10 @@ exports.submitFeedback = async (req, res) => {
  */
 exports.getFeedback = async (req, res) => {
   try {
+    // First, clean up expired feedback entries
+    const today = new Date();
+    await Feedback.deleteMany({ expiryDate: { $lt: today } });
+
     // Build query with filters
     const queryObj = {};
 
@@ -321,7 +337,8 @@ exports.deleteFeedback = async (req, res) => {
       });
     }
 
-    await feedback.remove();
+    // Use findByIdAndDelete instead of the deprecated remove() method
+    await Feedback.findByIdAndDelete(req.params.id);
 
     return res.status(200).json({
       success: true,
