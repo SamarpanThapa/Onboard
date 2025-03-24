@@ -5224,7 +5224,7 @@ async function handleTaskFormSubmit(e) {
     const taskPriority = document.getElementById('task-priority').value;
     const taskCategory = document.getElementById('task-category').value;
     const taskDueDate = document.getElementById('task-due-date').value;
-    const taskStatus = document.getElementById('task-status').value;
+    const taskStatus = document.getElementById('task-status').value || 'pending';
     const taskAssignee = document.getElementById('task-assignee').value;
     const taskId = document.getElementById('task-id').value;
     
@@ -5241,11 +5241,13 @@ async function handleTaskFormSubmit(e) {
     submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
     
     try {
-        // Map status values to backend expected values from Task model
-        let mappedStatus = taskStatus;
-        if (taskStatus === 'pending' || taskStatus === 'not_started') {
+        // Always set status to 'pending' for new tasks
+        let mappedStatus = taskId ? taskStatus : 'pending';
+        
+        // For existing tasks, map status values if needed
+        if (taskId && (taskStatus === 'pending' || taskStatus === 'not_started')) {
             mappedStatus = 'pending'; // Valid Task model value
-        } else if (taskStatus === 'in_progress') {
+        } else if (taskId && taskStatus === 'in_progress') {
             mappedStatus = 'in_progress';
         }
         
@@ -5262,12 +5264,13 @@ async function handleTaskFormSubmit(e) {
             taskType: 'other' // Valid enum value in Task model
         };
         
-        console.log('Sending task data:', taskData);
+        console.log('Sending task data:', JSON.stringify(taskData));
         
         let response;
         
         // Update existing task or create new one
         if (taskId) {
+            console.log(`Updating task with ID: ${taskId}`);
             response = await fetch(`/api/tasks/${taskId}`, {
                 method: 'PUT',
                 headers: {
@@ -5277,6 +5280,7 @@ async function handleTaskFormSubmit(e) {
                 body: JSON.stringify(taskData)
             });
         } else {
+            console.log('Creating new task');
             response = await fetch('/api/tasks', {
                 method: 'POST',
                 headers: {
@@ -5288,6 +5292,7 @@ async function handleTaskFormSubmit(e) {
             
             // Create a notification for the assignee
             try {
+                console.log('Creating notification for assignee');
                 const notificationResponse = await fetch('/api/notifications', {
                     method: 'POST',
                     headers: {
@@ -5305,6 +5310,8 @@ async function handleTaskFormSubmit(e) {
                 
                 if (!notificationResponse.ok) {
                     console.warn('Failed to create notification for task assignment');
+                } else {
+                    console.log('Notification created successfully');
                 }
             } catch (notifError) {
                 console.error('Error creating notification:', notifError);
@@ -5315,6 +5322,10 @@ async function handleTaskFormSubmit(e) {
             const errorData = await response.json();
             throw new Error(`Failed to save task: ${errorData.message || response.statusText}`);
         }
+        
+        // Parse response to get task data
+        const responseData = await response.json();
+        console.log('Task saved successfully:', responseData);
         
         // Close modal
         document.getElementById('task-modal').style.display = 'none';
@@ -5404,6 +5415,8 @@ function loadTasks() {
     inProgressList.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
     completedList.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
     
+    console.log('Fetching tasks from API...');
+    
     // Fetch tasks from API
     fetch('/api/tasks', {
         method: 'GET',
@@ -5415,6 +5428,7 @@ function loadTasks() {
         if (!response.ok) {
             throw new Error('Failed to load tasks');
         }
+        console.log('API response received, parsing JSON...');
         return response.json();
     })
     .then(data => {
@@ -5430,10 +5444,15 @@ function loadTasks() {
         
         if (tasks.length === 0) {
             console.log('No tasks found');
+        } else {
+            console.log('Raw tasks:', JSON.stringify(tasks));
         }
         
         // Filter tasks by status according to Task model schema
-        const todoTasks = tasks.filter(task => task.status === 'pending');
+        const todoTasks = tasks.filter(task => {
+            console.log(`Task ${task.title} has status: ${task.status}`);
+            return task.status === 'pending';
+        });
         const inProgressTasks = tasks.filter(task => task.status === 'in_progress');
         const completedTasks = tasks.filter(task => task.status === 'completed');
         
