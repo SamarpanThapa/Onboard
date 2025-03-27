@@ -132,6 +132,43 @@ exports.getMe = async (req, res, next) => {
   }
 };
 
+// @desc    Get users by role
+// @route   GET /api/auth/users/:role
+// @access  Private
+exports.getUsersByRole = async (req, res, next) => {
+  try {
+    const { role } = req.params;
+    
+    // Validate role
+    const validRoles = ['employee', 'hr', 'it', 'manager', 'admin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role specified'
+      });
+    }
+
+    console.log(`Finding users with role: ${role}`);
+
+    // Get users by role
+    const users = await User.find({ 
+      role,
+      isActive: true 
+    }).select('fullName email department');
+
+    console.log(`Found ${users.length} users with role ${role}`);
+
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users
+    });
+  } catch (err) {
+    console.error('Error in getUsersByRole:', err);
+    next(err);
+  }
+};
+
 // Helper function to get token from model, create cookie and send response
 const sendTokenResponse = (user, statusCode, res) => {
   // Create token

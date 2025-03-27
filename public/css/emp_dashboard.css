@@ -225,60 +225,73 @@ button {
     font-size: 1.2rem;
 }
 
-/* Tasks Section */
+/* Task List Styling */
 .task-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-bottom: 1.2rem;
+    margin-top: 15px;
 }
 
 .task-item {
-    display: flex;
-    align-items: center;
-    padding: 1rem;
-    background: rgba(0, 0, 0, 0.2);
+    background: #1a1a1a;
     border-radius: 8px;
-    transition: all var(--transition-speed) ease;
+    margin-bottom: 12px;
+    padding: 15px;
+    display: flex;
+    align-items: flex-start;
+    border: 1px solid #2a2a2a;
+    transition: all 0.3s ease;
+    position: relative;
 }
 
 .task-item:hover {
-    background: rgba(0, 0, 0, 0.3);
-    transform: translateX(5px);
+    border-color: #10b981;
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3);
+}
+
+.task-item.empty-tasks {
+    padding: 20px;
+    text-align: center;
+}
+
+.task-item.error {
+    border-color: #ff5252;
+    background-color: rgba(255, 82, 82, 0.05);
 }
 
 .task-checkbox {
-    margin-right: 1rem;
+    margin-right: 15px;
+    margin-top: 2px;
 }
 
-.task-checkbox input {
+.task-checkbox input[type="checkbox"] {
     display: none;
 }
 
 .task-checkbox label {
-    display: inline-block;
+    display: block;
     width: 22px;
     height: 22px;
-    border: 2px solid var(--border-color);
+    border: 2px solid #555;
     border-radius: 4px;
-    position: relative;
     cursor: pointer;
-    transition: all var(--transition-speed) ease;
+    position: relative;
+    transition: all 0.2s ease;
 }
 
-.task-checkbox input:checked + label {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
+.task-checkbox input[type="checkbox"]:checked + label {
+    background-color: #10b981;
+    border-color: #10b981;
 }
 
-.task-checkbox input:checked + label::after {
-    content: '✓';
+.task-checkbox input[type="checkbox"]:checked + label:after {
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
     color: white;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 0.9rem;
+    font-size: 12px;
 }
 
 .task-content {
@@ -286,28 +299,125 @@ button {
 }
 
 .task-content h4 {
-    font-size: 1rem;
+    color: white;
+    margin: 0 0 8px 0;
+    font-size: 16px;
     font-weight: 500;
-    margin-bottom: 0.3rem;
+    transition: all 0.2s ease;
 }
 
-.task-content p {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
+/* Style for completed tasks */
+.task-content.completed h4 {
+    color: #888;
+    text-decoration: line-through;
 }
 
-.view-all-link {
-    display: block;
-    text-align: center;
-    font-size: 0.95rem;
-    color: var(--primary-color);
-    padding: 0.5rem;
-    transition: all var(--transition-speed) ease;
+.task-content.completed .task-detail,
+.task-content.completed .task-description {
+    color: #777;
 }
 
-.view-all-link:hover {
-    color: var(--primary-hover);
-    text-decoration: underline;
+.task-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 8px;
+    align-items: center;
+}
+
+.task-detail {
+    font-size: 13px;
+    color: #ccc;
+}
+
+.task-detail i {
+    margin-right: 5px;
+    color: #10b981;
+}
+
+.task-description {
+    margin: 10px 0 0 0;
+    font-size: 14px;
+    color: #bbb;
+    line-height: 1.4;
+}
+
+.task-category {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.task-category.onboarding {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+}
+
+.task-category.documentation {
+    background-color: rgba(79, 70, 229, 0.2);
+    color: #818cf8;
+}
+
+.task-category.training {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.task-category.it {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+}
+
+.task-category.hr {
+    background-color: rgba(236, 72, 153, 0.2);
+    color: #f472b6;
+}
+
+.task-priority {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.task-priority.priority-high {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.task-priority.priority-medium {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.task-priority.priority-low {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+}
+
+.task-priority.priority-normal {
+    background-color: rgba(107, 114, 128, 0.2);
+    color: #9ca3af;
+}
+
+.loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #aaa;
+}
+
+.loading-indicator i {
+    margin-right: 10px;
+    color: #10b981;
 }
 
 /* Resources Section */
@@ -1194,12 +1304,25 @@ button {
 
 .contact-select {
     width: 100%;
-    padding: 8px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background-color: var(--card-bg);
-    color: var(--text-primary);
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #333;
+    color: #fff;
+    border: 1px solid #444;
     margin-bottom: 10px;
+    -webkit-appearance: menulist;
+    appearance: menulist;
+}
+
+.contact-select.error {
+    border-color: #ff4d4d;
+    background-color: rgba(255, 77, 77, 0.1);
+}
+
+.contact-select option {
+    background-color: #333;
+    color: #fff;
+    padding: 8px;
 }
 
 .selected-contact-info {
@@ -1308,4 +1431,182 @@ button {
     font-size: 0.9rem;
     color: var(--text-light);
     margin-bottom: 8px;
+}
+
+/* Improved contact details styling */
+.contact-details {
+    padding: 15px;
+    background-color: #383838;
+    border-radius: 4px;
+    border-left: 3px solid #00c853;
+    margin-top: 10px;
+}
+
+.contact-details p {
+    margin: 8px 0;
+    line-height: 1.4;
+}
+
+/* Add these styles for email links */
+.email-link {
+    color: #00c853;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.email-link:hover {
+    color: #00e676;
+    text-decoration: underline;
+}
+
+.email-link:active {
+    color: #00af4c;
+}
+
+/* Role badge styling */
+.role-badge {
+    display: inline-block;
+    font-size: 0.7em;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 6px;
+    text-transform: uppercase;
+    font-weight: bold;
+    vertical-align: middle;
+}
+
+.role-badge.hr {
+    background-color: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+}
+
+.role-badge.hr_admin {
+    background-color: rgba(255, 152, 0, 0.2);
+    color: #ff9800;
+}
+
+.role-badge.it {
+    background-color: rgba(33, 150, 243, 0.2);
+    color: #2196f3;
+}
+
+.role-badge.it_admin {
+    background-color: rgba(3, 169, 244, 0.2);
+    color: #03a9f4;
+}
+
+.role-badge.admin {
+    background-color: rgba(233, 30, 99, 0.2);
+    color: #e91e63;
+}
+
+.role-badge.employee {
+    background-color: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+}
+
+/* Improved contact container */
+.contact-details {
+    padding: 15px;
+    background-color: #383838;
+    border-radius: 4px;
+    border-left: 3px solid #00c853;
+    margin-top: 10px;
+}
+
+.contact-details .contact-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.contact-details .contact-name {
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+/* Improved select dropdown styles */
+.contact-select {
+    appearance: menulist; /* Standard syntax */
+    -webkit-appearance: menulist; /* WebKit/Chrome */
+    -moz-appearance: menulist; /* Firefox */
+    background-color: #333;
+    color: #fff;
+    padding: 10px;
+    width: 100%;
+    border: 1px solid #444;
+    border-radius: 4px;
+}
+
+/* Feedback Acknowledgment Styles */
+.feedback-acknowledgment {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 350px;
+    background: #10b981;
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    overflow: hidden;
+    animation: slideInAck 0.5s ease-out;
+    transform-origin: bottom right;
+}
+
+.feedback-acknowledgment-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.feedback-acknowledgment-header i {
+    font-size: 20px;
+    margin-right: 10px;
+}
+
+.feedback-acknowledgment-header h3 {
+    margin: 0;
+    flex: 1;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.close-acknowledgment {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.close-acknowledgment:hover {
+    opacity: 1;
+}
+
+.feedback-acknowledgment-body {
+    padding: 15px;
+    font-size: 14px;
+}
+
+.feedback-acknowledgment-body p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+@keyframes slideInAck {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideOutAck {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(100%); opacity: 0; }
+}
+
+.feedback-acknowledgment.closing {
+    animation: slideOutAck 0.3s ease-in forwards;
 }

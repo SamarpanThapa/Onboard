@@ -1842,14 +1842,14 @@ textarea.form-control {
 }
 
 .feedback-message {
-  background-color: var(--bg-dark);
+  background-color: #1a1a1a;
   border-radius: 8px;
   padding: 15px;
   border-left: 4px solid var(--primary-green);
 }
 
 .feedback-message p {
-  color: var(--text-white);
+  color: #e5e7eb;
   line-height: 1.6;
 }
 
@@ -1991,4 +1991,18 @@ textarea.form-control {
   .detail-label {
     margin-bottom: 5px;
   }
+}
+
+/* Feedback response modal */
+.feedback-details {
+  background-color: #121212;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  color: #f9f9f9;
+}
+
+.feedback-details p {
+  margin: 8px 0;
+  color: #e5e7eb;
 }

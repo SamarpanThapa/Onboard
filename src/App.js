@@ -8,6 +8,7 @@ import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import Templates from './components/Templates';
 import Login from './components/Login';
+import TaskManagement from './components/TaskManagement';
 import { useAuth } from './contexts/AuthContext';
 
 const App = () => {
@@ -39,6 +40,10 @@ const App = () => {
             <Route
               path="/templates"
               element={user ? <Templates /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/tasks"
+              element={user ? <TaskManagement /> : <Navigate to="/login" />}
             />
             <Route
               path="/"

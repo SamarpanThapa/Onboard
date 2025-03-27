@@ -13,6 +13,7 @@ const {
   updateMe
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const User = require('../models/User');
 
 // @route   GET /api/users
 // @desc    Get all users
@@ -103,7 +104,6 @@ router.get('/directory/employees', protect, async (req, res) => {
   console.log('🔍 Employee Directory API called by:', req.user.email, '(', req.user.role, ')');
   try {
     // Find all active users with select fields
-    const User = require('../models/User'); // Import User model
     const employees = await User.find({ isActive: true })
       .select('name email department position personalInfo.phoneNumber')
       .sort({ name: 1 });
@@ -129,6 +129,86 @@ router.get('/directory/employees', protect, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server Error'
+    });
+  }
+});
+
+// @route   GET /api/users/role/:role
+// @desc    Get users by role
+// @access  Private (Any authenticated user)
+router.get('/role/:role', protect, async (req, res) => {
+  try {
+    const { role } = req.params;
+    
+    // Validate role
+    const validRoles = ['employee', 'hr', 'it', 'manager', 'admin', 'hr_admin', 'it_admin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role specified'
+      });
+    }
+
+    console.log(`Fetching users with role: ${role}`);
+    
+    // Map simplified roles to actual DB roles if needed
+    const dbRoleMapping = {
+      'hr': ['hr', 'hr_admin', 'HR', 'HR Admin', 'Human Resources', 'hr admin'],
+      'it': ['it', 'it_admin', 'IT', 'IT Admin', 'IT Support', 'it admin', 'it support'],
+      'employee': ['employee', 'Employee', 'staff', 'Staff']
+    };
+    
+    // Build regex pattern for case-insensitive role matching
+    let query = { isActive: true };
+    
+    if (dbRoleMapping[role]) {
+      // Build a regex OR pattern for multiple role variations
+      const rolePatterns = dbRoleMapping[role].map(r => new RegExp(`^${r}$`, 'i'));
+      query.$or = [
+        { role: { $in: rolePatterns } },
+        { role: { $in: dbRoleMapping[role] } } // Also try exact matches
+      ];
+      
+      // For IT, explicitly add it_admin
+      if (role === 'it') {
+        query.$or.push({ role: 'it_admin' });
+        query.$or.push({ role: 'IT_Admin' });
+      }
+    } else {
+      // Otherwise use exact role match
+      query.role = role;
+    }
+    
+    console.log('Query:', JSON.stringify(query));
+
+    // Get users by role with debug logging
+    console.log('Executing User.find() with query');
+    const users = await User.find(query).select('name fullName email department role');
+    console.log(`Raw query returned ${users.length} users`);
+
+    // Ensure all users have consistent field names
+    const formattedUsers = users.map(user => ({
+      _id: user._id,
+      name: user.name || user.fullName || 'Unknown',
+      fullName: user.fullName || user.name || 'Unknown',
+      email: user.email || '',
+      department: user.department || '',
+      role: user.role
+    }));
+
+    console.log(`Found ${formattedUsers.length} ${role} users`);
+    formattedUsers.forEach(user => console.log(`- ${user.name} (${user.role})`));
+
+    res.status(200).json({
+      success: true,
+      count: formattedUsers.length,
+      data: formattedUsers
+    });
+  } catch (err) {
+    console.error('Error getting users by role:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
     });
   }
 });

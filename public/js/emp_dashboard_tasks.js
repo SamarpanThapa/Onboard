@@ -52,48 +52,72 @@ function renderTasks(tasks) {
         return;
     }
 
-    // Select just one task to display
-    const task = tasks[0]; // Display only the first task as requested
-    console.log('Displaying task:', task);
+    // Display all assigned tasks
+    tasks.forEach(task => {
+        console.log('Displaying task:', task);
 
-    // Create task element
-    const taskItem = document.createElement('div');
-    taskItem.className = 'task-item';
-    taskItem.dataset.id = task._id;
-    taskItem.dataset.category = task.category || 'other';
+        // Create task element
+        const taskItem = document.createElement('div');
+        taskItem.className = 'task-item';
+        taskItem.dataset.id = task._id;
+        taskItem.dataset.category = task.category || 'other';
 
-    // Format due date
-    const dueDate = task.dueDate ? formatDueDate(new Date(task.dueDate)) : 'No due date';
+        // Format due date
+        const dueDate = task.dueDate ? formatDueDate(new Date(task.dueDate)) : 'No due date';
 
-    // Get category display
-    const categoryDisplay = getCategoryDisplay(task.category);
+        // Get priority class
+        const priorityClass = getPriorityClass(task.priority);
+        
+        // Get category display
+        const categoryDisplay = getCategoryDisplay(task.category);
 
-    // Get proper checkbox state based on status
-    const isChecked = task.status === 'completed';
+        // Get proper checkbox state based on status
+        const isChecked = task.status === 'completed';
+        const completedClass = isChecked ? 'completed' : '';
 
-    // Create task HTML
-    taskItem.innerHTML = `
-        <div class="task-checkbox">
-            <input type="checkbox" id="task-${task._id}" ${isChecked ? 'checked' : ''}>
-            <label for="task-${task._id}"></label>
-        </div>
-        <div class="task-content">
-            <h4>${task.title}</h4>
-            <p>Due: ${dueDate}</p>
-            <span class="task-category ${getCategoryClass(task.category)}">${categoryDisplay}</span>
-        </div>
-    `;
+        // Format assigned by 
+        const assignedBy = task.assignedBy && task.assignedBy.firstName ? 
+            `${task.assignedBy.firstName} ${task.assignedBy.lastName || ''}` : 
+            'HR/Admin';
 
-    // Add event listener for checkbox
-    const checkbox = taskItem.querySelector(`input[type="checkbox"]`);
-    checkbox.addEventListener('change', function() {
-        const newStatus = this.checked ? 'completed' : 'pending';
-        console.log(`Updating task ${task._id} status to ${newStatus}`);
-        updateTaskStatus(task._id, newStatus);
+        // Create task HTML
+        taskItem.innerHTML = `
+            <div class="task-checkbox">
+                <input type="checkbox" id="task-${task._id}" ${isChecked ? 'checked' : ''}>
+                <label for="task-${task._id}"></label>
+            </div>
+            <div class="task-content ${completedClass}">
+                <h4>${task.title}</h4>
+                <div class="task-details">
+                    <span class="task-detail"><i class="fas fa-calendar-alt"></i> Due: ${dueDate}</span>
+                    <span class="task-detail"><i class="fas fa-user"></i> From: ${assignedBy}</span>
+                    <span class="task-category ${getCategoryClass(task.category)}">${categoryDisplay}</span>
+                    <span class="task-priority ${priorityClass}">${task.priority || 'Normal'}</span>
+                </div>
+                ${task.description ? `<p class="task-description">${task.description}</p>` : ''}
+            </div>
+        `;
+
+        // Add event listener for checkbox
+        const checkbox = taskItem.querySelector(`input[type="checkbox"]`);
+        checkbox.addEventListener('change', function() {
+            const newStatus = this.checked ? 'completed' : 'pending';
+            console.log(`Updating task ${task._id} status to ${newStatus}`);
+            
+            // Add visual feedback immediately
+            const contentElement = taskItem.querySelector('.task-content');
+            if (this.checked) {
+                contentElement.classList.add('completed');
+            } else {
+                contentElement.classList.remove('completed');
+            }
+            
+            updateTaskStatus(task._id, newStatus);
+        });
+
+        // Add the task item to the list
+        taskList.appendChild(taskItem);
     });
-
-    // Add the task item to the list
-    taskList.appendChild(taskItem);
 }
 
 // Format due date to display
@@ -130,6 +154,22 @@ function getCategoryDisplay(category) {
 function getCategoryClass(category) {
     if (!category) return 'other';
     return (category.name || 'other').toLowerCase().replace(/\s+/g, '-');
+}
+
+// Get priority class for styling
+function getPriorityClass(priority) {
+    if (!priority) return 'priority-normal';
+    
+    switch(priority.toLowerCase()) {
+        case 'high':
+            return 'priority-high';
+        case 'medium':
+            return 'priority-medium';
+        case 'low':
+            return 'priority-low';
+        default:
+            return 'priority-normal';
+    }
 }
 
 // Update task status

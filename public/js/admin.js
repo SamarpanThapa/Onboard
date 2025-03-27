@@ -4690,6 +4690,10 @@ function showFeedbackDetails(feedback) {
         if (acknowledgeBtn) {
             acknowledgeBtn.addEventListener('click', async () => {
                 try {
+                    // Set loading state
+                    setButtonLoading(acknowledgeBtn, true);
+                    
+                    // Update feedback status to reviewed/acknowledged
                     // Update feedback status to reviewed/acknowledged
                     const response = await fetch(`/api/feedback/${feedback._id}`, {
                         method: 'PUT',

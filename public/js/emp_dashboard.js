@@ -696,6 +696,7 @@ function showFeedbackForm() {
                     <div class="form-group">
                         <label for="feedback-category">Feedback category:</label>
                         <select id="feedback-category" name="category" required>
+                            <option value="">Select a category</option>
                             <option value="onboarding">Onboarding Process</option>
                             <option value="system">System Usability</option>
                             <option value="support">Support Services</option>
@@ -723,7 +724,25 @@ function showFeedbackForm() {
     document.body.appendChild(modal);
     
     // Apply immediately
-    modal.style.display = 'flex';
+    // Delay display to prevent scrolling issues
+    setTimeout(() => {
+        modal.style.display = 'flex';
+        // Focus on the modal to enable scrolling
+        modal.tabIndex = -1;
+        modal.focus();
+    }, 50);
+    
+    // Add touch scrolling for mobile
+    modal.addEventListener('touchstart', function(e) {
+        // Enable touch scrolling
+        e.stopPropagation();
+    });
+    
+    // Add wheel event listener for better scrolling
+    modal.addEventListener('wheel', function(e) {
+        // Prevent body scroll when modal is scrolled
+        e.stopPropagation();
+    });
     
     // Character counter
     const feedbackComments = document.getElementById('feedback-comments');
@@ -740,11 +759,49 @@ function showFeedbackForm() {
     const submitBtn = modal.querySelector('#submit-feedback');
     
     const closeModal = () => {
-        modal.remove();
+        // Add fade-out animation
+        modal.style.opacity = '0';
+        setTimeout(() => {
+            modal.remove();
+        }, 300);
     };
     
     closeBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
+    
+    // Enhance rating experience
+    const ratingInputs = document.querySelectorAll('.rating input[type="radio"]');
+    const ratingLabels = document.querySelectorAll('.rating label');
+    const ratingHint = document.querySelector('.rating-hint');
+    
+    const emojiDescriptions = {
+        'star5': 'Excellent! 😍',
+        'star4': 'Very Good! 😊',
+        'star3': 'Good 🙂',
+        'star2': 'Fair 😐',
+        'star1': 'Poor 😞'
+    };
+    
+    ratingInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            ratingHint.textContent = emojiDescriptions[this.id] || 'Select your rating';
+            ratingHint.classList.add('selected');
+            ratingHint.classList.remove('error');
+        });
+    });
+    
+    // Make labels more clickable on mobile
+    ratingLabels.forEach(label => {
+        label.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            const forAttr = this.getAttribute('for');
+            document.getElementById(forAttr).checked = true;
+            
+            // Manually trigger change event
+            const changeEvent = new Event('change');
+            document.getElementById(forAttr).dispatchEvent(changeEvent);
+        });
+    });
     
     submitBtn.addEventListener('click', async () => {
         const form = document.getElementById('feedback-form');
@@ -752,21 +809,29 @@ function showFeedbackForm() {
         const category = document.getElementById('feedback-category').value;
         const comments = document.getElementById('feedback-comments').value;
         
-        if (!rating || !comments) {
+        if (!rating || !category || !comments) {
             const missingFields = [];
             if (!rating) missingFields.push('rating');
+            if (!category) missingFields.push('category');
             if (!comments) missingFields.push('feedback comments');
             
             showNotification(`Please provide ${missingFields.join(' and ')}.`, 'warning');
             
             // Highlight missing fields
             if (!rating) {
-                document.querySelector('.rating-hint').classList.add('error');
-                setTimeout(() => document.querySelector('.rating-hint').classList.remove('error'), 3000);
+                ratingHint.textContent = 'Please select a rating';
+                ratingHint.classList.add('error');
+                ratingHint.classList.remove('selected');
+            }
+            
+            if (!category) {
+                document.getElementById('feedback-category').classList.add('error-border');
+                setTimeout(() => document.getElementById('feedback-category').classList.remove('error-border'), 3000);
             }
             
             if (!comments) {
                 feedbackComments.classList.add('error-border');
+                feedbackComments.focus();
                 setTimeout(() => feedbackComments.classList.remove('error-border'), 3000);
             }
             
@@ -842,25 +907,6 @@ function showFeedbackForm() {
             }, 2000);
         }
     });
-    
-    // Enhance rating experience
-    const ratingLabels = document.querySelectorAll('.rating label');
-    const emojiDescriptions = {
-        'star5': 'Excellent 😍',
-        'star4': 'Very Good 😊',
-        'star3': 'Good 🙂',
-        'star2': 'Fair 😐',
-        'star1': 'Poor 😞'
-    };
-    
-    ratingLabels.forEach(label => {
-        label.addEventListener('click', function() {
-            const id = this.getAttribute('for');
-            const hint = document.querySelector('.rating-hint');
-            hint.textContent = `Selected: ${emojiDescriptions[id]}`;
-            hint.classList.add('selected');
-        });
-    });
 }
 
 // Show notification
@@ -912,6 +958,323 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
+// Function to display feedback acknowledgment notification
+function showFeedbackAcknowledgment(notification) {
+    // Get the feedback section
+    const feedbackSection = document.querySelector('.feedback-content');
+    
+    if (!feedbackSection) {
+        console.warn('Feedback section not found, cannot display acknowledgment');
+        return;
+    }
+    
+    console.log('Showing acknowledgment for notification:', notification);
+    
+    // Store the original content
+    const originalContent = feedbackSection.innerHTML;
+    
+    // Create the acknowledgment card with enhanced styling
+    feedbackSection.innerHTML = `
+        <div class="acknowledgment-card">
+            <div class="acknowledgment-card-inner">
+                <div class="acknowledgment-card-front">
+                    <div class="acknowledgment-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h3>${notification.title || 'Feedback Acknowledged'}</h3>
+                    <p>${notification.message || 'Your feedback has been acknowledged by HR.'}</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add enhanced CSS for better visual appeal
+    const style = document.createElement('style');
+    style.textContent = `
+        .acknowledgment-card {
+            perspective: 1000px;
+            width: 100%;
+            height: 100%;
+            min-height: 150px;
+        }
+        
+        .acknowledgment-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+            animation: cardAppear 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+        }
+        
+        .acknowledgment-card-front {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            background: linear-gradient(135deg, #0ea371, #10b981, #0ea371);
+            color: white;
+            border-radius: 12px;
+            padding: 25px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.35), 
+                        0 0 0 1px rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        .acknowledgment-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+            animation: pulseIcon 2s ease-in-out infinite;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+        }
+        
+        .acknowledgment-card h3 {
+            margin: 0 0 12px 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .acknowledgment-card p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 15px;
+            line-height: 1.5;
+            padding: 0 10px;
+        }
+        
+        .dismiss-btn {
+            margin-top: 18px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .dismiss-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .dismiss-btn:active {
+            transform: translateY(0);
+        }
+        
+        @keyframes cardAppear {
+            0% { transform: translateY(20px) scale(0.96); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        
+        @keyframes pulseIcon {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // After duration (2 minutes), restore the original content with animation
+    const duration = notification.metadata?.showDuration || 120000; // 2 minutes default
+    
+    // Create a button to dismiss the card early if needed
+    const dismissButton = document.createElement('button');
+    dismissButton.className = 'dismiss-btn';
+    dismissButton.innerHTML = '<i class="fas fa-check"></i> Dismiss';
+    
+    const cardFront = document.querySelector('.acknowledgment-card-front');
+    if (cardFront) {
+        cardFront.appendChild(dismissButton);
+    }
+    
+    // Add confetti animation effect when acknowledgment appears
+    function createConfetti() {
+        for (let i = 0; i < 30; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.cssText = `
+                position: absolute;
+                width: ${Math.random() * 10 + 5}px;
+                height: ${Math.random() * 5 + 3}px;
+                background-color: ${['#ffffff', '#a7f3d0', '#d1fae5'][Math.floor(Math.random() * 3)]};
+                top: ${Math.random() * 100}%;
+                left: ${Math.random() * 100}%;
+                opacity: ${Math.random() * 0.7 + 0.3};
+                transform: rotate(${Math.random() * 360}deg);
+                animation: confettiDrop ${Math.random() * 3 + 2}s ease-out forwards;
+                z-index: -1;
+                border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+            `;
+            
+            // Add confetti animation
+            const confettiStyle = document.createElement('style');
+            confettiStyle.textContent = `
+                @keyframes confettiDrop {
+                    0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+                    100% { transform: translateY(${Math.random() * 100 + 50}px) rotate(${Math.random() * 360}deg); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(confettiStyle);
+            
+            cardFront.appendChild(confetti);
+        }
+    }
+    
+    // Add the confetti effect
+    setTimeout(createConfetti, 300);
+    
+    dismissButton.addEventListener('click', () => {
+        // Add fade out animation
+        const card = document.querySelector('.acknowledgment-card');
+        if (card) {
+            card.style.animation = 'fadeOut 0.5s forwards';
+            
+            setTimeout(() => {
+                // Restore original content
+                feedbackSection.innerHTML = originalContent;
+                
+                // Re-attach event listener to the feedback button
+                const provideFeedbackBtn = document.getElementById('provide-feedback');
+                if (provideFeedbackBtn) {
+                    provideFeedbackBtn.addEventListener('click', function() {
+                        showFeedbackForm();
+                    });
+                }
+            }, 500);
+        }
+    });
+    
+    setTimeout(() => {
+        // Add fade out animation
+        const card = document.querySelector('.acknowledgment-card');
+        if (card) {
+            card.style.animation = 'fadeOut 0.5s forwards';
+            
+            setTimeout(() => {
+                // Restore original content
+                feedbackSection.innerHTML = originalContent;
+                
+                // Re-attach event listener to the feedback button
+                const provideFeedbackBtn = document.getElementById('provide-feedback');
+                if (provideFeedbackBtn) {
+                    provideFeedbackBtn.addEventListener('click', function() {
+                        showFeedbackForm();
+                    });
+                }
+            }, 500);
+        }
+    }, duration);
+    
+    // Also mark as read on server if not already read
+    // This will happen in parallel with the display
+    const token = localStorage.getItem('token');
+    if (token && notification._id) {
+        fetch(`/api/notifications/${notification._id}/read`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        }).catch(err => console.error('Error marking notification as read:', err));
+    }
+}
+
+// Function to check for notifications and handle feedback acknowledgments
+function checkNotifications() {
+    // First check if the user is logged in
+    const token = localStorage.getItem('token');
+    if (!token) {
+        return;
+    }
+    
+    // Check if we should display feedback acknowledgment message
+    const feedbackSection = document.querySelector('.feedback-content');
+    const hasAcknowledgmentCard = document.querySelector('.acknowledgment-card');
+    
+    // Don't proceed with notification checking if already displaying an acknowledgment
+    if (hasAcknowledgmentCard) {
+        return;
+    }
+    
+    // Fetch ALL notifications from API - we'll filter for feedback acknowledgments client-side
+    fetch('/api/notifications', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        console.log('Notification response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Fetched notifications data:', data);
+        
+        if (data.success && data.data && data.data.length > 0) {
+            // Find feedback acknowledgment notifications
+            const acknowledgments = data.data.filter(n => 
+                n.type === 'feedback_acknowledged' || 
+                (n.title && n.title.includes('Feedback Acknowledged'))
+            );
+            
+            console.log('Found acknowledgment notifications:', acknowledgments);
+            
+            if (acknowledgments.length > 0 && feedbackSection) {
+                // Display the most recent acknowledgment
+                const notification = acknowledgments[0];
+                showFeedbackAcknowledgment(notification);
+            } else {
+                console.log('No feedback acknowledgments found or no feedback section available');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching notifications:', error);
+    });
+}
+
+// Add a manual test function to display a feedback acknowledgment (for debugging)
+function testFeedbackAcknowledgment() {
+    // Create a test notification
+    const testNotification = {
+        _id: 'test-notification-' + new Date().getTime(),
+        title: 'Feedback Acknowledged',
+        message: 'Your feedback has been acknowledged by HR Admin.',
+        type: 'feedback_acknowledged',
+        metadata: {
+            showDuration: 120000 // 2 minutes
+        }
+    };
+    
+    // Display it
+    showFeedbackAcknowledgment(testNotification);
+    console.log('Test acknowledgment displayed');
+}
+
 // Initialize when document is ready
 document.addEventListener('DOMContentLoaded', function() {
     // Check if user is logged in
@@ -931,6 +1294,9 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             
+            // Also clear notification tracking on logout
+            localStorage.removeItem('viewedFeedbackNotifications');
+            
             // Show notification
             showNotification('You have been successfully logged out', 'success');
             
@@ -946,4 +1312,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize offboarding functionality
     initializeOffboarding();
+    
+    // Check for notifications immediately
+    checkNotifications();
+    
+    // Set up periodic notification check (every 30 seconds)
+    setInterval(checkNotifications, 30000);
+    
+    // For testing - automatically display test acknowledgment after 3 seconds
+    // Uncomment the line below to test the feedback acknowledgment display
+    setTimeout(testFeedbackAcknowledgment, 3000);
 }); 

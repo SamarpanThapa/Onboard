@@ -5,15 +5,17 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.85);
+  background-color: rgba(0, 0, 0, 0.75);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   z-index: 9999;
   backdrop-filter: blur(8px);
   padding: 20px;
   opacity: 0;
   animation: fadeIn 0.3s forwards;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes fadeIn {
@@ -23,29 +25,36 @@
 
 .modal-content {
   width: 100%;
-  max-width: 600px;
-  background: linear-gradient(135deg, #121212 0%, #000000 100%);
-  border-radius: 16px;
-  overflow: hidden;
+  max-width: 550px;
+  background: #121212;
+  border-radius: 8px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5),
               0 0 30px 5px rgba(16, 185, 129, 0.2);
-  transform: scale(0.95);
-  animation: scaleIn 0.4s forwards 0.1s;
+  transform: translateY(20px) scale(0.98);
+  animation: modalEnter 0.4s forwards 0.1s;
   color: white;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid #1e1e1e;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 20px auto;
 }
 
-@keyframes scaleIn {
-  to { transform: scale(1); }
+@keyframes modalEnter {
+  to { transform: translateY(0) scale(1); }
 }
 
 .modal-header {
-  padding: 20px 25px;
+  padding: 18px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: #10b981;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .modal-header h2 {
@@ -76,30 +85,35 @@
 }
 
 .modal-body {
-  padding: 25px;
+  padding: 24px;
+  overflow-y: auto;
+  flex-grow: 1;
+  -webkit-overflow-scrolling: touch;
+  background: #121212;
 }
 
 .modal-body p {
   margin-top: 0;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
   color: rgba(255, 255, 255, 0.9);
   font-size: 15px;
   line-height: 1.6;
 }
 
-/* Star Rating */
+/* Emoji Rating */
 .rating-container {
-  margin: 25px 0;
+  margin: 20px 0 25px;
   display: flex;
   justify-content: center;
 }
 
 .rating {
   display: flex;
-  flex-direction: row-reverse;
-  justify-content: center;
+  justify-content: space-between;
   position: relative;
-  gap: 25px;
+  gap: 5%;
+  width: 100%;
+  max-width: 400px;
 }
 
 .rating input {
@@ -108,71 +122,96 @@
 
 .rating label {
   cursor: pointer;
-  font-size: 48px !important;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 36px !important;
+  color: rgba(255, 255, 255, 0.5);
   transition: all 0.3s ease;
   background: none !important;
   border: none !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   display: inline-block;
-  padding: 0 !important;
+  padding: 8px !important;
   margin: 0 !important;
   width: auto !important;
   height: auto !important;
   line-height: 1 !important;
+  transform: scale(0.9);
+  filter: grayscale(0.5);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .rating label:hover,
 .rating label:hover ~ label {
   color: #10b981;
-  transform: scale(1.2);
-  text-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
-  background: none !important;
-  border: none !important;
-  box-shadow: none !important;
+  transform: scale(1.15);
+  filter: grayscale(0);
 }
 
 .rating input:checked ~ label {
-  color: #10b981;
-  transform: scale(1.2);
-  text-shadow: 0 0 20px rgba(16, 185, 129, 0.7);
-  background: none !important;
-  border: none !important;
-  box-shadow: none !important;
+  color: #b5b5b5;
+  filter: grayscale(0.5);
+}
+
+.rating input[value="5"]:checked ~ label[for="star5"] {
+  color: #FF2D95;
+  filter: grayscale(0);
+  transform: scale(1.15);
+}
+
+.rating input[value="4"]:checked ~ label[for="star4"] {
+  color: #FFA726;
+  filter: grayscale(0);
+  transform: scale(1.15);
+}
+
+.rating input[value="3"]:checked ~ label[for="star3"] {
+  color: #FFD54F;
+  filter: grayscale(0);
+  transform: scale(1.15);
+}
+
+.rating input[value="2"]:checked ~ label[for="star2"] {
+  color: #64B5F6;
+  filter: grayscale(0);
+  transform: scale(1.15);
+}
+
+.rating input[value="1"]:checked ~ label[for="star1"] {
+  color: #FFB9B9;
+  filter: grayscale(0);
+  transform: scale(1.15);
 }
 
 .rating-hint {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.7);
   margin-top: 15px;
-  margin-bottom: 10px;
-  transition: all 0.3s;
-  height: auto;
   text-align: center;
-  background: rgba(0, 0, 0, 0.3);
+  background: #1e1e1e;
   border-radius: 20px;
   padding: 8px 15px;
   width: 100%;
-  max-width: 300px;
+  max-width: 280px;
   margin-left: auto;
   margin-right: auto;
   box-sizing: border-box;
   line-height: 1.4;
-  border: 1px solid rgba(16, 185, 129, 0.2);
   display: inline-block;
+  transition: all 0.3s ease;
 }
 
 .rating-hint.selected {
   color: #10b981;
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.4);
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
 }
 
 .rating-hint.error {
   color: #ff5252;
   animation: shake 0.5s;
+  border-color: rgba(255, 82, 82, 0.4);
+  background: rgba(255, 82, 82, 0.15);
 }
 
 @keyframes shake {
@@ -183,7 +222,7 @@
 
 /* Form Controls */
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .form-group label {
@@ -196,15 +235,15 @@
 
 select, textarea {
   width: 100%;
-  padding: 12px 16px;
+  padding: 14px 18px;
   border: none;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  background: #1e1e1e;
   color: white;
   font-size: 15px;
   outline: none;
   transition: all 0.2s;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid #2e2e2e;
   box-sizing: border-box;
 }
 
@@ -212,24 +251,28 @@ select {
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(16,185,129,0.8)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 15px center;
-  padding-right: 40px;
+  background-position: right 18px center;
+  padding-right: 45px;
+  cursor: pointer;
 }
 
 select:focus, textarea:focus {
-  background: rgba(255, 255, 255, 0.07);
+  background: #232323;
   border-color: #10b981;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
 }
 
 textarea {
-  min-height: 120px;
+  min-height: 100px;
   resize: vertical;
+  line-height: 1.5;
 }
 
+select.error-border,
 textarea.error-border {
   border-color: #ff5252;
   box-shadow: 0 0 0 2px rgba(255, 82, 82, 0.2);
+  animation: shake 0.5s;
 }
 
 .chars-counter {
@@ -237,61 +280,155 @@ textarea.error-border {
   text-align: right;
   font-size: 12px;
   color: rgba(255, 255, 255, 0.6);
-  margin-top: 5px;
+  margin-top: 8px;
 }
 
 .disclaimer {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.6);
-  background: rgba(16, 185, 129, 0.1);
-  padding: 10px 15px;
+  background: #1e1e1e;
+  padding: 12px 16px;
   border-radius: 8px;
   line-height: 1.5;
   border-left: 3px solid #10b981;
+  margin-top: 10px;
 }
 
-/* Modal Footer */
 .modal-footer {
-  padding: 20px 25px;
   display: flex;
   justify-content: flex-end;
+  padding: 18px 24px;
+  background: #1a1a1a;
+  border-top: 1px solid #2e2e2e;
   gap: 15px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(0, 0, 0, 0.2);
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 
-/* Button Styles */
 button {
-  min-width: 120px;
-  padding: 12px 20px;
+  padding: 12px 22px;
   border: none;
-  border-radius: 30px;
-  font-weight: 600;
+  border-radius: 8px;
   font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  outline: none;
-  position: relative;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #cancel-feedback {
-  background-color: rgba(255, 255, 255, 0.1);
+  background: #2a2a2a;
   color: rgba(255, 255, 255, 0.8);
 }
 
 #cancel-feedback:hover {
-  background-color: rgba(255, 255, 255, 0.15);
+  background: #333333;
 }
 
 #submit-feedback {
-  background-color: #10b981;
+  background: #10b981;
   color: white;
-  font-weight: 600;
+  padding: 12px 28px;
 }
 
 #submit-feedback:hover {
-  background-color: #059669;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  background: #0ea271;
+}
+
+/* Loading and success states */
+button.loading, button.success, button.error {
+  position: relative;
+  padding-left: 42px !important;
+}
+
+button.loading::before, 
+button.success::before, 
+button.error::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  width: 18px;
+  height: 18px;
+}
+
+button.loading::before {
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+button.success::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+button.error::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'%3E%3C/line%3E%3Cline x1='6' y1='6' x2='18' y2='18'%3E%3C/line%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 600px) {
+  .modal {
+    align-items: flex-start;
+    padding: 10px;
+    overflow-y: scroll;
+  }
+  
+  .modal-content {
+    max-width: 100%;
+    border-radius: 8px;
+    max-height: calc(100vh - 20px);
+    margin: 10px auto;
+  }
+  
+  .modal-header {
+    padding: 16px 20px;
+  }
+  
+  .modal-body {
+    padding: 18px;
+  }
+  
+  .rating {
+    gap: 3%;
+  }
+  
+  .rating label {
+    font-size: 32px !important;
+    padding: 8px !important;
+  }
+  
+  .modal-footer {
+    padding: 16px 20px;
+    flex-direction: column-reverse;
+  }
+  
+  button {
+    width: 100%;
+    padding: 14px 22px;
+  }
+  
+  #cancel-feedback {
+    order: 2;
+  }
+  
+  #submit-feedback {
+    order: 1;
+    margin-bottom: 10px;
+  }
+  
+  .rating-hint {
+    max-width: 100%;
+  }
 } 

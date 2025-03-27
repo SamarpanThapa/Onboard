@@ -259,9 +259,24 @@ exports.updateFeedbackStatus = async (req, res) => {
       });
     }
 
-    // Update feedback
-    feedback.status = status;
-    
+    // Store user ID before potentially deleting feedback
+    const userId = feedback.user;
+
+    // Get reviewer name for the notification - safely handle any potential errors
+    let reviewerName = 'HR Team'; // Default fallback name
+    try {
+      if (req.user && req.user.id) {
+        const reviewer = await User.findById(req.user.id);
+        if (reviewer && reviewer.name) {
+          reviewerName = reviewer.name;
+        }
+      }
+    } catch (userLookupError) {
+      console.error('Error getting reviewer name:', userLookupError);
+      // Continue with default name
+    }
+
+    // Update feedback or prepare for deletion
     if (status === 'reviewed') {
       feedback.reviewedBy = req.user.id;
       feedback.reviewedAt = new Date();
@@ -271,28 +286,58 @@ exports.updateFeedbackStatus = async (req, res) => {
       feedback.responseMessage = responseMessage;
     }
 
-    await feedback.save();
+    // Create notification data
+    let notificationTitle = 'Feedback Acknowledged';
+    let notificationMessage = `Your feedback has been acknowledged by ${reviewerName}.`;
+    let notificationType = 'feedback_acknowledged';
+    let showDuration = 120000; // 2 minutes in milliseconds
+    let isPersistent = true; // Make acknowledgment notifications persistent until viewed
 
-    // If status changed to reviewed, create notification for the feedback submitter
-    if (status === 'reviewed' && responseMessage) {
+    // If there's a response message, change notification details
+    if (responseMessage) {
+      notificationTitle = 'Feedback Response';
+      notificationMessage = 'Your feedback has been reviewed. Click to view the response.';
+      notificationType = 'feedback_response';
+      showDuration = null; // Default duration
+      isPersistent = false; // Response notifications follow normal rules
+      
+      // Only save the feedback if there's a response message
+      await feedback.save();
+    } else {
+      // If acknowledging without a response, delete the feedback
+      await Feedback.findByIdAndDelete(req.params.id);
+    }
+
+    // Create notification for the feedback submitter
+    try {
       const notification = new Notification({
-        recipient: feedback.user,
-        title: 'Feedback Response',
-        message: 'Your feedback has been reviewed. Click to view the response.',
-        type: 'feedback_response',
+        recipient: userId,
+        title: notificationTitle,
+        message: notificationMessage,
+        type: notificationType,
         sender: req.user.id,
         relatedTo: {
           model: 'Feedback',
-          id: feedback._id
-        }
+          id: req.params.id // Use the ID directly since feedback might be deleted
+        },
+        metadata: {
+          showDuration: showDuration, // Add a special field for notification duration
+          isPersistent: isPersistent // Flag to indicate this should not auto-expire
+        },
+        // For acknowledgments, don't auto-expire
+        expiresAt: isPersistent ? null : undefined
       });
 
       await notification.save();
+    } catch (notificationError) {
+      console.error('Error creating notification:', notificationError);
+      // Continue even if notification fails - don't block the feedback status update
     }
 
     return res.status(200).json({
       success: true,
-      data: feedback
+      data: feedback,
+      message: responseMessage ? 'Feedback updated with response' : 'Feedback acknowledged and deleted'
     });
   } catch (error) {
     console.error('Error updating feedback:', error);
