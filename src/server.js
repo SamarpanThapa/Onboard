@@ -59,7 +59,7 @@ try {
   app.use('/api/onboarding-processes', require('./routes/onboardingProcessRoutes'));
   // Also register the external API route
   app.use('/api/onboarding-processes', require('../routes/api/onboarding-processes'));
-  app.use('/api/tasks', require('./routes/taskRoutes'));
+  app.use('/api/tasks', require('../routes/api/tasks'));
   
   // Document management
   app.use('/api/documents', require('./routes/documentRoutes'));

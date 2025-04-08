@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - OnboardX</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/admin_dashboard.css">
+    <link rel="stylesheet" href="/css/document-viewer.css">
+    <link rel="stylesheet" href="/css/admin_dashboard_debug.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Sortable.js for drag and drop functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <!-- Include API client -->
+    <script src="/js/api.js"></script>
+    <style>
+        /* Hide notification feed */
+        .notification-feed, #notification-feed {
+            display: none !important;
+        }
+        
+        /* Custom styles for Onboarding Tracker */
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .kanban-column {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .kanban-items {
+            background-color: #fff;
+            border-radius: 0 0 8px 8px;
+            flex-grow: 1;
+            min-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .employee-card {
+            cursor: grab;
+        }
+        
+        .employee-card:active {
+            cursor: grabbing;
+        }
+    </style>
+</head>
+<body>
+    <div class="branding">
+        <button id="menu-toggle" class="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="brand-name">
+            <i class="fas fa-users-gear"></i>
+            Onboard-X
+        </h1>
+        <div class="user-menu">
+            <button class="user-menu-toggle">
+                <i class="fas fa-user-circle"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="admin-dashboard">
+        <div class="sidebar">
+            <nav>
+                <div class="nav-group">
+                    <h3>Overview</h3>
+                    <a href="#dashboard" class="active">
+                        <i class="fas fa-chart-line"></i>
+                        Dashboard
+                    </a>
+                    <a href="#analytics">
+                        <i class="fas fa-chart-bar"></i>
+                        Analytics
+                    </a>
+                </div>
+
+                <div class="nav-group">
+                    <h3>Employees</h3>
+                    <a href="#employees">
+                        <i class="fas fa-users"></i>
+                        Employee List
+                    </a>
+                    <a href="#onboarding">
+                        <i class="fas fa-user-plus"></i>
+                        Onboarding
+                    </a>
+                    <a href="#offboarding">
+                        <i class="fas fa-user-minus"></i>
+                        Offboarding
+                    </a>
+                </div>
+
+                <div class="nav-group">
+                    <h3>Communication</h3>
+                    <a href="#communication">
+                        <i class="fas fa-comments"></i>
+                        Contact Directory
+                    </a>
+                    <a href="#feedback">
+                        <i class="fas fa-comment-dots"></i>
+                        Employee Feedback
+                    </a>
+                </div>
+
+                <div class="nav-group">
+                    <h3>Workflow</h3>
+                    <a href="#tasks">
+                        <i class="fas fa-tasks"></i>
+                        Tasks
+                    </a>
+                    <a href="#templates">
+                        <i class="fas fa-file-invoice"></i>
+                        Templates
+                    </a>
+                </div>
+
+                <div class="nav-group">
+                    <h3>Settings</h3>
+                    <a href="#notifications">
+                        <i class="fas fa-bell"></i>
+                        Notifications
+                    </a>
+                    <a href="#settings">
+                        <i class="fas fa-cog"></i>
+                        System Settings
+                    </a>
+                    <a href="#" id="logout-link">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <div class="main-content">
+            <!-- Alert Container -->
+            <div id="alertContainer" class="alert-container"></div>
+            
+            <!-- Dashboard Overview -->
+            <section id="dashboard" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Welcome <span id="user-name">to your dashboard!</span></h2>
+                    <div class="date-time">
+                        <span id="current-datetime">Loading date and time...</span>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-user-plus"></i>
+                        <div class="stat-content">
+                        <h3>Active Onboarding</h3>
+                        <p class="stat-number">12</p>
+                            <span class="stat-trend positive">↑ 8% from last month</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-tasks"></i>
+                        <div class="stat-content">
+                            <h3>Pending Tasks</h3>
+                            <p class="stat-number">15</p>
+                            <span class="stat-trend negative">↓ 3 tasks overdue</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-file-alt"></i>
+                        <div class="stat-content">
+                            <h3>Documents</h3>
+                        <p class="stat-number">8</p>
+                            <span class="stat-trend">Pending review</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-bell"></i>
+                        <div class="stat-content">
+                            <h3>Notifications</h3>
+                            <p class="stat-number">5</p>
+                            <span class="stat-trend">New updates</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Feed Container -->
+                <div class="activity-feed-container">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+
+                <!-- Main Chart -->
+                <div class="chart-container">
+                    <h3>Employee Onboarding Progress</h3>
+                    <canvas id="employeeProgressChart"></canvas>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="recent-activity">
+                    <h3>Recent Activity</h3>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <i class="fas fa-user-plus"></i>
+                            <div class="activity-content">
+                                <p>New employee Sarah Johnson started onboarding process</p>
+                                <span class="activity-time">2 hours ago</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-file-alt"></i>
+                            <div class="activity-content">
+                                <p>Employment contract for Michael Chen approved</p>
+                                <span class="activity-time">3 hours ago</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-laptop"></i>
+                            <div class="activity-content">
+                                <p>IT setup completed for David Wilson</p>
+                                <span class="activity-time">5 hours ago</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-calendar-check"></i>
+                            <div class="activity-content">
+                                <p>Orientation scheduled for new Marketing team</p>
+                                <span class="activity-time">Yesterday</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-user-minus"></i>
+                            <div class="activity-content">
+                                <p>Exit interview completed for Emily Brown</p>
+                                <span class="activity-time">Yesterday</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Feedback Section -->
+            <section id="feedback" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Employee Feedback</h2>
+                    <div class="action-bar">
+                        <input type="search" id="feedback-search" placeholder="Search feedback...">
+                        <select id="feedback-filter" class="filter-dropdown">
+                            <option value="all">All Feedback</option>
+                            <option value="pending">Pending</option>
+                            <option value="reviewed">Reviewed</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                        <select id="feedback-time-filter" class="time-filter">
+                            <option value="all">All Time</option>
+                            <option value="7days">Last 7 Days</option>
+                            <option value="30days">Last 30 Days</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="feedback-container">
+                    <div class="feedback-list-container">
+                        <div class="loading-feedback">
+                            <i class="fas fa-spinner fa-spin"></i> Loading feedback...
+                        </div>
+                        <div class="feedback-list" id="feedback-list">
+                            <!-- Will be populated dynamically with feedback items -->
+                        </div>
+                        <div class="empty-feedback-list" style="display: none;">
+                            <p>No feedback available.</p>
+                        </div>
+                    </div>
+
+                    <div class="feedback-details-container" id="feedback-details-container">
+                        <div class="empty-selection">
+                            <i class="fas fa-comment-dots feedback-icon"></i>
+                            <p>Select a feedback item to view details</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics Section -->
+            <section id="analytics" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Analytics Overview</h2>
+                <div class="action-bar">
+                        <select class="time-filter">
+                            <option value="7days">Last 7 Days</option>
+                            <option value="30days">Last 30 Days</option>
+                            <option value="90days">Last 90 Days</option>
+                            <option value="1year">Last Year</option>
+                        </select>
+                        <select class="department-filter">
+                            <option value="all">All Departments</option>
+                            <option value="engineering">Engineering</option>
+                            <option value="marketing">Marketing</option>
+                            <option value="sales">Sales</option>
+                            <option value="hr">HR</option>
+                        </select>
+                        <button class="add-btn"><i class="fas fa-download"></i> Export Report</button>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="analytics-summary">
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="summary-details">
+                            <h4>Total Employees</h4>
+                            <p class="summary-number">156</p>
+                            <span class="trend positive">↑ 12 this month</span>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="summary-details">
+                            <h4>Avg Time to Onboard</h4>
+                            <p class="summary-number">14 days</p>
+                            <span class="trend positive">↓ 2 days faster</span>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="summary-details">
+                            <h4>Retention Rate</h4>
+                            <p class="summary-number">95%</p>
+                            <span class="trend positive">↑ 3% improvement</span>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="summary-details">
+                            <h4>Cost per Hire</h4>
+                            <p class="summary-number">$4,200</p>
+                            <span class="trend negative">↑ $200 increase</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-grid">
+                    <!-- Main Charts -->
+                    <div class="chart-container full-width">
+                        <div class="chart-header">
+                            <h3>Employee Growth Trends</h3>
+                            <div class="chart-controls">
+                                <button class="chart-type-btn active" data-type="line">
+                                    <i class="fas fa-chart-line"></i>
+                                </button>
+                                <button class="chart-type-btn" data-type="bar">
+                                    <i class="fas fa-chart-bar"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="employeeGrowthChart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Department Distribution</h3>
+                            <div class="chart-controls">
+                                <button class="chart-type-btn active" data-type="pie">
+                                    <i class="fas fa-chart-pie"></i>
+                                </button>
+                                <button class="chart-type-btn" data-type="doughnut">
+                                    <i class="fas fa-circle-notch"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="departmentChart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Onboarding Success Rate</h3>
+                            <div class="chart-controls">
+                                <button class="chart-type-btn active" data-type="gauge">
+                                    <i class="fas fa-tachometer-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="successRateChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Detailed Metrics -->
+                <div class="metrics-container">
+                    <div class="metrics-header">
+                        <h3>Department Performance Metrics</h3>
+                        <div class="metrics-controls">
+                            <button class="filter-btn active">Efficiency</button>
+                            <button class="filter-btn">Cost</button>
+                            <button class="filter-btn">Satisfaction</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                    <thead>
+                        <tr>
+                                    <th>Department</th>
+                                    <th>Employees</th>
+                                    <th>Avg. Time</th>
+                                    <th>Success Rate</th>
+                                    <th>Satisfaction</th>
+                                    <th>Cost</th>
+                                    <th>Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                                    <td>Engineering</td>
+                                    <td>45</td>
+                                    <td>12 days</td>
+                                    <td>95%</td>
+                                    <td>4.8/5</td>
+                                    <td>$4,500</td>
+                                    <td><span class="trend positive">↑</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Marketing</td>
+                                    <td>28</td>
+                                    <td>15 days</td>
+                                    <td>88%</td>
+                                    <td>4.6/5</td>
+                                    <td>$3,800</td>
+                                    <td><span class="trend neutral">→</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Sales</td>
+                                    <td>35</td>
+                                    <td>10 days</td>
+                                    <td>92%</td>
+                                    <td>4.7/5</td>
+                                    <td>$4,200</td>
+                                    <td><span class="trend positive">↑</span></td>
+                                </tr>
+                                <tr>
+                                    <td>HR</td>
+                                    <td>12</td>
+                                    <td>14 days</td>
+                                    <td>90%</td>
+                                    <td>4.5/5</td>
+                                    <td>$3,500</td>
+                                    <td><span class="trend positive">↑</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+                    </div>
+                </div>
+
+                <!-- Insights Section -->
+                <div class="analytics-insights">
+                    <h3>Key Insights</h3>
+                    <div class="insights-grid">
+                        <div class="insight-card positive">
+                            <i class="fas fa-arrow-up"></i>
+                            <h4>Engineering Growth</h4>
+                            <p>25% increase in engineering hires compared to last quarter</p>
+                        </div>
+                        <div class="insight-card warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h4>Marketing Onboarding</h4>
+                            <p>Average onboarding time increased by 3 days in Marketing</p>
+                        </div>
+                        <div class="insight-card positive">
+                            <i class="fas fa-check-circle"></i>
+                            <h4>Retention Success</h4>
+                            <p>90-day retention rate improved by 5% across all departments</p>
+                        </div>
+                        <div class="insight-card neutral">
+                            <i class="fas fa-info-circle"></i>
+                            <h4>Cost Analysis</h4>
+                            <p>Cost per hire remains within target range despite market changes</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Employee List Section -->
+            <section id="employees" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Employee Management</h2>
+                    <div class="action-bar">
+                        <input type="search" placeholder="Search employees...">
+                        <button class="add-btn"><i class="fas fa-plus"></i> Add Employee</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Position</th>
+                                <th>Start Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Sarah Johnson</td>
+                                <td>Marketing</td>
+                                <td>Content Manager</td>
+                                <td>2024-03-15</td>
+                                <td><span class="status-badge onboarding">Onboarding</span></td>
+                                <td>
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Michael Chen</td>
+                                <td>Engineering</td>
+                                <td>Senior Developer</td>
+                                <td>2024-03-10</td>
+                                <td><span class="status-badge active">Active</span></td>
+                                <td>
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Emily Brown</td>
+                                <td>Sales</td>
+                                <td>Account Executive</td>
+                                <td>2024-03-01</td>
+                                <td><span class="status-badge offboarding">Offboarding</span></td>
+                                <td>
+                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Onboarding Section -->
+            <section id="onboarding" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Onboarding Tracker</h2>
+                    <button class="add-btn" id="new-onboarding-btn"><i class="fas fa-plus"></i> New Onboarding</button>
+                </div>
+                
+                <!-- Alert container for notifications -->
+                <div id="alert-container" class="mb-3"></div>
+                
+                <div class="kanban-board">
+                    <div class="kanban-column">
+                        <div class="kanban-header bg-light rounded-top p-2">
+                            <h3 class="mb-0"><i class="fas fa-hourglass-start me-2 text-secondary"></i>To Start</h3>
+                        </div>
+                        <div class="kanban-items p-2" id="toStart">
+                            <!-- Content will be loaded dynamically -->
+                        </div>
+                    </div>
+                    <div class="kanban-column">
+                        <div class="kanban-header bg-light rounded-top p-2">
+                            <h3 class="mb-0"><i class="fas fa-spinner me-2 text-warning"></i>In Progress</h3>
+                        </div>
+                        <div class="kanban-items p-2" id="inProgress">
+                            <!-- Content will be loaded dynamically -->
+                        </div>
+                    </div>
+                    <div class="kanban-column">
+                        <div class="kanban-header bg-light rounded-top p-2">
+                            <h3 class="mb-0"><i class="fas fa-check-circle me-2 text-success"></i>Completed</h3>
+                        </div>
+                        <div class="kanban-items p-2" id="completed">
+                            <!-- Content will be loaded dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tasks Section -->
+            <section id="tasks" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Task Management</h2>
+                    <div class="action-bar">
+                        <input type="search" id="task-search" placeholder="Search tasks...">
+                        <button class="add-btn" id="add-task-btn"><i class="fas fa-plus"></i> Add Task</button>
+                    </div>
+                </div>
+                
+                <!-- Task Management Dashboard -->
+                <div class="task-dashboard">
+                    <div class="task-board">
+                        <div class="task-columns">
+                            <!-- To Do Column -->
+                            <div class="task-column">
+                                <h3>To Do <span class="task-count">0</span></h3>
+                                <div class="task-list" id="todo-tasks">
+                                    <!-- Tasks will be loaded dynamically -->
+                                    <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                                </div>
+                            </div>
+                            
+                            <!-- In Progress Column -->
+                            <div class="task-column">
+                                <h3>In Progress <span class="task-count">0</span></h3>
+                                <div class="task-list" id="in-progress-tasks">
+                                    <!-- Tasks will be loaded dynamically -->
+                                    <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Completed Column -->
+                            <div class="task-column">
+                                <h3>Completed <span class="task-count">0</span></h3>
+                                <div class="task-list" id="completed-tasks">
+                                    <!-- Tasks will be loaded dynamically -->
+                                    <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Task Form Modal (Hidden by default) -->
+                <div id="task-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="task-modal-title">Add New Task</h3>
+                            <button class="close-modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="task-form">
+                                <input type="hidden" id="task-id" name="id">
+                                
+                                <div class="form-group">
+                                    <label for="task-title">Title*</label>
+                                    <input type="text" id="task-title" name="title" required placeholder="Enter task title">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="task-description">Description</label>
+                                    <textarea id="task-description" name="description" rows="3" placeholder="Describe the task"></textarea>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="task-priority">Priority</label>
+                                        <select id="task-priority" name="priority">
+                                            <option value="low">Low</option>
+                                            <option value="medium" selected>Medium</option>
+                                            <option value="high">High</option>
+                                            <option value="urgent">Urgent</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="task-category">Category</label>
+                                        <select id="task-category" name="category">
+                                            <option value="onboarding">Onboarding</option>
+                                            <option value="offboarding">Offboarding</option>
+                                            <option value="hr">HR</option>
+                                            <option value="it">IT</option>
+                                            <option value="finance">Finance</option>
+                                            <option value="compliance">Compliance</option>
+                                            <option value="training">Training</option>
+                                            <option value="other" selected>Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="task-due-date">Due Date</label>
+                                        <input type="date" id="task-due-date" name="dueDate">
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="task-status">Status</label>
+                                        <select id="task-status" name="status">
+                                            <option value="pending" selected>To Do</option>
+                                            <option value="in_progress">In Progress</option>
+                                            <option value="completed">Completed</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="task-assignee">Assign To*</label>
+                                    <select id="task-assignee" name="assignee" required>
+                                        <option value="">Unassigned</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                </div>
+                                
+                                <div class="form-actions">
+                                    <button type="button" class="btn-secondary close-modal">Cancel</button>
+                                    <button type="submit" class="btn-primary">Save Task</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Templates Section -->
+            <section id="templates" class="dashboard-section">
+                <div class="section-title mb-4">
+                    <h2>Document Templates</h2>
+                </div>
+
+                <!-- Filter bar -->
+                <div class="filter-bar mb-4 d-flex justify-content-between align-items-center">
+                    <div class="dropdown">
+                        <select class="form-select" id="filterCategory">
+                            <option value="All Categories">All Categories</option>
+                            <option value="Onboarding">Onboarding</option>
+                            <option value="HR">HR</option>
+                            <option value="Legal">Legal</option>
+                        </select>
+                    </div>
+                    <button id="newTemplateBtn" class="btn btn-primary" onclick="toggleTemplateForm()">
+                        <i class="fas fa-plus"></i> New Template
+                    </button>
+                </div>
+
+                <!-- Alert Container -->
+                <div id="alertContainer" class="mb-4"></div>
+
+                <!-- Template Form (Hidden by Default) -->
+                <div id="templateFormSection" class="card mb-4" style="display: none;">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="m-0">Upload New Template</h5>
+                        <button type="button" class="btn-close" onclick="toggleTemplateForm()"></button>
+                    </div>
+                    <div class="card-body">
+                        <form id="templateUploadForm">
+                            <div class="form-group mb-3">
+                                <label for="templateTitle">Title</label>
+                                <input type="text" class="form-control" id="templateTitle" placeholder="Enter template title" required>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="templateDescription">Description</label>
+                                <textarea class="form-control" id="templateDescription" rows="3" placeholder="Enter template description" required></textarea>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="templateType">Document Type</label>
+                                    <select class="form-select" id="templateType" required>
+                                        <option value="">Select document type</option>
+                                        <option value="Policy">Policy</option>
+                                        <option value="Form">Form</option>
+                                        <option value="Guide">Guide</option>
+                                        <option value="Contract">Contract</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="templateCategory">Category</label>
+                                    <select class="form-select" id="templateCategory" required>
+                                        <option value="">Select category</option>
+                                        <option value="Onboarding">Onboarding</option>
+                                        <option value="HR">HR</option>
+                                        <option value="Legal">Legal</option>
+                                        <option value="Finance">Finance</option>
+                                        <option value="General">General</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="templateTags">Tags (optional)</label>
+                                <input type="text" class="form-control" id="templateTags" placeholder="Enter comma-separated tags">
+                                <small class="form-text text-muted">Example: onboarding, employee, contract</small>
+                            </div>
+                            <div class="mb-3">
+                                <label>File</label>
+                                <input type="file" class="form-control" id="templateFile" accept=".pdf,.doc,.docx" required>
+                                <small class="form-text text-muted">Supported formats: PDF, DOC, DOCX (Max 5MB)</small>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="button" class="btn btn-secondary me-2" onclick="toggleTemplateForm()">Cancel</button>
+                                <button type="button" class="btn btn-primary" id="uploadTemplateBtn">Upload Template</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Onboarding Templates -->
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h5 class="m-0"><i class="fas fa-clipboard-list mr-2"></i>Onboarding Templates</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="loading-templates" style="display: flex; justify-content: center; padding: 20px;">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                </div>
+                                <div id="toStart" class="templates-container"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- HR Documents -->
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h5 class="m-0"><i class="fas fa-user-tie mr-2"></i>HR Documents</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="loading-templates" style="display: flex; justify-content: center; padding: 20px;">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                </div>
+                                <div id="inProgress" class="templates-container"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Legal Documents -->
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h5 class="m-0"><i class="fas fa-gavel mr-2"></i>Legal Documents</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="loading-templates" style="display: flex; justify-content: center; padding: 20px;">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                </div>
+                                <div id="completed" class="templates-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Notifications Section -->
+            <section id="notifications" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Notification Center</h2>
+                    <div class="action-bar">
+                        <button class="filter-btn active">All</button>
+                        <button class="filter-btn">Unread</button>
+                        <button class="filter-btn">Important</button>
+                    </div>
+                </div>
+                <div class="notification-list" id="notificationList">
+                    <!-- Notifications will be dynamically populated -->
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="dashboard-section">
+                <div class="dashboard-header">
+                <h2>System Settings</h2>
+                    <button class="add-btn"><i class="fas fa-save"></i> Save Changes</button>
+                </div>
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <h3><i class="fas fa-building"></i> Basic Settings</h3>
+                        <form class="settings-form">
+                            <div class="form-group">
+                                <label>Company Name</label>
+                                <input type="text" value="OnboardX">
+                            </div>
+                            <div class="form-group">
+                                <label>Logo</label>
+                                <div class="file-upload">
+                                    <input type="file" accept="image/*">
+                                    <button type="button" class="upload-btn">Upload Logo</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Time Zone</label>
+                                <select>
+                                    <option>Pacific Time (PT)</option>
+                                    <option>Eastern Time (ET)</option>
+                                    <option>Central Time (CT)</option>
+                                    <option>Mountain Time (MT)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Date Format</label>
+                                <select>
+                                    <option>MM/DD/YYYY</option>
+                                    <option>DD/MM/YYYY</option>
+                                    <option>YYYY-MM-DD</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3><i class="fas fa-shield-alt"></i> Security</h3>
+                        <form class="settings-form">
+                            <div class="form-group">
+                                <label>Password Requirements</label>
+                                <select>
+                                    <option>Strong (8+ chars, special chars)</option>
+                                    <option>Basic (6+ chars)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Two-Factor Authentication</label>
+                                <label class="switch">
+                                    <input type="checkbox">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>Session Timeout</label>
+                                <select>
+                                    <option>30 minutes</option>
+                                    <option>1 hour</option>
+                                    <option>2 hours</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3><i class="fas fa-users"></i> User Roles</h3>
+                        <div class="role-list">
+                            <div class="role-item">
+                                <div class="role-info">
+                                    <h4>Admin</h4>
+                                    <p>Full system access</p>
+                                </div>
+                                <button class="action-btn"><i class="fas fa-edit"></i></button>
+                            </div>
+                            <div class="role-item">
+                                <div class="role-info">
+                                    <h4>HR Manager</h4>
+                                    <p>Employee management access</p>
+                                </div>
+                                <button class="action-btn"><i class="fas fa-edit"></i></button>
+                            </div>
+                            <div class="role-item">
+                                <div class="role-info">
+                                    <h4>Team Leader</h4>
+                                    <p>Basic team access</p>
+                                </div>
+                                <button class="action-btn"><i class="fas fa-edit"></i></button>
+                            </div>
+                        </div>
+                        <button class="add-btn mt-3"><i class="fas fa-plus"></i> Add Role</button>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3><i class="fas fa-bell"></i> Notifications</h3>
+                        <form class="settings-form">
+                            <div class="form-group">
+                                <label>Email Notifications</label>
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>Task Reminders</label>
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>System Updates</label>
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Offboarding Section -->
+            <section id="offboarding" class="dashboard-section">
+                <div class="dashboard-header">
+                    <h2>Offboarding Management</h2>
+                    <div class="action-bar">
+                        <input type="search" placeholder="Search employees...">
+                        <button class="add-btn"><i class="fas fa-plus"></i> New Offboarding</button>
+                    </div>
+                </div>
+                <div class="offboarding-grid">
+                    <div class="process-tracker">
+                        <div class="kanban-board">
+                            <div class="kanban-column">
+                                <h3>Initiated</h3>
+                                <div class="kanban-items">
+                                    <div class="kanban-item">
+                                        <h4>Emily Brown</h4>
+                                        <p>Sales Executive</p>
+                                        <span class="date">Last Day: Apr 15</span>
+                                        <div class="checklist">
+                                            <div class="checklist-item completed">
+                                                <i class="fas fa-check"></i>
+                                                <span>Exit Interview Scheduled</span>
+                                            </div>
+                                            <div class="checklist-item">
+                                                <i class="fas fa-clock"></i>
+                                                <span>Asset Return</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="kanban-column">
+                                <h3>In Progress</h3>
+                                <div class="kanban-items">
+                                    <div class="kanban-item">
+                                        <h4>John Smith</h4>
+                                        <p>IT Specialist</p>
+                                        <span class="date">Last Day: Apr 1</span>
+                                        <div class="checklist">
+                                            <div class="checklist-item completed">
+                                                <i class="fas fa-check"></i>
+                                                <span>Knowledge Transfer</span>
+                                            </div>
+                                            <div class="checklist-item completed">
+                                                <i class="fas fa-check"></i>
+                                                <span>System Access Review</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="kanban-column">
+                                <h3>Completed</h3>
+                                <div class="kanban-items">
+                                    <div class="kanban-item">
+                                        <h4>Lisa Anderson</h4>
+                                        <p>HR Manager</p>
+                                        <span class="date">Completed: Mar 30</span>
+                                        <div class="task-progress">
+                                            <div class="progress-bar" style="width: 100%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="offboarding-checklist">
+                        <h3>Offboarding Checklist Template</h3>
+                        <div class="checklist-categories">
+                            <div class="checklist-category">
+                                <h4><i class="fas fa-laptop"></i> IT & Systems</h4>
+                                <ul>
+                                    <li>Disable system access</li>
+                                    <li>Collect company devices</li>
+                                    <li>Data backup</li>
+                                    <li>Remove from distribution lists</li>
+                                </ul>
+                            </div>
+                            <div class="checklist-category">
+                                <h4><i class="fas fa-file-alt"></i> Documentation</h4>
+                                <ul>
+                                    <li>Exit interview documentation</li>
+                                    <li>Final payroll processing</li>
+                                    <li>Benefits termination</li>
+                                    <li>NDA review</li>
+                                </ul>
+                            </div>
+                            <div class="checklist-category">
+                                <h4><i class="fas fa-people-arrows"></i> Knowledge Transfer</h4>
+                                <ul>
+                                    <li>Project handover</li>
+                                    <li>Document processes</li>
+                                    <li>Team notification</li>
+                                    <li>Client transition</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Communication Section -->
+            <section id="communication" class="dashboard-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-comments"></i> Communication</h2>
+                    <div class="header-actions">
+                        <button class="refresh-btn" id="refresh-communication"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+
+                <div class="communication-container">
+                    <div class="communication-list">
+                        <div class="communication-item">
+                            <div class="comm-icon">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div class="comm-content">
+                                <h4>Employees</h4>
+                                <div class="employee-contacts">
+                                    <select id="employee-contact-list" class="contact-select">
+                                        <option value="">Select an employee to view contact info...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <div id="selected-employee-info" class="selected-contact-info">
+                                        <p>Select an employee from the dropdown to view their contact details.</p>
+                                    </div>
+                                </div>
+                                <div class="message-panel" id="employees-message-panel" style="display: none;">
+                                    <select class="employee-select" id="employee-select">
+                                        <option value="">Select an employee...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <textarea class="message-input" id="employee-message" placeholder="Type your message here..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="communication-item">
+                            <div class="comm-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="comm-content">
+                                <h4>HR Department</h4>
+                                <div class="employee-contacts">
+                                    <select id="hr-contact-list" class="contact-select">
+                                        <option value="">Select an HR staff to view contact info...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <div id="selected-hr-info" class="selected-contact-info">
+                                        <p>Select an HR staff member from the dropdown to view their contact details.</p>
+                                    </div>
+                                </div>
+                                <div class="message-panel" id="hr-message-panel" style="display: none;">
+                                    <select class="hr-select" id="hr-select">
+                                        <option value="">Select HR staff...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <textarea class="message-input" id="hr-message" placeholder="Type your message here..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="communication-item">
+                            <div class="comm-icon">
+                                <i class="fas fa-laptop-code"></i>
+                            </div>
+                            <div class="comm-content">
+                                <h4>IT Support</h4>
+                                <div class="employee-contacts">
+                                    <select id="it-contact-list" class="contact-select">
+                                        <option value="">Select an IT staff to view contact info...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <div id="selected-it-info" class="selected-contact-info">
+                                        <p>Select an IT staff member from the dropdown to view their contact details.</p>
+                                    </div>
+                                </div>
+                                <div class="message-panel" id="it-message-panel" style="display: none;">
+                                    <select class="it-select" id="it-select">
+                                        <option value="">Select IT staff...</option>
+                                        <!-- Will be populated dynamically -->
+                                    </select>
+                                    <textarea class="message-input" id="it-message" placeholder="Type your message here..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modal for New Offboarding Process -->
+    <div id="new-offboarding-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Start New Offboarding Process</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="new-offboarding-form">
+                    <div class="form-group">
+                        <label for="employeeId">Employee</label>
+                        <select name="employeeId" id="employeeId" required>
+                            <option value="">Select an employee</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="exitDate">Last Working Day</label>
+                        <input type="date" name="exitDate" id="exitDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reason">Reason for Offboarding</label>
+                        <select name="reason" id="reason" required>
+                            <option value="">Select a reason</option>
+                            <option value="resignation">Resignation</option>
+                            <option value="termination">Termination</option>
+                            <option value="retirement">Retirement</option>
+                            <option value="relocation">Relocation</option>
+                            <option value="new-opportunity">New Opportunity</option>
+                            <option value="personal">Personal Reasons</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">Notes</label>
+                        <textarea name="notes" id="notes" rows="4" placeholder="Add any relevant notes about this offboarding process"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary close-modal">Cancel</button>
+                        <button type="submit" class="btn-primary">Create Offboarding Process</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Offboarding Process Details -->
+    <div id="offboarding-details-modal" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3 class="modal-title">Offboarding: Employee Name</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="offboarding-details-grid">
+                    <div class="offboarding-details-section">
+                        <h4>Employee Information</h4>
+                        <div class="employee-info">
+                            <!-- Employee info will be inserted here -->
+                        </div>
+                    </div>
+                    <div class="offboarding-details-section">
+                        <h4>Process Information</h4>
+                        <div class="process-info">
+                            <!-- Process info will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="offboarding-details-section mt-4">
+                    <h4>Tasks</h4>
+                    <div class="tasks-list">
+                        <!-- Tasks will be inserted here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <!-- Action buttons will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div id="add-task-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add New Task</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-task-form">
+                    <input type="hidden" id="process-id" name="processId">
+                    <div class="form-group">
+                        <label for="task-title">Task Title</label>
+                        <input type="text" id="task-title" name="title" required placeholder="Enter task title">
+                    </div>
+                    <div class="form-group">
+                        <label for="task-assignee">Assignee</label>
+                        <input type="text" id="task-assignee" name="assignee" placeholder="Who is responsible for this task?">
+                    </div>
+                    <div class="form-group">
+                        <label for="task-due-date">Due Date</label>
+                        <input type="date" id="task-due-date" name="dueDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="task-description">Description</label>
+                        <textarea id="task-description" name="description" rows="3" placeholder="Describe the task"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary close-modal">Cancel</button>
+                        <button type="submit" class="btn-primary">Add Task</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onboarding Approval Modal -->
+    <div id="onboarding-approval-modal" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3 class="modal-title">Onboarding Submission: <span id="employee-name"></span></h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="submission-info-bar">
+                    <div class="submission-meta">
+                        <span class="meta-label">Submitted:</span>
+                        <span id="submission-date"></span>
+                    </div>
+                    <div class="submission-meta">
+                        <span class="meta-label">Status:</span>
+                        <span id="submission-status" class="status-badge"></span>
+                    </div>
+                </div>
+
+                <div id="missing-items-section" style="display: none;" class="alert-box warning">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Missing Items</h4>
+                    <ul id="missing-items-list"></ul>
+                </div>
+
+                <div class="tabs-container">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" data-tab="personal-info-tab">Personal Information</button>
+                        <button class="tab-btn" data-tab="employment-tab">Employment Details</button>
+                        <button class="tab-btn" data-tab="documents-tab">Documents</button>
+                        <button class="tab-btn" data-tab="approval-tab">Approval</button>
+                    </div>
+
+                    <div id="personal-info-tab" class="tab-content" data-tab="personal-info-tab">
+                        <div class="info-grid">
+                            <div class="info-section">
+                                <h4>Basic Information</h4>
+                                <div class="info-row">
+                                    <span class="info-label">Full Name:</span>
+                                    <span id="info-fullname" class="info-value"></span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Date of Birth:</span>
+                                    <span id="info-dob" class="info-value"></span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Address:</span>
+                                    <span id="info-address" class="info-value"></span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Phone:</span>
+                                    <span id="info-phone" class="info-value"></span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Email:</span>
+                                    <span id="info-email" class="info-value"></span>
+                                </div>
+                            </div>
+                            <div class="info-section">
+                                <h4>Emergency Contact</h4>
+                                <div class="info-row">
+                                    <span class="info-label">Name:</span>
+                                    <span id="info-emergency-name" class="info-value"></span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Relationship:</span>
+                                    <span id="info-emergency-relationship" class="info-value"></span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Phone:</span>
+                                    <span id="info-emergency-phone" class="info-value"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="employment-tab" class="tab-content" data-tab="employment-tab">
+                        <div class="info-grid">
+                            <div class="info-section">
+                                <h4>Position Details</h4>
+                                <div class="info-row">
+                                    <span class="info-label">Position:</span>
+                                    <span id="info-position" class="info-value"></span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Department:</span>
+                                    <span id="info-department" class="info-value"></span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Start Date:</span>
+                                    <span id="info-start-date" class="info-value"></span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Work Schedule:</span>
+                                    <span id="info-work-schedule" class="info-value"></span>
+                                </div>
+                            </div>
+                            <div class="info-section">
+                                <h4>Payment Information</h4>
+                                <div class="info-row">
+                                    <span class="info-label">Bank Name:</span>
+                                    <span id="info-bank-name" class="info-value"></span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Account Number:</span>
+                                    <span id="info-account-number" class="info-value"></span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Routing Number:</span>
+                                    <span id="info-routing-number" class="info-value"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="documents-tab" class="tab-content" data-tab="documents-tab">
+                        <div id="documents-container">
+                            <div class="documents-header">
+                                <h4>Submitted Documents</h4>
+                            </div>
+                            <div id="documents-list" class="documents-list">
+                                <!-- Documents will be inserted here dynamically -->
+                            </div>
+                            <!-- Add document preview container -->
+                            <div id="document-preview">
+                                <div class="preview-placeholder">Select a document to preview</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="approval-tab" class="tab-content" data-tab="approval-tab">
+                        <div class="approval-section">
+                            <h4>HR Review</h4>
+                            <div class="form-group">
+                                <label for="feedback-text">Feedback/Comments (required for revision requests)</label>
+                                <textarea id="feedback-text" rows="4" placeholder="Provide feedback to the employee..."></textarea>
+                            </div>
+                            
+                            <div class="missing-items-editor">
+                                <h4>Mark Missing Items</h4>
+                                <p>Check any items that need to be addressed:</p>
+                                <div class="missing-items-checklist">
+                                    <div class="checkbox-group">
+                                        <input type="checkbox" id="missing-personal-info" value="Personal information incomplete">
+                                        <label for="missing-personal-info">Personal information incomplete</label>
+                                    </div>
+                                    <div class="checkbox-group">
+                                        <input type="checkbox" id="missing-contact-info" value="Contact information missing or invalid">
+                                        <label for="missing-contact-info">Contact information missing or invalid</label>
+                                    </div>
+                                    <div class="checkbox-group">
+                                        <input type="checkbox" id="missing-emergency-contact" value="Emergency contact incomplete">
+                                        <label for="missing-emergency-contact">Emergency contact incomplete</label>
+                                    </div>
+                                    <div class="checkbox-group">
+                                        <input type="checkbox" id="missing-bank-info" value="Banking information incomplete">
+                                        <label for="missing-bank-info">Banking information incomplete</label>
+                                    </div>
+                                    <div class="checkbox-group">
+                                        <input type="checkbox" id="missing-id-documents" value="ID documents missing">
+                                        <label for="missing-id-documents">ID documents missing</label>
+                                    </div>
+                                    <div class="checkbox-group">
+                                        <input type="checkbox" id="missing-tax-forms" value="Tax forms incomplete or missing">
+                                        <label for="missing-tax-forms">Tax forms incomplete or missing</label>
+                                    </div>
+                                    <div class="checkbox-group">
+                                        <input type="checkbox" id="missing-other-docs" value="Other required documents missing">
+                                        <label for="missing-other-docs">Other required documents missing</label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="custom-missing-item">Custom Missing Item</label>
+                                    <div class="custom-missing-item-container">
+                                        <input type="text" id="custom-missing-item" placeholder="Enter custom missing item...">
+                                        <button type="button" id="add-custom-item" class="btn-secondary">Add</button>
+                                    </div>
+                                </div>
+                                <div id="custom-missing-items-list">
+                                    <!-- Custom missing items will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="request-revisions-btn" class="btn-warning"><i class="fas fa-redo"></i> Request Revisions</button>
+                <button id="approve-onboarding-btn" class="btn-success"><i class="fas fa-check"></i> Approve Submission</button>
+                <button id="close-approval-modal" class="btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Preview Modal -->
+    <div id="document-viewer-modal" class="modal">
+        <div class="modal-content modal-xl">
+            <div class="modal-header">
+                <h3 class="modal-title">Document: <span id="document-name"></span></h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="document-container">
+                    <!-- Document content will be displayed here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a id="download-document" class="btn-primary" href="#" download><i class="fas fa-download"></i> Download</a>
+                <button class="btn-secondary close-modal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    
+    <script src="/js/admin.js" defer></script>
+</body>
+</html>
