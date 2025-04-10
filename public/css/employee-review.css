@@ -1,0 +1,520 @@
+/**
+ * Employee Review Modal Styling
+ * Pure CSS implementation without Bootstrap dependencies
+ */
+
+/* Loading overlay */
+#employee-review-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    color: white;
+    font-family: 'Roboto', sans-serif;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Modal container */
+#employee-review-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    font-family: 'Roboto', sans-serif;
+}
+
+#employee-review-modal.visible {
+    opacity: 1;
+}
+
+/* Modal content */
+.review-modal-content {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    width: 80%;
+    max-width: 900px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    animation: slideIn 0.3s ease;
+    position: relative;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Modal header */
+.review-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    background-color: #fff;
+    border-radius: 8px 8px 0 0;
+    z-index: 1;
+}
+
+.review-modal-header h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 500;
+    color: #333;
+    display: flex;
+    align-items: center;
+}
+
+.review-modal-header h2 i {
+    margin-right: 10px;
+    color: #4CAF50;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #999;
+    transition: color 0.2s;
+}
+
+.close-modal:hover {
+    color: #333;
+}
+
+/* Modal body */
+.review-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+/* Modal footer */
+.review-modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+    position: sticky;
+    bottom: 0;
+    background-color: #fff;
+    border-radius: 0 0 8px 8px;
+}
+
+/* Sections */
+.review-section {
+    margin-bottom: 30px;
+    background-color: #fafafa;
+    border-radius: 6px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.review-section h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 18px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.review-section h3 i {
+    margin-right: 10px;
+    color: #4a6fde;
+}
+
+/* Grid layout for fields */
+.review-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.review-field {
+    margin-bottom: 5px;
+}
+
+.review-field label {
+    display: block;
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.review-field div {
+    font-size: 16px;
+    color: #333;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-badge.success {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.status-badge.warning {
+    background-color: #fff8e1;
+    color: #f57f17;
+    border: 1px solid #ffecb3;
+}
+
+.status-badge.danger {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+/* Documents section */
+.document-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.document-card {
+    background-color: white;
+    border-radius: 6px;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+}
+
+.document-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #4a6fde;
+    margin-bottom: 10px;
+}
+
+.document-info {
+    flex-grow: 1;
+}
+
+.document-info h4 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+}
+
+.document-info p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.document-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.document-actions button {
+    flex: 1;
+    padding: 6px 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.view-document-btn {
+    background-color: #e3f2fd;
+    color: #1565c0;
+}
+
+.view-document-btn:hover {
+    background-color: #bbdefb;
+}
+
+.download-document-btn {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.download-document-btn:hover {
+    background-color: #c8e6c9;
+}
+
+.document-actions i {
+    margin-right: 5px;
+}
+
+.no-documents {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+}
+
+/* Progress bar */
+.progress-container {
+    margin: 15px 0;
+}
+
+.progress-bar {
+    height: 8px;
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #4CAF50;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    text-align: right;
+    font-size: 14px;
+    color: #4CAF50;
+    margin-top: 5px;
+    font-weight: 500;
+}
+
+/* Action buttons */
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.approve-btn, .reject-btn, .submit-rejection-btn, .close-btn {
+    padding: 10px 20px;
+    border-radius: 4px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.approve-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.approve-btn:hover {
+    background-color: #388e3c;
+}
+
+.reject-btn {
+    background-color: #f44336;
+    color: white;
+}
+
+.reject-btn:hover {
+    background-color: #d32f2f;
+}
+
+.close-btn {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+.close-btn:hover {
+    background-color: #bdbdbd;
+}
+
+.approve-btn i, .reject-btn i {
+    margin-right: 8px;
+}
+
+/* Rejection reason section */
+.rejection-reason {
+    margin-top: 15px;
+    padding: 15px;
+    border-radius: 4px;
+    background-color: #ffebee;
+    border: 1px solid #ffcdd2;
+}
+
+.rejection-reason.hidden {
+    display: none;
+}
+
+.rejection-reason label {
+    display: block;
+    font-size: 14px;
+    color: #c62828;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.rejection-reason textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+    font-family: 'Roboto', sans-serif;
+    margin-bottom: 10px;
+}
+
+.submit-rejection-btn {
+    background-color: #d32f2f;
+    color: white;
+}
+
+.submit-rejection-btn:hover {
+    background-color: #b71c1c;
+}
+
+/* Simple alert */
+.simple-alert {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    max-width: 350px;
+    border-radius: 4px;
+    padding: 0;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    z-index: 10001;
+    transform: translateX(120%);
+    transition: transform 0.3s ease;
+    overflow: hidden;
+}
+
+.simple-alert.visible {
+    transform: translateX(0);
+}
+
+.simple-alert.closing {
+    transform: translateX(120%);
+}
+
+.alert-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+}
+
+.alert-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.7;
+    margin-left: 10px;
+}
+
+.alert-close:hover {
+    opacity: 1;
+}
+
+.simple-alert.success {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border-left: 4px solid #4CAF50;
+}
+
+.simple-alert.error {
+    background-color: #ffebee;
+    color: #c62828;
+    border-left: 4px solid #f44336;
+}
+
+.simple-alert.warning {
+    background-color: #fff8e1;
+    color: #f57f17;
+    border-left: 4px solid #ffb300;
+}
+
+.simple-alert.info {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    border-left: 4px solid #2196f3;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .review-modal-content {
+        width: 95%;
+        max-height: 95vh;
+    }
+    
+    .review-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .document-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .review-modal-header h2 {
+        font-size: 20px;
+    }
+} 

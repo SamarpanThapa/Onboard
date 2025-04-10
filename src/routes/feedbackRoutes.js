@@ -12,7 +12,8 @@ const {
   submitExitInterview,
   getExitInterview,
   sendExitSurvey,
-  getExitSurveyAnalytics
+  getExitSurveyAnalytics,
+  respondToFeedback
 } = require('../controllers/feedbackController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -144,6 +145,21 @@ router.get('/exit-survey/analytics',
   protect,
   authorize('admin', 'hr_admin'),
   getExitSurveyAnalytics
+);
+
+/**
+ * @route POST /api/feedback/:id/respond
+ * @desc Respond to specific feedback
+ * @access Private (Admin, HR)
+ */
+router.post('/:id/respond',
+  protect,
+  authorize('hr_admin', 'admin'),
+  [
+    check('responseMessage', 'Response message is required').not().isEmpty(),
+    check('status', 'Status is required').isIn(['reviewed', 'archived'])
+  ],
+  respondToFeedback
 );
 
 module.exports = router; 

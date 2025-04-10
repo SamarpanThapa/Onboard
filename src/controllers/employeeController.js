@@ -216,16 +216,103 @@ const getEmployeeById = async (req, res) => {
 
     // Get onboarding process if it exists
     let onboardingProcess = null;
+    let onboardingData = null;
+    
     if (employee.onboarding && employee.onboarding.processId) {
       onboardingProcess = await OnboardingProcess.findById(employee.onboarding.processId)
         .populate('template');
+        
+      // If we have an onboarding process, check for the form data
+      if (onboardingProcess) {
+        onboardingData = onboardingProcess.formData || {};
+        
+        // If we have form data, use it to enhance the employee data
+        if (onboardingData && Object.keys(onboardingData).length > 0) {
+          console.log('Found onboarding form data for employee:', req.params.id);
+          
+          // Merge onboarding data into employee
+          if (onboardingData.personalInfo) {
+            // Create personalInfo if it doesn't exist
+            if (!employee.personalInfo) {
+              employee.personalInfo = {};
+            }
+            
+            // Merge fields, prioritizing existing values
+            employee.personalInfo = {
+              ...onboardingData.personalInfo,
+              ...employee.personalInfo
+            };
+          }
+          
+          if (onboardingData.employmentDetails) {
+            // Create employmentDetails if it doesn't exist
+            if (!employee.employmentDetails) {
+              employee.employmentDetails = {};
+            }
+            
+            // Merge fields, prioritizing existing values
+            employee.employmentDetails = {
+              ...onboardingData.employmentDetails,
+              ...employee.employmentDetails
+            };
+          }
+        }
+      }
     }
+    
+    // Check submitted documents status
+    if (documents && documents.length > 0) {
+      // Create personalInfo if it doesn't exist
+      if (!employee.personalInfo) {
+        employee.personalInfo = {};
+      }
+      
+      // Set document flags based on actual documents
+      const hasTaxDocument = documents.some(doc => 
+        doc.category === 'tax' || 
+        (doc.title && doc.title.toLowerCase().includes('tax')) ||
+        (doc.documentType === 'tax')
+      );
+      
+      const hasWorkAuthDocument = documents.some(doc => 
+        doc.category === 'work_authorization' || 
+        (doc.title && doc.title.toLowerCase().includes('work authorization')) ||
+        (doc.documentType === 'work_authorization')
+      );
+      
+      const hasCitizenshipDocument = documents.some(doc => 
+        doc.category === 'citizenship' || 
+        (doc.title && doc.title.toLowerCase().includes('citizenship')) ||
+        (doc.documentType === 'citizenship')
+      );
+      
+      // Update document submission flags
+      if (hasTaxDocument) {
+        employee.personalInfo.taxDocumentsSubmitted = true;
+      }
+      
+      if (hasWorkAuthDocument) {
+        employee.personalInfo.workAuthorizationSubmitted = true;
+      }
+      
+      if (hasCitizenshipDocument) {
+        employee.personalInfo.citizenshipProofSubmitted = true;
+      }
+    }
+
+    // Log debugging information
+    console.log('Returning employee data with document flags:', 
+      employee.personalInfo?.taxDocumentsSubmitted,
+      employee.personalInfo?.workAuthorizationSubmitted,
+      employee.personalInfo?.citizenshipProofSubmitted
+    );
 
     return res.json({
       employee,
       tasks,
       documents,
-      onboardingProcess
+      onboardingProcess,
+      onboardingData
     });
   } catch (error) {
     console.error('Error fetching employee details:', error);

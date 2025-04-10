@@ -2006,3 +2006,44 @@ textarea.form-control {
   margin: 8px 0;
   color: #e5e7eb;
 }
+
+/* New buttons styling */
+.review-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    display: inline-block;
+    text-align: center;
+    width: 100%;
+    margin-top: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.review-btn:hover {
+    background-color: #388e3c;
+}
+
+.view-details-btn {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    display: inline-block;
+    text-align: center;
+    width: 100%;
+    margin-top: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.view-details-btn:hover {
+    background-color: #e0e0e0;
+}

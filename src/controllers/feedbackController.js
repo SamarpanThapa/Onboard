@@ -798,4 +798,96 @@ function extractCommonTerms(text) {
     .map(([text, value]) => ({ text, value }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 30); // Return top 30 words
-} 
+}
+
+/**
+ * Respond to feedback
+ * @route   POST /api/feedback/:id/respond
+ * @access  Private (Admin, HR)
+ */
+exports.respondToFeedback = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const { responseMessage, status } = req.body;
+
+    // Find the feedback
+    const feedback = await Feedback.findById(req.params.id);
+
+    if (!feedback) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Feedback not found' 
+      });
+    }
+
+    // Update the feedback with response
+    feedback.responseMessage = responseMessage;
+    feedback.status = status;
+    feedback.reviewedBy = req.user.id;
+    feedback.reviewedAt = new Date();
+
+    // Save the updated feedback
+    await feedback.save();
+
+    // Get reviewer information for notification
+    let reviewerName = 'HR Team';
+    try {
+      const reviewer = await User.findById(req.user.id);
+      if (reviewer && reviewer.name) {
+        reviewerName = reviewer.name;
+      }
+    } catch (error) {
+      console.error('Error getting reviewer name:', error);
+      // Continue with default name
+    }
+
+    // Create notification for the feedback submitter
+    try {
+      const notification = new Notification({
+        recipient: feedback.user,
+        title: 'Response to Your Feedback',
+        message: `${reviewerName} has responded to your feedback.`,
+        type: 'feedback_response',
+        priority: 'high',
+        sender: req.user.id,
+        relatedTo: {
+          model: 'Feedback',
+          id: feedback._id
+        },
+        metadata: {
+          responseMessage: responseMessage.substring(0, 100) + (responseMessage.length > 100 ? '...' : ''),
+          responseDate: new Date()
+        }
+      });
+
+      await notification.save();
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      // Continue even if notification fails
+    }
+
+    // Return the updated feedback
+    return res.status(200).json({
+      success: true,
+      message: 'Response sent successfully',
+      data: feedback
+    });
+  } catch (error) {
+    console.error('Error responding to feedback:', error);
+    if (error.kind === 'ObjectId') {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Feedback not found' 
+      });
+    }
+    return res.status(500).json({ 
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+}; 

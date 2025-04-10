@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin_dashboard.css">
     <link rel="stylesheet" href="/css/document-viewer.css">
+    <link rel="stylesheet" href="/css/accessibility-fixes.css">
+    <link rel="stylesheet" href="/css/employee-review.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Sortable.js for drag and drop functionality -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -441,9 +443,380 @@
         .documents-container {
             margin-top: 15px;
         }
+
+        /* Feedback Section Styles */
+        .feedback-container {
+            display: flex;
+            height: calc(100vh - 180px);
+            overflow: hidden;
+            border-radius: 8px;
+            margin-top: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .feedback-sidebar {
+            width: 350px;
+            background-color: #f5f5f5;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+        }
+        
+        .feedback-list-header {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+        
+        .feedback-list-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        
+        .feedback-list {
+            overflow-y: auto;
+        }
+        
+        .feedback-item {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .feedback-item:hover {
+            background-color: #e9e9e9;
+        }
+        
+        .feedback-item.active {
+            background-color: #e0f7fa;
+            border-left: 3px solid #00acc1;
+        }
+        
+        .feedback-details-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: white;
+        }
+        
+        .feedback-stars {
+            color: #ffc107;
+        }
+        
+        .feedback-stars i.far {
+            color: #ddd;
+        }
+        
+        .feedback-message {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        
+        .details-section {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .details-section h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 1.1rem;
+        }
+        
+        .detail-row {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        
+        .detail-label {
+            width: 150px;
+            font-weight: 500;
+            color: #666;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            text-transform: capitalize;
+        }
+        
+        .status-badge.pending {
+            background-color: #ffbb33;
+            color: #333;
+        }
+        
+        .status-badge.reviewed {
+            background-color: #00C851;
+            color: white;
+        }
+        
+        .status-badge.archived {
+            background-color: #777;
+            color: white;
+        }
+        
+        .empty-selection, .loading-feedback, .empty-feedback-list {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: #777;
+            padding: 20px;
+        }
+        
+        .feedback-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #ccc;
+        }
+        
+        .response-form {
+            margin-top: 20px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+        }
+
+        .loading-indicator {
+            text-align: center;
+            padding: 20px;
+            color: #aaa;
+        }
+
+        /* Simplified Task Management Styles */
+        .simplified-task-board {
+            display: block;
+            margin-top: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 15px;
+        }
+        
+        .simplified-task-board .task-column {
+            width: 100%;
+        }
+        
+        .simplified-task-board .task-column h3 {
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .simplified-task-board .task-count {
+            background-color: #f0f0f0;
+            border-radius: 50%;
+            min-width: 25px;
+            height: 25px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .simplified-task-board .task-list {
+            margin-top: 10px;
+        }
+        
+        .simplified-task-board .task-item {
+            background-color: #f9f9f9;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid #4A6FFF;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .simplified-task-board .task-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .simplified-task-board .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        
+        .simplified-task-board .task-title {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .simplified-task-board .task-priority {
+            font-size: 12px;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 10px;
+            text-transform: capitalize;
+        }
+        
+        .simplified-task-board .priority-high {
+            background-color: #ff4444;
+            color: white;
+        }
+        
+        .simplified-task-board .priority-medium {
+            background-color: #ffbb33;
+            color: #333;
+        }
+        
+        .simplified-task-board .priority-low {
+            background-color: #00C851;
+            color: white;
+        }
+        
+        .simplified-task-board .task-details {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        
+        .simplified-task-board .task-details p {
+            margin: 4px 0;
+        }
+        
+        .simplified-task-board .task-details i {
+            width: 16px;
+            margin-right: 5px;
+            text-align: center;
+        }
+        
+        .simplified-task-board .task-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #eee;
+        }
+        
+        .simplified-task-board .status-badge {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        
+        .simplified-task-board .status-pending {
+            background-color: #f0f0f0;
+            color: #555;
+        }
+        
+        .simplified-task-board .status-in-progress {
+            background-color: #4A6FFF;
+            color: white;
+        }
+        
+        .simplified-task-board .status-completed {
+            background-color: #00C851;
+            color: white;
+        }
+        
+        .simplified-task-board .task-action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #555;
+            padding: 0;
+            font-size: 16px;
+        }
+        
+        .simplified-task-board .task-action-btn:hover {
+            color: #000;
+        }
+        
+        .empty-list {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            font-style: italic;
+        }
+        
+        .task-action-menu {
+            position: fixed;
+            background-color: white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            border-radius: 4px;
+            padding: 8px 0;
+            z-index: 1000;
+            min-width: 150px;
+        }
+        
+        .task-action-menu button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .task-action-menu button:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .task-due-date.overdue {
+            color: #ff4444;
+            font-weight: 500;
+        }
     </style>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/document-viewer.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
+    <!-- EMERGENCY ESCAPE SCRIPT -->
+    <script>
+        (function() {
+            // Force close all modals
+            document.querySelectorAll('.modal').forEach(function(modal) {
+                modal.style.display = 'none';
+            });
+            
+            // Revoke any blob URLs
+            document.querySelectorAll('iframe, img').forEach(function(el) {
+                if (el.src && el.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(el.src);
+                }
+            });
+            
+            // Add event listener to force close document-viewer-modal when pressing Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.modal').forEach(function(modal) {
+                        modal.style.display = 'none';
+                    });
+                }
+            });
+            
+            // Override the viewDocument function to do nothing
+            window.viewDocument = function() {
+                console.log('Document viewer disabled');
+                return false;
+            };
+        })();
+    </script>
+
     <div class="branding">
         <button id="menu-toggle" class="menu-toggle">
             <i class="fas fa-bars"></i>
@@ -495,6 +868,10 @@
                     <a href="#templates">
                         <i class="fas fa-file-invoice"></i>
                         Templates
+                    </a>
+                    <a href="#feedback">
+                        <i class="fas fa-comment-dots"></i>
+                        Feedback
                     </a>
                 </div>
 
@@ -717,43 +1094,38 @@
                     <div class="search-add">
                         <input type="text" id="task-search" placeholder="Search tasks...">
                         <button id="add-task-btn" class="btn-primary">
-                            <i class="fas fa-plus"></i> Add Task
+                            <i class="fas fa-plus"></i> Assign Task
+                        </button>
+                        <!-- Debug button -->
+                        <button id="debug-task-btn" class="btn-secondary" style="background-color: #6c5ce7; margin-left: 10px;" onclick="createSimpleTestTask()">
+                            <i class="fas fa-bug"></i> Test Task
                         </button>
                     </div>
                 </div>
 
-                <div class="task-board">
-                    <div class="task-column" id="todo-column">
-                        <h3>To Do <span class="task-count">0</span></h3>
-                        <div class="task-list" data-status="todo"></div>
-                    </div>
-
-                    <div class="task-column" id="in-progress-column">
-                        <h3>In Progress <span class="task-count">0</span></h3>
-                        <div class="task-list" data-status="in-progress"></div>
-                    </div>
-
-                    <div class="task-column" id="completed-column">
-                        <h3>Completed <span class="task-count">0</span></h3>
-                        <div class="task-list" data-status="completed"></div>
+                <div class="simplified-task-board">
+                    <div class="task-column" id="task-column">
+                        <h3>Tasks <span class="task-count">0</span></h3>
+                        <div class="task-list" id="tasks-list"></div>
                     </div>
                 </div>
 
                 <!-- Add Task Modal -->
-                <div id="add-task-modal" class="modal">
+                <div id="task-modal" class="modal">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h3>Add New Task</h3>
+                            <h3 id="task-modal-title">Assign New Task</h3>
                             <button class="close-modal">&times;</button>
                         </div>
-                        <form id="add-task-form">
+                        <form id="task-form">
+                            <input type="hidden" id="task-id">
                             <div class="form-group">
-                                <label for="task-title">Title</label>
+                                <label for="task-title">Task Title</label>
                                 <input type="text" id="task-title" required>
                             </div>
                             <div class="form-group">
                                 <label for="task-description">Description</label>
-                                <textarea id="task-description" required></textarea>
+                                <textarea id="task-description" rows="3"></textarea>
                             </div>
                             <div class="form-group">
                                 <label for="task-assignee">Assign To</label>
@@ -765,15 +1137,17 @@
                             </div>
                             <div class="form-group">
                                 <label for="task-priority">Priority</label>
-                                <select id="task-priority" required>
+                                <select id="task-priority">
                                     <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
+                                    <option value="medium" selected>Medium</option>
                                     <option value="high">High</option>
                                 </select>
                             </div>
+                            <input type="hidden" id="task-status" value="pending">
+                            <input type="hidden" id="task-category" value="other">
                             <div class="form-actions">
                                 <button type="button" class="btn-secondary close-modal">Cancel</button>
-                                <button type="submit" class="btn-primary">Create Task</button>
+                                <button type="submit" class="btn-primary">Assign Task</button>
                             </div>
                         </form>
                     </div>
@@ -830,143 +1204,48 @@
                 </div>
             </section>
 
-            <!-- Notifications Section -->
-            <section id="notifications" class="dashboard-section">
+            <!-- Feedback Section -->
+            <section id="feedback" class="dashboard-section">
                 <div class="dashboard-header">
-                    <h2>Notification Center</h2>
+                    <h2>Employee Feedback</h2>
                     <div class="action-bar">
-                        <button class="filter-btn active">All</button>
-                        <button class="filter-btn">Unread</button>
-                        <button class="filter-btn">Important</button>
-                    </div>
-                </div>
-                <div class="notification-list" id="notificationList">
-                    <!-- Notifications will be dynamically populated -->
-                </div>
-            </section>
-
-            <!-- Settings Section -->
-            <section id="settings" class="dashboard-section">
-                <div class="dashboard-header">
-                <h2>System Settings</h2>
-                    <button class="add-btn"><i class="fas fa-save"></i> Save Changes</button>
-                </div>
-                <div class="settings-grid">
-                    <div class="settings-card">
-                        <h3><i class="fas fa-building"></i> Basic Settings</h3>
-                        <form class="settings-form">
-                            <div class="form-group">
-                                <label>Company Name</label>
-                                <input type="text" value="OnboardX">
-                            </div>
-                            <div class="form-group">
-                                <label>Logo</label>
-                                <div class="file-upload">
-                                    <input type="file" accept="image/*">
-                                    <button type="button" class="upload-btn">Upload Logo</button>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Time Zone</label>
-                                <select>
-                                    <option>Pacific Time (PT)</option>
-                                    <option>Eastern Time (ET)</option>
-                                    <option>Central Time (CT)</option>
-                                    <option>Mountain Time (MT)</option>
+                        <select id="feedback-filter" class="filter-select">
+                            <option value="all">All Feedback</option>
+                            <option value="pending">Pending</option>
+                            <option value="reviewed">Reviewed</option>
+                            <option value="archived">Archived</option>
+                                </select>
+                        <select id="feedback-time-filter" class="filter-select">
+                            <option value="all">All Time</option>
+                            <option value="7days">Last 7 Days</option>
+                            <option value="30days">Last 30 Days</option>
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label>Date Format</label>
-                                <select>
-                                    <option>MM/DD/YYYY</option>
-                                    <option>DD/MM/YYYY</option>
-                                    <option>YYYY-MM-DD</option>
-                                </select>
-                            </div>
-                        </form>
                     </div>
 
-                    <div class="settings-card">
-                        <h3><i class="fas fa-shield-alt"></i> Security</h3>
-                        <form class="settings-form">
-                            <div class="form-group">
-                                <label>Password Requirements</label>
-                                <select>
-                                    <option>Strong (8+ chars, special chars)</option>
-                                    <option>Basic (6+ chars)</option>
-                                </select>
+                <div class="feedback-container">
+                    <div class="feedback-sidebar">
+                        <div class="feedback-list-header">
+                            <h3>Feedback Items</h3>
                             </div>
-                            <div class="form-group">
-                                <label>Two-Factor Authentication</label>
-                                <label class="switch">
-                                    <input type="checkbox">
-                                    <span class="slider"></span>
-                                </label>
+                        <div class="loading-feedback">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Loading feedback...</p>
                             </div>
-                            <div class="form-group">
-                                <label>Session Timeout</label>
-                                <select>
-                                    <option>30 minutes</option>
-                                    <option>1 hour</option>
-                                    <option>2 hours</option>
-                                </select>
+                        <div class="empty-feedback-list" style="display: none;">
+                            <i class="fas fa-comment-slash"></i>
+                            <p>No feedback found</p>
                             </div>
-                        </form>
+                        <div id="feedback-list" class="feedback-list">
+                            <!-- Feedback items will be loaded here dynamically -->
+                    </div>
                     </div>
 
-                    <div class="settings-card">
-                        <h3><i class="fas fa-users"></i> User Roles</h3>
-                        <div class="role-list">
-                            <div class="role-item">
-                                <div class="role-info">
-                                    <h4>Admin</h4>
-                                    <p>Full system access</p>
-                                </div>
-                                <button class="action-btn"><i class="fas fa-edit"></i></button>
+                    <div id="feedback-details-container" class="feedback-details-container">
+                        <div class="empty-selection">
+                            <i class="fas fa-comment-dots feedback-icon"></i>
+                            <p>Select a feedback item to view details</p>
                             </div>
-                            <div class="role-item">
-                                <div class="role-info">
-                                    <h4>HR Manager</h4>
-                                    <p>Employee management access</p>
-                                </div>
-                                <button class="action-btn"><i class="fas fa-edit"></i></button>
-                            </div>
-                            <div class="role-item">
-                                <div class="role-info">
-                                    <h4>Team Leader</h4>
-                                    <p>Basic team access</p>
-                                </div>
-                                <button class="action-btn"><i class="fas fa-edit"></i></button>
-                            </div>
-                        </div>
-                        <button class="add-btn mt-3"><i class="fas fa-plus"></i> Add Role</button>
-                    </div>
-
-                    <div class="settings-card">
-                        <h3><i class="fas fa-bell"></i> Notifications</h3>
-                        <form class="settings-form">
-                            <div class="form-group">
-                                <label>Email Notifications</label>
-                                <label class="switch">
-                                    <input type="checkbox" checked>
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="form-group">
-                                <label>Task Reminders</label>
-                                <label class="switch">
-                                    <input type="checkbox" checked>
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="form-group">
-                                <label>System Updates</label>
-                                <label class="switch">
-                                    <input type="checkbox" checked>
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                        </form>
                     </div>
                 </div>
             </section>
@@ -1368,495 +1647,54 @@
         </div>
     </div>
 
+    <!-- Main scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/disable-document-viewer.js"></script>
     <script src="/js/admin.js" defer></script>
+    <script src="/js/simplified-tasks.js" defer></script>
+    <script src="/js/task-debug.js" defer></script>
+    <script src="/js/employee-review.js" defer></script>
+    
+    <!-- Quick debug function -->
     <script>
-        // Dashboard Data Loading
-        document.addEventListener('DOMContentLoaded', function() {
-            // Load initial dashboard data
-            loadDashboardData();
-            
-            // Add event listener for refresh button if it exists
-            const refreshBtn = document.getElementById('refresh-dashboard');
-            if (refreshBtn) {
-                refreshBtn.addEventListener('click', function() {
-                    loadDashboardData();
-                });
-            }
-            
-            // Update date and time
-            updateDateTime();
-            // Set up interval for updating date and time
-            setInterval(updateDateTime, 60000);
-        });
-        
-        // Update date and time
-        function updateDateTime() {
-            const now = new Date();
-            document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            });
-            document.getElementById('current-time').textContent = now.toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-        }
-        
-        // Fetch current user information
-        async function fetchCurrentUser() {
-            try {
-                const response = await fetch('/api/auth/me');
-                if (response.ok) {
-                    const userData = await response.json();
-                    document.getElementById('user-name').textContent = userData.name || 'Admin';
-                }
-            } catch (error) {
-                console.error('Error fetching user data:', error);
-            }
-        }
-        
-        // Create the task status chart
-        function createTaskStatusChart(todo, inProgress, completed) {
-            // Get the canvas element
-            const ctx = document.getElementById('taskStatusChart').getContext('2d');
-            
-            // Check if a chart instance already exists and destroy it
-            if (window.taskStatusChart) {
-                window.taskStatusChart.destroy();
-            }
-            
-            // Ensure values are numbers and set defaults if not provided
-            todo = typeof todo === 'number' ? todo : 0;
-            inProgress = typeof inProgress === 'number' ? inProgress : 0;
-            completed = typeof completed === 'number' ? completed : 0;
-            
-            // Define vibrant colors with good contrast
-            const chartColors = {
-                todo: 'rgba(255, 99, 132, 0.9)',        // Bright pink
-                inProgress: 'rgba(54, 162, 235, 0.9)',  // Bright blue
-                completed: 'rgba(75, 192, 75, 0.9)',    // Bright green
+        function createSimpleTestTask() {
+            // Create a minimal task with just required fields
+            const testTask = {
+                title: "Test Task " + new Date().toLocaleTimeString(),
+                description: "This is a test task created directly.",
+                status: "pending"
             };
             
-            // Create the chart
-            window.taskStatusChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['To Do', 'In Progress', 'Completed'],
-                    datasets: [{
-                        data: [todo, inProgress, completed],
-                        backgroundColor: [
-                            chartColors.todo,
-                            chartColors.inProgress, 
-                            chartColors.completed
-                        ],
-                        borderColor: [
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(54, 162, 235, 1)', 
-                            'rgba(75, 192, 75, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
+            // Try to create the task
+            fetch('/api/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                boxWidth: 12,
-                                color: '#333' // Darker color for better readability
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                            padding: 12,
-                            bodyFont: {
-                                size: 14
-                            },
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.raw || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                                    return `${label}: ${value} (${percentage}%)`;
-                                }
-                            }
-                        }
-                    },
-                    animation: {
-                        animateScale: true,
-                        animateRotate: true,
-                        duration: 1000
+                body: JSON.stringify(testTask)
+            })
+            .then(response => {
+                console.log("Test task status:", response.status);
+                return response.text();
+            })
+            .then(text => {
+                console.log("Test task response:", text);
+                try {
+                    const data = JSON.parse(text);
+                    alert("Task created successfully with ID: " + (data._id || data.id || "unknown"));
+                    // Reload tasks
+                    if (typeof loadTasks === 'function') {
+                        loadTasks();
                     }
+                } catch(e) {
+                    alert("Task creation response received but parsing failed. Check console.");
                 }
+            })
+            .catch(error => {
+                console.error("Test task error:", error);
+                alert("Error creating test task: " + error.message);
             });
-            
-            // Update chart container background - fixed to have white background
-            const chartContainer = document.querySelector('.task-status-chart');
-            if (chartContainer) {
-                chartContainer.style.backgroundColor = '#ffffff';
-                chartContainer.style.borderRadius = '8px';
-                chartContainer.style.padding = '15px';
-                chartContainer.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
-            }
-            
-            // Ensure the canvas itself has a white background
-            const canvas = document.getElementById('taskStatusChart');
-            if (canvas) {
-                canvas.style.backgroundColor = '#ffffff';
-            }
-        }
-        
-        // Load dashboard data with proper authentication and error handling
-        async function loadDashboardData() {
-            try {
-                // Show loading indicators
-                document.getElementById('total-employees-count').textContent = '...';
-                document.getElementById('active-onboarding-count').textContent = '...';
-                document.getElementById('pending-tasks-count').textContent = '...';
-                document.getElementById('completed-tasks-count').textContent = '...';
-                
-                // Get auth token
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    // Show login needed message
-                    document.getElementById('total-employees-count').textContent = '-';
-                    document.getElementById('active-onboarding-count').textContent = '-';
-                    document.getElementById('pending-tasks-count').textContent = '-';
-                    document.getElementById('completed-tasks-count').textContent = '-';
-                    createTaskStatusChart(null, null, null); // Use sample data
-                    return;
-                }
-                
-                const headers = {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                };
-                
-                // Fetch tasks
-                let taskTodo = 0;
-                let taskInProgress = 0;
-                let taskCompleted = 0;
-                
-                try {
-                    const tasksResponse = await fetch('/api/tasks', { headers });
-                    
-                    if (tasksResponse.ok) {
-                        const tasks = await tasksResponse.json();
-                        
-                        if (Array.isArray(tasks)) {
-                            // Count tasks by status
-                            taskTodo = tasks.filter(task => task.status === 'todo').length;
-                            taskInProgress = tasks.filter(task => task.status === 'in-progress').length;
-                            taskCompleted = tasks.filter(task => task.status === 'completed').length;
-                            
-                            // Update counts on dashboard
-                            document.getElementById('pending-tasks-count').textContent = taskTodo + taskInProgress;
-                            document.getElementById('completed-tasks-count').textContent = taskCompleted;
-                            
-                            // Update task count indicators on kanban board if they exist
-                            const todoCount = document.querySelector('#todo-column .task-count');
-                            const inProgressCount = document.querySelector('#in-progress-column .task-count');
-                            const completedCount = document.querySelector('#completed-column .task-count');
-                            
-                            if (todoCount) todoCount.textContent = taskTodo;
-                            if (inProgressCount) inProgressCount.textContent = taskInProgress;
-                            if (completedCount) completedCount.textContent = taskCompleted;
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error fetching tasks:', error);
-                }
-                
-                // Create chart with real data or sample data if API failed
-                createTaskStatusChart(taskTodo, taskInProgress, taskCompleted);
-                
-                // Fetch employees count
-                try {
-                    const employeesResponse = await fetch('/api/employees', { headers });
-                    
-                    if (employeesResponse.ok) {
-                        const employees = await employeesResponse.json();
-                        const count = Array.isArray(employees) ? employees.length : (employees.count || 0);
-                        document.getElementById('total-employees-count').textContent = count;
-                        
-                        // Count onboarding employees
-                        const onboardingCount = Array.isArray(employees) 
-                            ? employees.filter(e => e.status === 'onboarding').length 
-                            : 0;
-                        document.getElementById('active-onboarding-count').textContent = onboardingCount;
-                    }
-                } catch (error) {
-                    console.error('Error fetching employees:', error);
-                    document.getElementById('total-employees-count').textContent = '-';
-                    document.getElementById('active-onboarding-count').textContent = '-';
-                }
-                
-            } catch (error) {
-                console.error('Error loading dashboard data:', error);
-                createTaskStatusChart(null, null, null); // Use sample data on error
-            }
-        }
-        
-        // Load recent activities with proper error handling
-        async function loadRecentActivities() {
-            try {
-                const activityList = document.getElementById('activity-list');
-                if (!activityList) return; // Skip if element doesn't exist
-                
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    activityList.innerHTML = '<div class="empty-state">Please log in to view activities</div>';
-                    return;
-                }
-                
-                try {
-                    const response = await fetch('/api/activities?limit=5', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/json'
-                        }
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`Failed to load activities: ${response.status}`);
-                    }
-                    
-                    const contentType = response.headers.get('content-type');
-                    if (!contentType || !contentType.includes('application/json')) {
-                        throw new Error('Invalid response format');
-                    }
-                    
-                    const activities = await response.json();
-                    
-                    if (activities.length === 0) {
-                        activityList.innerHTML = '<div class="empty-state">No recent activities</div>';
-                    } else {
-                        activityList.innerHTML = '';
-                        
-                        activities.forEach(activity => {
-                            const timeAgo = formatTimeAgo(new Date(activity.timestamp));
-                            let iconClass = 'fa-bell';
-                            
-                            const activityItem = document.createElement('div');
-                            activityItem.className = 'activity-item';
-                            activityItem.innerHTML = `
-                                <i class="fas ${iconClass}"></i>
-                                <div class="activity-content">
-                                    <p>${activity.description || 'Activity recorded'}</p>
-                                    <span class="activity-time">${timeAgo}</span>
-                                </div>
-                            `;
-                            
-                            activityList.appendChild(activityItem);
-                        });
-                    }
-                } catch (error) {
-                    console.error('Error loading activities:', error);
-                    activityList.innerHTML = '<div class="error-state">Could not load activities</div>';
-                    
-                    // Add sample activities as fallback
-                    setTimeout(() => {
-                        if (activityList.querySelector('.error-state')) {
-                            activityList.innerHTML = '';
-                            
-                            const sampleActivities = [
-                                { icon: 'fa-user-plus', text: 'New employee Sarah Johnson started onboarding process', time: '2 hours ago' },
-                                { icon: 'fa-file-alt', text: 'Employment contract for Michael Chen approved', time: '3 hours ago' },
-                                { icon: 'fa-laptop', text: 'IT setup completed for David Wilson', time: '5 hours ago' },
-                                { icon: 'fa-calendar-check', text: 'Orientation scheduled for new Marketing team', time: 'Yesterday' }
-                            ];
-                            
-                            sampleActivities.forEach(activity => {
-                                const activityItem = document.createElement('div');
-                                activityItem.className = 'activity-item';
-                                activityItem.innerHTML = `
-                                    <i class="fas ${activity.icon}"></i>
-                                    <div class="activity-content">
-                                        <p>${activity.text}</p>
-                                        <span class="activity-time">${activity.time}</span>
-                                    </div>
-                                `;
-                                
-                                activityList.appendChild(activityItem);
-                            });
-                        }
-                    }, 500);
-                }
-            } catch (error) {
-                console.error('Error in loadRecentActivities:', error);
-            }
-        }
-        
-        // Load recent onboarding with proper error handling
-        async function loadRecentOnboarding() {
-            try {
-                const onboardingList = document.getElementById('recent-onboarding-list');
-                if (!onboardingList) return; // Skip if element doesn't exist
-                
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    onboardingList.innerHTML = `
-                        <tr>
-                            <td colspan="5" class="text-center">Please log in to view onboarding data</td>
-                        </tr>
-                    `;
-                    return;
-                }
-                
-                try {
-                    const response = await fetch('/api/employees?status=onboarding&limit=5', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/json'
-                        }
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`Failed to load onboarding data: ${response.status}`);
-                    }
-                    
-                    const contentType = response.headers.get('content-type');
-                    if (!contentType || !contentType.includes('application/json')) {
-                        throw new Error('Invalid response format');
-                    }
-                    
-                    const onboardingData = await response.json();
-                    const employees = onboardingData.employees || onboardingData;
-                    
-                    if (!employees || employees.length === 0) {
-                        onboardingList.innerHTML = `
-                            <tr>
-                                <td colspan="5" class="text-center">No active onboarding processes</td>
-                            </tr>
-                        `;
-                    } else {
-                        onboardingList.innerHTML = '';
-                        
-                        employees.slice(0, 5).forEach(employee => {
-                            const progress = employee.onboarding ? 
-                                Math.round((employee.onboarding.completedSteps / employee.onboarding.totalSteps) * 100) : 0;
-                            
-                            const startDate = employee.startDate ? 
-                                new Date(employee.startDate).toLocaleDateString() : 'N/A';
-                            
-                            const status = employee.status || 'pending';
-                            
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td>${employee.name || 'New Employee'}</td>
-                                <td>${employee.department || 'N/A'}</td>
-                                <td>${startDate}</td>
-                                <td>
-                                    <div class="progress-bar">
-                                        <div class="progress" style="width: ${progress}%"></div>
-                                    </div>
-                                    <span class="progress-text">${progress}%</span>
-                                </td>
-                                <td><span class="status-badge ${getStatusClass(status)}">${status}</span></td>
-                            `;
-                            
-                            onboardingList.appendChild(row);
-                        });
-                    }
-                } catch (error) {
-                    console.error('Error loading onboarding data:', error);
-                    onboardingList.innerHTML = `
-                        <tr>
-                            <td colspan="5" class="text-center">Could not load onboarding data</td>
-                        </tr>
-                    `;
-                    
-                    // Add sample data as fallback
-                    setTimeout(() => {
-                        if (onboardingList.querySelector('td.text-center')) {
-                            onboardingList.innerHTML = '';
-                            
-                            const sampleEmployees = [
-                                { name: 'John Smith', department: 'Engineering', startDate: '2023-04-01', progress: 75, status: 'active' },
-                                { name: 'Sarah Johnson', department: 'Marketing', startDate: '2023-04-05', progress: 40, status: 'active' },
-                                { name: 'Michael Chen', department: 'Finance', startDate: '2023-04-10', progress: 20, status: 'active' }
-                            ];
-                            
-                            sampleEmployees.forEach(employee => {
-                                const row = document.createElement('tr');
-                                row.innerHTML = `
-                                    <td>${employee.name}</td>
-                                    <td>${employee.department}</td>
-                                    <td>${new Date(employee.startDate).toLocaleDateString()}</td>
-                                    <td>
-                                        <div class="progress-bar">
-                                            <div class="progress" style="width: ${employee.progress}%"></div>
-                                        </div>
-                                        <span class="progress-text">${employee.progress}%</span>
-                                    </td>
-                                    <td><span class="status-badge ${getStatusClass(employee.status)}">${employee.status}</span></td>
-                                `;
-                                
-                                onboardingList.appendChild(row);
-                            });
-                        }
-                    }, 500);
-                }
-            } catch (error) {
-                console.error('Error in loadRecentOnboarding:', error);
-            }
-        }
-        
-        // Calculate progress percentage
-        function calculateProgress(completed, total) {
-            if (!total || total === 0) return 0;
-            return Math.round((completed / total) * 100);
-        }
-        
-        // Get status badge class
-        function getStatusClass(status) {
-            switch (status.toLowerCase()) {
-                case 'active': return 'active';
-                case 'completed': return 'success';
-                case 'delayed': return 'warning';
-                case 'onhold': return 'secondary';
-                default: return 'default';
-            }
-        }
-        
-        // Format time ago function if not already defined
-        function formatTimeAgo(date) {
-            const now = new Date();
-            const diffInSeconds = Math.floor((now - date) / 1000);
-            
-            if (diffInSeconds < 60) {
-                return 'Just now';
-            }
-            
-            const diffInMinutes = Math.floor(diffInSeconds / 60);
-            if (diffInMinutes < 60) {
-                return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
-            }
-            
-            const diffInHours = Math.floor(diffInMinutes / 60);
-            if (diffInHours < 24) {
-                return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-            }
-            
-            const diffInDays = Math.floor(diffInHours / 24);
-            if (diffInDays < 7) {
-                return diffInDays === 1 ? 'Yesterday' : `${diffInDays} days ago`;
-            }
-            
-            return date.toLocaleDateString();
-        }
-        
-        // Task Management
-        async function initializeTaskManagement() {
-            // Load task management code
-            // This can be the existing task management code or added later
         }
     </script>
 </body>

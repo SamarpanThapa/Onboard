@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     /**
-     * Handle file uploads for documents - simplified version that skips actual uploads for now
+     * Handle file uploads for documents - properly uploads files to server 
      */
     async function uploadFiles(data) {
         try {
@@ -412,9 +412,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const taxFormInput = document.getElementById('td1');
             if (taxFormInput && taxFormInput.files && taxFormInput.files.length > 0) {
                 const taxForm = taxFormInput.files[0];
-                console.log('Processing tax form:', taxForm.name);
+                console.log('Uploading tax form:', taxForm.name);
                 
-                // Instead of uploading, just record that a document was submitted
+                // First, record metadata
                 data.personalInfo.taxDocumentsSubmitted = true;
                 data.personalInfo.taxDocumentInfo = {
                     fileName: taxForm.name,
@@ -422,15 +422,51 @@ document.addEventListener('DOMContentLoaded', function() {
                     fileType: taxForm.type,
                     submittedAt: new Date()
                 };
+                
+                // Upload the actual document
+                const formData = new FormData();
+                formData.append('file', taxForm);
+                formData.append('title', 'Tax Form (TD1)');
+                formData.append('documentType', 'tax');
+                formData.append('category', 'Onboarding');
+                
+                try {
+                    const uploadResponse = await fetch('/api/documents/upload', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: formData
+                    });
+                    
+                    const uploadResult = await uploadResponse.json();
+                    if (uploadResponse.ok) {
+                        console.log('Tax form uploaded successfully:', uploadResult);
+                        
+                        // Store document ID for reference
+                        if (!data.documents) data.documents = [];
+                        data.documents.push({
+                            id: uploadResult.data._id,
+                            type: 'tax',
+                            name: 'Tax Form (TD1)',
+                            fileName: taxForm.name,
+                            uploadedAt: new Date()
+                        });
+                    } else {
+                        console.error('Failed to upload tax form:', uploadResult);
+                    }
+                } catch (uploadError) {
+                    console.error('Error uploading tax form:', uploadError);
+                }
             }
             
             // Work authorization upload
             const workAuthInput = document.getElementById('work-authorization');
             if (workAuthInput && workAuthInput.files && workAuthInput.files.length > 0) {
                 const workAuth = workAuthInput.files[0];
-                console.log('Processing work authorization:', workAuth.name);
+                console.log('Uploading work authorization:', workAuth.name);
                 
-                // Instead of uploading, just record that a document was submitted
+                // First, record metadata
                 data.personalInfo.workAuthorizationSubmitted = true;
                 data.personalInfo.workAuthorizationInfo = {
                     fileName: workAuth.name,
@@ -438,15 +474,51 @@ document.addEventListener('DOMContentLoaded', function() {
                     fileType: workAuth.type,
                     submittedAt: new Date()
                 };
+                
+                // Upload the actual document
+                const formData = new FormData();
+                formData.append('file', workAuth);
+                formData.append('title', 'Work Authorization');
+                formData.append('documentType', 'work_authorization');
+                formData.append('category', 'Onboarding');
+                
+                try {
+                    const uploadResponse = await fetch('/api/documents/upload', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: formData
+                    });
+                    
+                    const uploadResult = await uploadResponse.json();
+                    if (uploadResponse.ok) {
+                        console.log('Work authorization uploaded successfully:', uploadResult);
+                        
+                        // Store document ID for reference
+                        if (!data.documents) data.documents = [];
+                        data.documents.push({
+                            id: uploadResult.data._id,
+                            type: 'work_authorization',
+                            name: 'Work Authorization',
+                            fileName: workAuth.name,
+                            uploadedAt: new Date()
+                        });
+                    } else {
+                        console.error('Failed to upload work authorization:', uploadResult);
+                    }
+                } catch (uploadError) {
+                    console.error('Error uploading work authorization:', uploadError);
+                }
             }
             
             // Citizenship proof upload
             const citizenshipProofInput = document.getElementById('citizenship-proof');
             if (citizenshipProofInput && citizenshipProofInput.files && citizenshipProofInput.files.length > 0) {
                 const citizenshipProof = citizenshipProofInput.files[0];
-                console.log('Processing citizenship proof:', citizenshipProof.name);
+                console.log('Uploading citizenship proof:', citizenshipProof.name);
                 
-                // Instead of uploading, just record that a document was submitted
+                // First, record metadata
                 data.personalInfo.citizenshipProofSubmitted = true;
                 data.personalInfo.citizenshipProofInfo = {
                     fileName: citizenshipProof.name,
@@ -454,12 +526,48 @@ document.addEventListener('DOMContentLoaded', function() {
                     fileType: citizenshipProof.type,
                     submittedAt: new Date()
                 };
+                
+                // Upload the actual document
+                const formData = new FormData();
+                formData.append('file', citizenshipProof);
+                formData.append('title', 'Proof of Citizenship/Immigration Status');
+                formData.append('documentType', 'citizenship');
+                formData.append('category', 'Onboarding');
+                
+                try {
+                    const uploadResponse = await fetch('/api/documents/upload', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: formData
+                    });
+                    
+                    const uploadResult = await uploadResponse.json();
+                    if (uploadResponse.ok) {
+                        console.log('Citizenship proof uploaded successfully:', uploadResult);
+                        
+                        // Store document ID for reference
+                        if (!data.documents) data.documents = [];
+                        data.documents.push({
+                            id: uploadResult.data._id,
+                            type: 'citizenship',
+                            name: 'Proof of Citizenship/Immigration Status',
+                            fileName: citizenshipProof.name,
+                            uploadedAt: new Date()
+                        });
+                    } else {
+                        console.error('Failed to upload citizenship proof:', uploadResult);
+                    }
+                } catch (uploadError) {
+                    console.error('Error uploading citizenship proof:', uploadError);
+                }
             }
             
-            console.log('File information processed successfully');
+            console.log('All files processed and uploaded successfully');
             return true;
         } catch (error) {
-            console.error('Error processing file information:', error);
+            console.error('Error processing file uploads:', error);
             return false;
         }
     }

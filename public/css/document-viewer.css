@@ -283,4 +283,319 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+}
+
+/* Document Viewer CSS */
+
+/* Document Viewer Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    position: relative;
+    background-color: #fff;
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid #888;
+    width: 90%;
+    max-width: 900px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    animation: modalFadeIn 0.3s;
+}
+
+.modal-xl {
+    max-width: 1200px;
+}
+
+.modal-header {
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.close-modal {
+    color: #777;
+    font-size: 28px;
+    font-weight: bold;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+}
+
+.close-modal:hover,
+.close-modal:focus {
+    color: #000;
+    text-decoration: none;
+    outline: none;
+}
+
+.modal-body {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Loading indicator */
+#document-loading-indicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-overlay {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Buttons */
+.btn-primary {
+    color: #fff;
+    background-color: #3498db;
+    border: 1px solid #2980b9;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: #2980b9;
+}
+
+.btn-secondary {
+    color: #fff;
+    background-color: #7f8c8d;
+    border: 1px solid #6c7a7d;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.3s;
+}
+
+.btn-secondary:hover {
+    background-color: #6c7a7d;
+}
+
+/* Document container */
+#document-container {
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#document-container img {
+    max-width: 100%;
+    max-height: 600px;
+    object-fit: contain;
+}
+
+#document-container iframe {
+    width: 100%;
+    height: 600px;
+    border: 1px solid #ddd;
+}
+
+/* Alerts */
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.alert-warning {
+    color: #8a6d3b;
+    background-color: #fcf8e3;
+    border-color: #faebcc;
+}
+
+.alert-info {
+    color: #31708f;
+    background-color: #d9edf7;
+    border-color: #bce8f1;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.p-5 {
+    padding: 3rem;
+}
+
+.m-3 {
+    margin: 1rem;
+}
+
+.mb-3 {
+    margin-bottom: 1rem;
+}
+
+.h-100 {
+    height: 100%;
+}
+
+.mx-auto {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.d-block {
+    display: block;
+}
+
+.text-muted {
+    color: #6c757d;
+}
+
+/* Animation */
+@keyframes modalFadeIn {
+    from {opacity: 0; transform: translateY(-50px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+
+/* Utility classes */
+.img-fluid {
+    max-width: 100%;
+    height: auto;
+}
+
+.me-2 {
+    margin-right: 0.5rem;
+}
+
+.mb-0 {
+    margin-bottom: 0;
+}
+
+.fa-4x {
+    font-size: 4em;
+}
+
+.emergency-close {
+    background-color: #e74c3c !important;
+    border-color: #c0392b !important;
+}
+
+.emergency-close:hover {
+    background-color: #c0392b !important;
+}
+
+/* Fix for stuck modals */
+#cancel-document-load {
+    margin-top: 15px;
+    min-width: 100px;
+}
+
+/* Make sure iframe contents don't cause issues */
+#document-container iframe {
+    background-color: white;
+}
+
+/* Make sure modals always have a close button visible */
+.modal-header .close-modal {
+    position: sticky;
+    top: 10px;
+    right: 10px;
+    z-index: 9999;
+    text-shadow: 0 0 3px white;
+}
+
+/* Fix for modal backdrop that might get stuck */
+.modal::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: -1;
+}
+
+/* Ensure modals can be closed */
+.modal.active {
+    display: block;
+}
+
+/* Ensure close button is always visible */
+.modal-content {
+    position: relative;
+    max-height: 90vh;
+    overflow: auto;
+}
+
+/* Fix for scrolling issues */
+body.modal-open {
+    overflow: hidden;
+}
+
+/* Alert styling for error messages */
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
 } 

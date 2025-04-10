@@ -1,0 +1,61 @@
+/**
+ * Accessibility fixes for document viewer and modals
+ */
+
+/* Fix for aria-hidden issues */
+[aria-hidden="true"] {
+    display: none !important;
+}
+
+/* Make sure elements with aria-hidden don't retain focus */
+[aria-hidden="true"] * {
+    visibility: hidden !important;
+    pointer-events: none !important;
+    outline: none !important;
+}
+
+/* Ensure modals have proper focus styles */
+[role="dialog"]:focus,
+[role="dialog"] *:focus {
+    outline: 2px solid #4CAF50 !important;
+    outline-offset: 2px !important;
+}
+
+/* Ensure close buttons are clearly visible for keyboard navigation */
+.close-modal:focus {
+    outline: 2px solid #4CAF50 !important;
+    color: #000 !important;
+    box-shadow: 0 0 3px 2px rgba(76, 175, 80, 0.5);
+}
+
+/* Ensure buttons have proper focus styles */
+button:focus,
+a:focus {
+    outline: 2px solid #4CAF50 !important;
+    outline-offset: 2px !important;
+}
+
+/* Ensure content is not hidden while focused */
+.modal:not([aria-hidden="true"]) {
+    display: block;
+}
+
+/* Fix for incorrectly nested focus-retaining elements */
+.modal[aria-hidden="true"] {
+    display: none !important;
+}
+
+/* Support for tabindex navigation */
+[tabindex="-1"] {
+    outline: none !important;
+}
+
+/* Fix for modal fade using proper accessibility attributes */
+.modal[aria-modal="true"] {
+    display: block;
+}
+
+/* Make sure modal doesn't trap focus if hidden */
+.modal[style*="display: none"] * {
+    display: none !important;
+} 

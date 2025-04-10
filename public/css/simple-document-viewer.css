@@ -1,0 +1,68 @@
+/* Simple Document Viewer CSS */
+
+/* Spinner animation */
+.simple-loader {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 4px solid #3498db;
+    animation: simple-spin 1s linear infinite;
+    margin: 0 auto 15px auto;
+}
+
+@keyframes simple-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Modal animation */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#simple-document-modal {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Emergency escape button hover effect */
+#emergency-close-btn:hover {
+    background-color: #bd2130 !important;
+}
+
+/* Close and download button hover effects */
+#close-document-btn:hover {
+    background-color: #5a6268 !important;
+}
+
+#fake-download-btn:hover {
+    background-color: #3a56b5 !important;
+}
+
+/* Close button hover */
+#close-document-modal:hover {
+    color: #000 !important;
+}
+
+/* Focus styles for accessibility */
+button:focus {
+    outline: 2px solid #4a6fde !important;
+    outline-offset: 2px !important;
+}
+
+/* Make sure modal content looks good on smaller screens */
+@media (max-width: 600px) {
+    #simple-document-modal > div {
+        width: 95% !important;
+        margin: 10px;
+    }
+    
+    #simple-document-modal > div > div:last-child {
+        flex-direction: column;
+    }
+    
+    #emergency-close-btn {
+        margin-bottom: 10px;
+    }
+} 

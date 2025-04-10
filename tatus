@@ -1,0 +1,96 @@
+[33mcommit e10c974c6893d8f0580080b0c71e09e330aa0c71[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Tue Apr 8 15:28:03 2025 -0400
+
+    Implement onboarding tracker with document handling and review functionality
+
+[33mcommit b1c557654ed4bfd2d032339420a3cef37759e07a[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Thu Mar 27 12:04:59 2025 -0400
+
+    Improve UI/UX: Enhanced feedback form, task management system for employees, and various UI improvements
+
+[33mcommit 53e806adf6dca887265d3c1ca4a7e5f94dca2901[m
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Sun Mar 23 23:36:49 2025 -0400
+
+    Fix tasks not appearing in To-Do column by ensuring proper status handling and adding detailed logging
+
+[33mcommit 8976fc562c92087021be839b9bcf64f1c404e5f5[m
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Sun Mar 23 23:28:51 2025 -0400
+
+    Fix task creation to correctly use Task model enum values
+
+[33mcommit cbf851ff32f91318badc7dbb850421861b349e97[m
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Sun Mar 23 23:26:17 2025 -0400
+
+    Fix task creation by updating field values to match Task model schema
+
+[33mcommit cd352a949f8d1976d08b68b5bd7a40c59b90bcdc[m
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Sun Mar 23 23:23:04 2025 -0400
+
+    Improve UI/UX for feedback section and fix task functionality. Fixed issues with tasks not showing in employee dashboard by updating field mappings and API calls.
+
+[33mcommit 07479d8bac3e4209f063e57016ed63b4d857e0bc[m
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Thu Mar 20 12:22:52 2025 -0400
+
+    Enhanced offboarding functionality with completion notifications to HR/admin
+
+[33mcommit c54bb898df39554f2711d6bb87df7892c37149ee[m
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Thu Mar 20 12:16:18 2025 -0400
+
+    Fix template management: Replace modal with form section toggle
+
+[33mcommit b4ad50dc92059767aa361d60519dd8a1442afad5[m
+Merge: 36b0021 76b4889
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Thu Mar 20 05:19:55 2025 -0400
+
+    Major update: Enhanced onboarding tracker, task management, and employee management features
+
+[33mcommit 36b00217ba69b0710631abe4dfc415f63beb9747[m
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Wed Mar 19 22:32:54 2025 -0400
+
+    Implement functional offboarding process synced between employee and HR admin panels
+
+[33mcommit 76b488947e1a26f1260d15855b2e76bd1fefea44[m
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Wed Mar 19 20:59:38 2025 -0400
+
+    Add exit interview and offboarding functionality to employee dashboard and admin panel
+
+[33mcommit 7d26e088353149749fee758e7c1c2a8faf49eb95[m
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Wed Mar 19 00:36:26 2025 -0400
+
+    Remove Upcoming Events section from employee dashboard
+
+[33mcommit e6a3fab055cec57a915048d133829b90fc34f5a5[m
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Wed Mar 19 00:26:20 2025 -0400
+
+    Fix onboarding data storage, migrate from localStorage to database storage, install missing dependencies
+
+[33mcommit f181e7e7785cd0132a7e9ff781edea6932d0e31c[m
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Wed Mar 19 00:06:12 2025 -0400
+
+    Implemented fully functional onboarding tracker with drag-and-drop kanban board
+
+[33mcommit e18d23f084c3b1300bf6fdf6953e8ed1e0824127[m
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Mon Mar 17 16:27:38 2025 -0400
+
+    Update UI styles for authentication pages to create consistent design
+
+[33mcommit 2535056b4e8c0adf311a22543c6d2c183fcc4769[m
+Author: SamarpanThapa <samarpanthapa012@gmail.com>
+Date:   Thu Mar 13 06:44:50 2025 -0400
+
+    Initial commit: Setup basic server structure with authentication, onboarding templates, and documentation
